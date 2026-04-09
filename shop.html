@@ -108,7 +108,8 @@
                 <span id="coinBalance" class="font-black" style="font-family: 'Orbitron', sans-serif;">0</span>
             </div>
         </div>
-        
+        <!-- Error message container -->
+        <div id="shopError" class="hidden glass rounded-2xl p-4 mb-4 bg-red-500/20 border-red-500 text-center text-red-300"></div>
         <!-- Tabs -->
         <div class="flex gap-2 mb-6 overflow-x-auto pb-2">
             <button class="tab-btn active px-6 py-3 rounded-xl font-black text-sm" data-tab="themes">
@@ -167,237 +168,346 @@
         let userInventory = { nameThemes: [], nameTags: [] };
         
         onAuthStateChanged(auth, async (user) => {
-            if (user) {
-                currentUser = user;
-                await loadUserData();
-                renderShop();
-            } else {
-                window.location.href = 'login.html';
-            }
-        });
+    if (user) {
+        currentUser = user;
+        try {
+            await loadUserData();
+            renderShop();
+        } catch (error) {
+            console.error('فشل تحميل بيانات المستخدم:', error);
+            showError('⚠️ فشل تحميل بيانات المتجر. يرجى تحديث الصفحة.');
+            // مع ذلك نعرض واجهة فارغة أو نعيد التوجيه
+            document.getElementById('themesGrid').innerHTML = '<div class="col-span-full text-center text-red-400 p-4">تعذر تحميل البيانات</div>';
+        }
+    } else {
+        window.location.href = 'login.html';
+    }
+});
+
+function showError(message) {
+    const errorEl = document.getElementById('shopError');
+    if (errorEl) {
+        errorEl.textContent = message;
+        errorEl.classList.remove('hidden');
+    } else {
+        alert(message);
+    }
+}
+
+function hideError() {
+    const errorEl = document.getElementById('shopError');
+    if (errorEl) errorEl.classList.add('hidden');
+}
         
         async function loadUserData() {
-            const snapshot = await get(ref(db, `players/${currentUser.uid}`));
-            if (snapshot.exists()) {
-                const data = snapshot.val();
-                userCoins = data.coins || 0;
-                userInventory = data.inventory || { nameThemes: ['default'], nameTags: [] };
-                document.getElementById('coinBalance').textContent = userCoins;
-            }
+    try {
+        const snapshot = await get(ref(db, `players/${currentUser.uid}`));
+        if (snapshot.exists()) {
+            const data = snapshot.val();
+            userCoins = data.coins || 0;
+            
+            const inv = data.inventory || {};
+            userInventory = {
+                nameThemes: Array.isArray(inv.nameThemes) ? inv.nameThemes : ['default'],
+                nameTags: Array.isArray(inv.nameTags) ? inv.nameTags : []
+            };
+        } else {
+            userCoins = 0;
+            userInventory = { nameThemes: ['default'], nameTags: [] };
         }
+        document.getElementById('coinBalance').textContent = userCoins;
+        hideError();
+    } catch (error) {
+        console.error('خطأ في تحميل بيانات المستخدم:', error);
+        showError('⚠️ فشل تحميل بيانات المتجر. يرجى تحديث الصفحة.');
+    }
+}
         
         function renderShop() {
-            renderThemes();
-            renderTags();
-            renderRanks();
-        }
+    // التحقق من وجود نظام الثيمات
+    if (!window.NameThemes) {
+        showError('❌ نظام الثيمات غير محمل. تأكد من وجود name-themes.js.');
+        return;
+    }
+    
+    renderThemes();
+    renderTags();
+    renderRanks();
+}
         
         function renderThemes() {
-            const grid = document.getElementById('themesGrid');
-            const themes = window.NameThemes.themes;
+    const grid = document.getElementById('themesGrid');
+    if (!grid) return;
+    
+    try {
+        const themes = window.NameThemes.themes;
+        if (!themes || Object.keys(themes).length === 0) {
+            grid.innerHTML = '<div class="col-span-full text-center text-gray-400 p-4">لا توجد ثيمات متاحة</div>';
+            return;
+        }
+        
+        // التأكد من أن userInventory.nameThemes مصفوفة
+        const ownedThemes = Array.isArray(userInventory.nameThemes) ? userInventory.nameThemes : ['default'];
+        
+        grid.innerHTML = Object.keys(themes).map(key => {
+            const theme = themes[key];
+            const owned = ownedThemes.includes(key);
             
-            grid.innerHTML = Object.keys(themes).map(key => {
-                const theme = themes[key];
-                const owned = userInventory.nameThemes.includes(key);
-                
-                return `
-                    <div class="glass rounded-2xl p-5 shop-item ${owned ? 'border-green-500' : ''}">
-                        <div class="flex items-center justify-between mb-3">
-                            <h3 class="font-black text-lg">${theme.name}</h3>
-                            <span class="px-3 py-1 rounded-full text-xs font-black ${
-                                theme.type === 'animated' ? 'bg-purple-500/20 text-purple-400' :
-                                theme.type === 'particle' ? 'bg-yellow-500/20 text-yellow-400' :
-                                'bg-blue-500/20 text-blue-400'
-                            }">
-                                ${theme.type === 'animated' ? 'متحرك' : theme.type === 'particle' ? 'جزيئات' : 'ثابت'}
+            return `
+                <div class="glass rounded-2xl p-5 shop-item ${owned ? 'border-green-500' : ''}">
+                    <div class="flex items-center justify-between mb-3">
+                        <h3 class="font-black text-lg">${theme.name}</h3>
+                        <span class="px-3 py-1 rounded-full text-xs font-black ${
+                            theme.type === 'animated' ? 'bg-purple-500/20 text-purple-400' :
+                            theme.type === 'particle' ? 'bg-yellow-500/20 text-yellow-400' :
+                            'bg-blue-500/20 text-blue-400'
+                        }">
+                            ${theme.type === 'animated' ? 'متحرك' : theme.type === 'particle' ? 'جزيئات' : 'ثابت'}
+                        </span>
+                    </div>
+                    
+                    <div class="mb-4 text-center">
+                        <div class="preview-name" id="preview-${key}">اسم اللاعب</div>
+                    </div>
+                    
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center gap-2">
+                            <span class="text-2xl">🪙</span>
+                            <span class="font-black text-xl" style="font-family: 'Orbitron', sans-serif; color: var(--primary);">
+                                ${theme.price}
                             </span>
                         </div>
-                        
-                        <div class="mb-4 text-center">
-                            <div class="preview-name" id="preview-${key}">اسم اللاعب</div>
-                        </div>
-                        
-                        <div class="flex items-center justify-between">
-                            <div class="flex items-center gap-2">
-                                <span class="text-2xl">🪙</span>
-                                <span class="font-black text-xl" style="font-family: 'Orbitron', sans-serif; color: var(--primary);">
-                                    ${theme.price}
-                                </span>
-                            </div>
-                            <button 
-                                class="px-6 py-2 rounded-xl font-black text-sm transition-all ${
-                                    owned ? 
-                                    'bg-green-500/20 text-green-400 border-2 border-green-500/50 cursor-default' : 
-                                    'bg-gradient-to-r from-cyan-500 to-purple-500 hover:scale-105'
-                                }"
-                                ${owned ? 'disabled' : ''}
-                                onclick="window.buyTheme('${key}')"
-                            >
-                                ${owned ? '✓ مملوك' : 'شراء'}
-                            </button>
-                        </div>
+                        <button 
+                            class="px-6 py-2 rounded-xl font-black text-sm transition-all ${
+                                owned ? 
+                                'bg-green-500/20 text-green-400 border-2 border-green-500/50 cursor-default' : 
+                                'bg-gradient-to-r from-cyan-500 to-purple-500 hover:scale-105'
+                            }"
+                            ${owned ? 'disabled' : ''}
+                            onclick="window.buyTheme('${key}')"
+                        >
+                            ${owned ? '✓ مملوك' : 'شراء'}
+                        </button>
                     </div>
-                `;
-            }).join('');
-            
-            // Apply theme previews
-            setTimeout(() => {
-                Object.keys(themes).forEach(key => {
-                    const el = document.getElementById(`preview-${key}`);
-                    if (el) {
+                </div>
+            `;
+        }).join('');
+        
+        // تطبيق معاينة الثيمات
+        setTimeout(() => {
+            Object.keys(themes).forEach(key => {
+                const el = document.getElementById(`preview-${key}`);
+                if (el) {
+                    try {
                         window.NameThemes.applyTheme(el, key, 'اسم اللاعب');
+                    } catch (e) {
+                        console.warn(`فشل تطبيق معاينة الثيم ${key}:`, e);
                     }
-                });
-            }, 100);
-        }
+                }
+            });
+        }, 100);
+        
+    } catch (error) {
+        console.error('خطأ في renderThemes:', error);
+        grid.innerHTML = '<div class="col-span-full text-center text-red-400 p-4">حدث خطأ أثناء تحميل الثيمات</div>';
+    }
+}
         
         function renderTags() {
-            const grid = document.getElementById('tagsGrid');
-            const tags = window.NameThemes.tags;
-            
-            grid.innerHTML = Object.keys(tags).map(key => {
-                const tag = tags[key];
-                const owned = userInventory.nameTags.includes(key);
-                
-                return `
-                    <div class="glass rounded-2xl p-5 shop-item ${owned ? 'border-green-500' : ''}">
-                        <div class="flex items-center gap-3 mb-4">
-                            <span class="text-4xl">${tag.icon}</span>
-                            <div>
-                                <h3 class="font-black text-lg">${tag.name}</h3>
-                                <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-black mt-1" 
-                                     style="background: ${tag.bgColor}; border: ${tag.border}; color: ${tag.color};">
-                                    ${tag.icon} ${tag.name}
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <div class="flex items-center justify-between">
-                            <div class="flex items-center gap-2">
-                                <span class="text-2xl">🪙</span>
-                                <span class="font-black text-xl" style="font-family: 'Orbitron', sans-serif; color: var(--primary);">
-                                    ${tag.price}
-                                </span>
-                            </div>
-                            <button 
-                                class="px-6 py-2 rounded-xl font-black text-sm transition-all ${
-                                    owned ? 
-                                    'bg-green-500/20 text-green-400 border-2 border-green-500/50 cursor-default' : 
-                                    'bg-gradient-to-r from-cyan-500 to-purple-500 hover:scale-105'
-                                }"
-                                ${owned ? 'disabled' : ''}
-                                onclick="window.buyTag('${key}')"
-                            >
-                                ${owned ? '✓ مملوك' : 'شراء'}
-                            </button>
-                        </div>
-                    </div>
-                `;
-            }).join('');
+    const grid = document.getElementById('tagsGrid');
+    if (!grid) return;
+    
+    try {
+        const tags = window.NameThemes.tags;
+        if (!tags || Object.keys(tags).length === 0) {
+            grid.innerHTML = '<div class="col-span-full text-center text-gray-400 p-4">لا توجد وسوم متاحة</div>';
+            return;
         }
         
-        function renderRanks() {
-            const grid = document.getElementById('ranksGrid');
-            const ranks = window.NameThemes.ranks;
+        const ownedTags = Array.isArray(userInventory.nameTags) ? userInventory.nameTags : [];
+        
+        grid.innerHTML = Object.keys(tags).map(key => {
+            const tag = tags[key];
+            const owned = ownedTags.includes(key);
             
-            grid.innerHTML = Object.keys(ranks).map(key => {
-                const rank = ranks[key];
-                
-                return `
-                    <div class="glass rounded-2xl p-5" style="border-color: ${rank.color}40;">
-                        <div class="flex items-center gap-3 mb-3">
-                            <span class="text-4xl">${rank.icon}</span>
-                            <div>
-                                <h3 class="font-black text-xl" style="color: ${rank.color};">${rank.nameAr}</h3>
-                                <p class="text-sm text-gray-400">${rank.name}</p>
+            return `
+                <div class="glass rounded-2xl p-5 shop-item ${owned ? 'border-green-500' : ''}">
+                    <div class="flex items-center gap-3 mb-4">
+                        <span class="text-4xl">${tag.icon}</span>
+                        <div>
+                            <h3 class="font-black text-lg">${tag.name}</h3>
+                            <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-black mt-1" 
+                                 style="background: ${tag.bgColor}; border: ${tag.border}; color: ${tag.color};">
+                                ${tag.icon} ${tag.name}
                             </div>
                         </div>
-                        
-                        <div class="bg-black/30 rounded-xl p-3 mb-3">
-                            <div class="flex items-center justify-between text-sm">
-                                <span class="text-gray-400">النقاط المطلوبة:</span>
-                                <span class="font-black" style="font-family: 'Orbitron', sans-serif; color: ${rank.color};">
-                                    ${rank.min} - ${rank.max === Infinity ? '∞' : rank.max}
-                                </span>
-                            </div>
-                        </div>
-                        
-                        <p class="text-xs text-gray-500 text-center">${rank.division}</p>
                     </div>
-                `;
-            }).join('');
+                    
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center gap-2">
+                            <span class="text-2xl">🪙</span>
+                            <span class="font-black text-xl" style="font-family: 'Orbitron', sans-serif; color: var(--primary);">
+                                ${tag.price}
+                            </span>
+                        </div>
+                        <button 
+                            class="px-6 py-2 rounded-xl font-black text-sm transition-all ${
+                                owned ? 
+                                'bg-green-500/20 text-green-400 border-2 border-green-500/50 cursor-default' : 
+                                'bg-gradient-to-r from-cyan-500 to-purple-500 hover:scale-105'
+                            }"
+                            ${owned ? 'disabled' : ''}
+                            onclick="window.buyTag('${key}')"
+                        >
+                            ${owned ? '✓ مملوك' : 'شراء'}
+                        </button>
+                    </div>
+                </div>
+            `;
+        }).join('');
+        
+    } catch (error) {
+        console.error('خطأ في renderTags:', error);
+        grid.innerHTML = '<div class="col-span-full text-center text-red-400 p-4">حدث خطأ أثناء تحميل الوسوم</div>';
+    }
+}
+        
+        function renderRanks() {
+    const grid = document.getElementById('ranksGrid');
+    if (!grid) return;
+    
+    try {
+        if (!window.NameThemes || !window.NameThemes.ranks) {
+            grid.innerHTML = '<div class="col-span-full text-center text-gray-400 p-4">نظام الرتب غير متاح حالياً</div>';
+            return;
         }
+        
+        const ranks = window.NameThemes.ranks;
+        
+        grid.innerHTML = Object.keys(ranks).map(key => {
+            const rank = ranks[key];
+            
+            return `
+                <div class="glass rounded-2xl p-5" style="border-color: ${rank.color}40;">
+                    <div class="flex items-center gap-3 mb-3">
+                        <span class="text-4xl">${rank.icon}</span>
+                        <div>
+                            <h3 class="font-black text-xl" style="color: ${rank.color};">${rank.nameAr}</h3>
+                            <p class="text-sm text-gray-400">${rank.name}</p>
+                        </div>
+                    </div>
+                    
+                    <div class="bg-black/30 rounded-xl p-3 mb-3">
+                        <div class="flex items-center justify-between text-sm">
+                            <span class="text-gray-400">النقاط المطلوبة:</span>
+                            <span class="font-black" style="font-family: 'Orbitron', sans-serif; color: ${rank.color};">
+                                ${rank.min} - ${rank.max === Infinity ? '∞' : rank.max}
+                            </span>
+                        </div>
+                    </div>
+                    
+                    <p class="text-xs text-gray-500 text-center">${rank.division}</p>
+                </div>
+            `;
+        }).join('');
+    } catch (error) {
+        console.error('خطأ في renderRanks:', error);
+        grid.innerHTML = '<div class="col-span-full text-center text-red-400 p-4">حدث خطأ أثناء تحميل الرتب</div>';
+    }
+}
         
         // Purchase functions
         window.buyTheme = async function(themeKey) {
-            const theme = window.NameThemes.themes[themeKey];
-            
-            if (userCoins < theme.price) {
-                alert('⚠️ ليس لديك عملات كافية!');
-                return;
-            }
-            
-            if (userInventory.nameThemes.includes(themeKey)) {
-                alert('✅ أنت تمتلك هذا الثيم بالفعل!');
-                return;
-            }
-            
-            try {
-                const newCoins = userCoins - theme.price;
-                const newThemes = [...userInventory.nameThemes, themeKey];
-                
-                await update(ref(db, `players/${currentUser.uid}`), {
-                    coins: newCoins,
-                    'inventory/nameThemes': newThemes
-                });
-                
-                userCoins = newCoins;
-                userInventory.nameThemes = newThemes;
-                
-                document.getElementById('coinBalance').textContent = userCoins;
-                renderThemes();
-                
-                alert(`✅ تم شراء "${theme.name}" بنجاح!`);
-            } catch (error) {
-                console.error('Purchase error:', error);
-                alert('❌ حدث خطأ أثناء الشراء');
-            }
-        };
+    try {
+        if (!window.NameThemes || !window.NameThemes.themes) {
+            showError('النظام غير جاهز، يرجى تحديث الصفحة');
+            return;
+        }
         
-        window.buyTag = async function(tagKey) {
-            const tag = window.NameThemes.tags[tagKey];
-            
-            if (userCoins < tag.price) {
-                alert('⚠️ ليس لديك عملات كافية!');
-                return;
-            }
-            
-            if (userInventory.nameTags.includes(tagKey)) {
-                alert('✅ أنت تمتلك هذا الوسم بالفعل!');
-                return;
-            }
-            
-            try {
-                const newCoins = userCoins - tag.price;
-                const newTags = [...userInventory.nameTags, tagKey];
-                
-                await update(ref(db, `players/${currentUser.uid}`), {
-                    coins: newCoins,
-                    'inventory/nameTags': newTags
-                });
-                
-                userCoins = newCoins;
-                userInventory.nameTags = newTags;
-                
-                document.getElementById('coinBalance').textContent = userCoins;
-                renderTags();
-                
-                alert(`✅ تم شراء "${tag.name}" بنجاح!`);
-            } catch (error) {
-                console.error('Purchase error:', error);
-                alert('❌ حدث خطأ أثناء الشراء');
-            }
-        };
+        const theme = window.NameThemes.themes[themeKey];
+        if (!theme) {
+            showError('الثيم غير موجود');
+            return;
+        }
+        
+        if (userCoins < theme.price) {
+            showError('⚠️ ليس لديك عملات كافية!');
+            return;
+        }
+        
+        const ownedThemes = Array.isArray(userInventory.nameThemes) ? userInventory.nameThemes : ['default'];
+        if (ownedThemes.includes(themeKey)) {
+            showError('✅ أنت تمتلك هذا الثيم بالفعل!');
+            return;
+        }
+        
+        const newCoins = userCoins - theme.price;
+        const newThemes = [...ownedThemes, themeKey];
+        
+        await update(ref(db, `players/${currentUser.uid}`), {
+            coins: newCoins,
+            'inventory/nameThemes': newThemes
+        });
+        
+        userCoins = newCoins;
+        userInventory.nameThemes = newThemes;
+        
+        document.getElementById('coinBalance').textContent = userCoins;
+        renderThemes();
+        
+        alert(`✅ تم شراء "${theme.name}" بنجاح!`);
+        hideError();
+    } catch (error) {
+        console.error('Purchase error:', error);
+        showError('❌ حدث خطأ أثناء الشراء: ' + error.message);
+    }
+};
+
+window.buyTag = async function(tagKey) {
+    try {
+        if (!window.NameThemes || !window.NameThemes.tags) {
+            showError('النظام غير جاهز، يرجى تحديث الصفحة');
+            return;
+        }
+        
+        const tag = window.NameThemes.tags[tagKey];
+        if (!tag) {
+            showError('الوسم غير موجود');
+            return;
+        }
+        
+        if (userCoins < tag.price) {
+            showError('⚠️ ليس لديك عملات كافية!');
+            return;
+        }
+        
+        const ownedTags = Array.isArray(userInventory.nameTags) ? userInventory.nameTags : [];
+        if (ownedTags.includes(tagKey)) {
+            showError('✅ أنت تمتلك هذا الوسم بالفعل!');
+            return;
+        }
+        
+        const newCoins = userCoins - tag.price;
+        const newTags = [...ownedTags, tagKey];
+        
+        await update(ref(db, `players/${currentUser.uid}`), {
+            coins: newCoins,
+            'inventory/nameTags': newTags
+        });
+        
+        userCoins = newCoins;
+        userInventory.nameTags = newTags;
+        
+        document.getElementById('coinBalance').textContent = userCoins;
+        renderTags();
+        
+        alert(`✅ تم شراء "${tag.name}" بنجاح!`);
+        hideError();
+    } catch (error) {
+        console.error('Purchase error:', error);
+        showError('❌ حدث خطأ أثناء الشراء: ' + error.message);
+    }
+};
         
         // Tab switching
         document.querySelectorAll('.tab-btn').forEach(btn => {
