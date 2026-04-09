@@ -164,6 +164,8 @@
         const db = getDatabase(app);
         
         let currentUser = null;
+        let userActiveTheme = 'default';
+        let userActiveTag = null;
         let userCoins = 0;
         let userInventory = { nameThemes: [], nameTags: [] };
         
@@ -216,6 +218,8 @@ function hideError() {
             userInventory = { nameThemes: ['default'], nameTags: [] };
         }
         document.getElementById('coinBalance').textContent = userCoins;
+        userActiveTheme = data.nameTheme || 'default';
+        userActiveTag = data.nameTag || null;
         hideError();
     } catch (error) {
         console.error('خطأ في تحميل بيانات المستخدم:', error);
@@ -232,7 +236,10 @@ function hideError() {
     
     renderThemes();
     renderTags();
-    renderRanks();
+    renderRanks (async () =>
+        parseInt(
+            (await get(ref(db, `players/${currentUser.uid}/rankPoints`))).val()) || 0);
+
 }
         
         function renderThemes() {
@@ -252,6 +259,7 @@ function hideError() {
         grid.innerHTML = Object.keys(themes).map(key => {
             const theme = themes[key];
             const owned = ownedThemes.includes(key);
+        const isActive = userActiveTheme === key;
             
             return `
                 <div class="glass rounded-2xl p-5 shop-item ${owned ? 'border-green-500' : ''}">
@@ -277,17 +285,23 @@ function hideError() {
                                 ${theme.price}
                             </span>
                         </div>
-                        <button 
-                            class="px-6 py-2 rounded-xl font-black text-sm transition-all ${
-                                owned ? 
-                                'bg-green-500/20 text-green-400 border-2 border-green-500/50 cursor-default' : 
-                                'bg-gradient-to-r from-cyan-500 to-purple-500 hover:scale-105'
-                            }"
-                            ${owned ? 'disabled' : ''}
-                            onclick="window.buyTheme('${key}')"
-                        >
-                            ${owned ? '✓ مملوك' : 'شراء'}
-                        </button>
+                        ${owned ? `
+                            <div class="flex flex-col gap-1 items-end">
+                                ${isActive
+                                    ? '<span class="text-xs text-cyan-400 font-black">⚡ مفعّل</span>'
+                                    : '<span class="text-xs text-green-400 font-bold">✓ مملوك</span>'
+                                }
+                                <button onclick="window.activateTheme('${key}')"
+                                    class="px-4 py-1.5 rounded-lg ${isActive ? 'bg-gray-500/20 text-gray-400 border border-gray-500/50 cursor-default' : 'bg-cyan-500/20 hover:bg-cyan-500/40 text-cyan-400 border border-cyan-500/50 hover:scale-105'} text-xs font-black transition-all">
+                                    ${isActive ? 'مفعّل' : 'تفعيل'}
+                                </button>
+                            </div>
+                        ` : `
+                            <button onclick="window.buyTheme('${key}')"
+                                class="px-6 py-2 rounded-xl font-black text-sm bg-gradient-to-r from-cyan-500 to-purple-500 hover:scale-105 transition-all">
+                                شراء
+                            </button>
+                        `}
                     </div>
                 </div>
             `;
@@ -329,6 +343,7 @@ function hideError() {
         grid.innerHTML = Object.keys(tags).map(key => {
             const tag = tags[key];
             const owned = ownedTags.includes(key);
+        const isActive = userActiveTag === key;
             
             return `
                 <div class="glass rounded-2xl p-5 shop-item ${owned ? 'border-green-500' : ''}">
@@ -350,17 +365,20 @@ function hideError() {
                                 ${tag.price}
                             </span>
                         </div>
-                        <button 
-                            class="px-6 py-2 rounded-xl font-black text-sm transition-all ${
-                                owned ? 
-                                'bg-green-500/20 text-green-400 border-2 border-green-500/50 cursor-default' : 
-                                'bg-gradient-to-r from-cyan-500 to-purple-500 hover:scale-105'
-                            }"
-                            ${owned ? 'disabled' : ''}
-                            onclick="window.buyTag('${key}')"
-                        >
-                            ${owned ? '✓ مملوك' : 'شراء'}
-                        </button>
+                        ${owned ? `
+                            <div class="flex flex-col gap-1 items-end">
+                                <span class="text-xs text-green-400 font-bold">✓ مملوك</span>
+                                <button onclick="window.activateTag('${key}')"
+                                    class="px-4 py-1.5 rounded-lg bg-cyan-500/20 hover:bg-cyan-500/40 text-cyan-400 border border-cyan-500/50 text-xs font-black transition-all hover:scale-105">
+                                    تفعيل
+                                </button>
+                            </div>
+                        ` : `
+                            <button onclick="window.buyTag('${key}')"
+                                class="px-6 py-2 rounded-xl font-black text-sm bg-gradient-to-r from-cyan-500 to-purple-500 hover:scale-105 transition-all">
+                                شراء
+                            </button>
+                        `}
                     </div>
                 </div>
             `;
@@ -372,7 +390,7 @@ function hideError() {
     }
 }
         
-        function renderRanks() {
+        function renderRanks(userPoints = 0) {
     const grid = document.getElementById('ranksGrid');
     if (!grid) return;
     
@@ -383,13 +401,14 @@ function hideError() {
         }
         
         const ranks = window.NameThemes.ranks;
-        
+        const userRank = window.NameThemes.getRank(async () =>
+                parseInt((await get(ref(db, `players/${currentUser?.uid}/rankPoints`))).val()) || 0
+            );
         grid.innerHTML = Object.keys(ranks).map(key => {
             const rank = ranks[key];
             
-            return `
-                <div class="glass rounded-2xl p-5" style="border-color: ${rank.color}40;">
-                    <div class="flex items-center gap-3 mb-3">
+            
+                    `<div class="flex items-center gap-3 mb-3">
                         <span class="text-4xl">${rank.icon}</span>
                         <div>
                             <h3 class="font-black text-xl" style="color: ${rank.color};">${rank.nameAr}</h3>
@@ -508,6 +527,29 @@ window.buyTag = async function(tagKey) {
         showError('❌ حدث خطأ أثناء الشراء: ' + error.message);
     }
 };
+
+window.activateTheme = async function(themeKey) {
+            try {
+                await update(ref(db, `players/${currentUser.uid}`), { nameTheme: themeKey });
+                const theme = window.NameThemes.themes[themeKey];
+                alert(`✅ تم تفعيل ثيم "${theme.name}"! سيظهر اسمك بهذا الشكل في الغرفة.`);
+            } catch (error) {
+                showError('❌ فشل تفعيل الثيم: ' + error.message);
+            }
+        };
+
+        window.activateTag = async function(tagKey) {
+            try {
+                // null = remove tag, anything else = set tag
+                const current = await get(ref(db, `players/${currentUser.uid}/nameTag`));
+                const isActive = current.val() === tagKey;
+                await update(ref(db, `players/${currentUser.uid}`), { nameTag: isActive ? null : tagKey });
+                const tag = window.NameThemes.tags[tagKey];
+                alert(isActive ? `❌ تم إزالة وسم "${tag.name}"` : `✅ تم تفعيل وسم "${tag.name}"!`);
+            } catch (error) {
+                showError('❌ فشل تفعيل الوسم: ' + error.message);
+            }
+        };
         
         // Tab switching
         document.querySelectorAll('.tab-btn').forEach(btn => {

@@ -1321,6 +1321,11 @@ async function joinRoom(uid, username) {
 
         function updateGameScreen(status) {
             console.log('Updating screen:', status);
+
+            // Hide loading screen first
+            const loadingScreen = document.getElementById('loadingScreen');
+            if (loadingScreen) loadingScreen.classList.add('hidden');
+            window.clearLoadingTimeout && window.clearLoadingTimeout();
             
             // Hide all screens
             document.getElementById('waitingScreen').classList.add('hidden');
@@ -1417,17 +1422,14 @@ async function joinRoom(uid, username) {
                         ` : ''}
                     </div>
                 `;
-
                 container.appendChild(playerCard);
-
-                // Apply theme (Snippet 2)
-                const nameEl1 = playerCard.querySelector(`[data-uid="${uid}"]`);
-                if (nameEl1 && window.NameThemes) {
-                    window.NameThemes.applyPlayerStyle(nameEl1, {
+                const nameEl_w = playerCard.querySelector(`[data-uid="${uid}"]`);
+                if (nameEl_w && window.NameThemes) {
+                    window.NameThemes.applyPlayerStyle(nameEl_w, {
                         username: player.username,
                         nameTheme: player.nameTheme || 'default',
                         nameTag: player.nameTag || null,
-                        rankPoints: player.rankPoints || 0
+                        rankPoints: parseInt(player.rankPoints) || 0
                     });
                 }
             });
@@ -1741,23 +1743,19 @@ async function joinRoom(uid, username) {
                         ` : ''}
                     </div>
                 `;
-
                 container.appendChild(card);
-
-                // Apply theme (Snippet 2)
-                const nameEl2 = card.querySelector(`[data-uid="${uid}"]`);
-                if (nameEl2 && window.NameThemes) {
-                    window.NameThemes.applyPlayerStyle(nameEl2, {
+                const nameEl_d = card.querySelector(`[data-uid="${uid}"]`);
+                if (nameEl_d && window.NameThemes) {
+                    window.NameThemes.applyPlayerStyle(nameEl_d, {
                         username: player.username,
                         nameTheme: player.nameTheme || 'default',
                         nameTag: player.nameTag || null,
-                        rankPoints: player.rankPoints || 0
+                        rankPoints: parseInt(player.rankPoints) || 0
                     });
                 }
             });
         }
 
-        // ✅ FIX: Support multiple suspects per player
         window.toggleSuspect = async function(targetUid) {
             const myUid = window.gameState.currentUser.uid;
             const suspectRef = ref(db, `rooms/${window.gameState.roomCode}/suspects/${myUid}`);
@@ -1920,17 +1918,14 @@ async function joinRoom(uid, username) {
                         ${isMe ? '<p class="text-xs opacity-60">(أنت)</p>' : ''}
                     </div>
                 `;
-
                 container.appendChild(card);
-
-                // Apply theme (Snippet 2)
-                const nameEl3 = card.querySelector(`[data-uid="${uid}"]`);
-                if (nameEl3 && window.NameThemes) {
-                    window.NameThemes.applyPlayerStyle(nameEl3, {
+                const nameEl_v = card.querySelector(`[data-uid="${uid}"]`);
+                if (nameEl_v && window.NameThemes) {
+                    window.NameThemes.applyPlayerStyle(nameEl_v, {
                         username: player.username,
                         nameTheme: player.nameTheme || 'default',
                         nameTag: player.nameTag || null,
-                        rankPoints: player.rankPoints || 0
+                        rankPoints: parseInt(player.rankPoints) || 0
                     });
                 }
             });
