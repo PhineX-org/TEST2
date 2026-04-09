@@ -1214,80 +1214,75 @@
         // ROOM MANAGEMENT
         // ═══════════════════════════════════════════════════════════
 
-        async function joinRoom(uid, username) {
-            try {
-                const roomRef = ref(db, `rooms/${window.gameState.roomCode}`);
-                const roomSnap = await get(roomRef);
-                
-                if (!roomSnap.exists()) {
-                    console.error('Room does not exist');
-                    alert('الغرفة غير موجودة');
-                    window.location.href = 'home.html';
-                    return;
-                }
-
-                const roomData = roomSnap.val();
-                console.log('Room data loaded:', roomData);
-                
-                // Check if banned
-                const banSnap = await get(ref(db, `banned_users/${uid}`));
-                if (banSnap.exists()) {
-                    alert('لقد تم حظرك من اللعبة');
-                    window.location.href = 'home.html';
-                    return;
-                }
-
-                // Check if room is full
-                const playerCount = roomData.players ? Object.keys(roomData.players).length : 0;
-                const isPlayerInRoom = roomData.players && roomData.players[uid];
-                
-                if (playerCount >= 10 && !isPlayerInRoom) {
-                    alert('الغرفة ممتلئة (10/10)');
-                    window.location.href = 'home.html';
-                    return;
-                }
-
-                // Add player to room
-                const playerRef = ref(db, `rooms/${window.gameState.roomCode}/players/${uid}`);
-                await set(playerRef, {
-                    username,
-                    uid,
-                    joinedAt: serverTimestamp(),
-                    connected: true,
-                    status: 'online'
-                });
-
-                // Setup disconnect handler
-                onDisconnect(playerRef).update({ connected: false, status: 'disconnected' });
-
-                // Check if host
-                window.gameState.isHost = roomData.hostId === uid;
-                console.log('Is host:', window.gameState.isHost);
-
-                // Clear loading timeout
-                if (window.clearLoadingTimeout) {
-                    window.clearLoadingTimeout();
-                }
-
-                // Hide loading, show game
-                document.getElementById('loadingScreen').classList.add('hidden');
-                document.getElementById('gameContainer').classList.remove('hidden');
-
-                // Update UI
-                document.getElementById('roomCodeDisplay').textContent = window.gameState.roomCode;
-                
-                if (window.gameState.isHost) {
-                    document.getElementById('hostControls').classList.remove('hidden');
-                    document.getElementById('startBtn').classList.remove('hidden');
-                } else {
-                    document.getElementById('waitingMsg').classList.remove('hidden');
-                }
-            } catch (error) {
-                console.error('Error joining room:', error);
-                alert('حدث خطأ: ' + error.message);
-                window.location.href = 'home.html';
-            }
+async function joinRoom(uid, username) {
+    try {
+        const roomRef = ref(db, `rooms/${window.gameState.roomCode}`);
+        const roomSnap = await get(roomRef);
+        
+        if (!roomSnap.exists()) {
+            console.error('Room does not exist');
+            alert('الغرفة غير موجودة');
+            window.location.href = 'home.html';
+            return;
         }
+
+        const roomData = roomSnap.val();
+        console.log('Room data loaded:', roomData);
+        
+        // Check if banned
+        const banSnap = await get(ref(db, `banned_users/${uid}`));
+        if (banSnap.exists()) {
+            alert('لقد تم حظرك من اللعبة');
+            window.location.href = 'home.html';
+            return;
+        }
+
+        // Check if room is full
+        const playerCount = roomData.players ? Object.keys(roomData.players).length : 0;
+        const isPlayerInRoom = roomData.players && roomData.players[uid];
+        
+        if (playerCount >= 10 && !isPlayerInRoom) {
+            alert('الغرفة ممتلئة (10/10)');
+            window.location.href = 'home.html';
+            return;
+        }
+
+        const playerProfileSnap = await get(ref(db, `players/${uid}`));
+        const playerProfile = playerProfileSnap.val() || {};
+
+        // Add player to room WITH theme/tag data
+        const playerRef = ref(db, `rooms/${window.gameState.roomCode}/players/${uid}`);
+        await set(playerRef, {
+            username,
+            uid,
+            joinedAt: serverTimestamp(),
+            connected: true,
+            status: 'online',
+            nameTheme: playerProfile.nameTheme || 'default',
+            nameTag: playerProfile.nameTag || null,
+            rankPoints: playerProfile.rankPoints || 0
+        });
+
+        // Setup disconnect handler
+        const connectedRef = ref(db, '.info/connected');
+        onValue(connectedRef, (snap) => {
+            if (snap.val() === true) {
+                onDisconnect(playerRef).update({ 
+                    connected: false, 
+                    status: 'offline' 
+                });
+            }
+        });
+
+        window.gameState.currentUser = { uid, username };
+        console.log('Successfully joined room');
+        
+    } catch (error) {
+        console.error('Error joining room:', error);
+        alert('فشل الانضمام للغرفة: ' + error.message);
+        window.location.href = 'home.html';
+    }
+}
 
         function setupRoomListener() {
             const roomRef = ref(db, `rooms/${window.gameState.roomCode}`);

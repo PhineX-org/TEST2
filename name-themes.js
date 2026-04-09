@@ -428,8 +428,8 @@
       border: '1px solid rgba(255, 165, 0, 0.4)',
       price: 400
     },
-    godlike: {
-      name: 'GODLIKE',
+    super: {
+      name: 'SUPER',
       icon: '⚡',
       color: '#00ff00',
       bgColor: 'rgba(0, 255, 0, 0.15)',

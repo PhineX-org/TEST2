@@ -214,7 +214,7 @@
 
                 <!-- Player Info -->
                 <div class="flex-1 text-center md:text-right">
-                    <h2 id="playerUsername" class="text-5xl font-black neon-text mb-2">. . . Loading</h2>
+                    <div id="playerUsername" class="text-5xl font-black mb-2" style="display: inline-flex; align-items: center; gap: 8px; flex-wrap: wrap;">. . . Loading</div>
                     <div class="flex items-center justify-center md:justify-start gap-4 mb-4">
                         <span id="playerRank" class="text-gray-400 text-sm">Bronze · Division III</span>
                         <span class="w-1 h-1 bg-gray-600 rounded-full"></span>
@@ -422,7 +422,22 @@ const firebaseConfig = {
             const categoryStats = data.categoryStats || {};
 
             // Display username
-            document.getElementById('playerUsername').innerText = data.username || 'Player';
+            const usernameElement = document.getElementById('playerUsername');
+if (usernameElement && window.NameThemes) {
+    // Clear the element first
+    usernameElement.innerHTML = '';
+    
+    // Apply full player styling (theme + tag + rank)
+    window.NameThemes.applyPlayerStyle(usernameElement, {
+        username: data.username || 'Player',
+        nameTheme: data.nameTheme || 'default',
+        nameTag: data.nameTag || null,
+        rankPoints: data.rankPoints || 0
+    });
+} else {
+    // Fallback if NameThemes not loaded
+    usernameElement.innerText = data.username || 'Player';
+}
 
             // Calculate and display rank
             const rankInfo = calculateRank(rankPoints);
