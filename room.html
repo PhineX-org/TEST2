@@ -1258,8 +1258,9 @@ async function joinRoom(uid, username) {
             joinedAt: serverTimestamp(),
             connected: true,
             status: 'online',
-            nameTheme: playerProfile.nameTheme || 'default',
-            nameTag: playerProfile.nameTag || null,
+            // ✅ FIX: Use activeTheme/activeTitle from your database structure
+            nameTheme: playerProfile.activeTheme || playerProfile.nameTheme || 'default',
+            nameTag: playerProfile.activeTitle || playerProfile.nameTag || null,
             rankPoints: playerProfile.rankPoints || 0
         });
 
@@ -2415,7 +2416,7 @@ async function joinRoom(uid, username) {
                         <div class="friend-status-dot ${isOnline ? 'online' : 'offline'}"></div>
                     </div>
                     <div class="flex-1 min-w-0">
-                        <p class="font-bold text-sm truncate"><span class="player-name-themed" data-uid="${friendUid}">${friendData.username}</span></p>
+                        <p class="font-bold text-sm truncate"><span class="player-name-themed" data-uid="${friendUid}">${friendPlayer?.username || 'Friend'}</span></p>
                         <p class="text-xs opacity-60">${isOnline ? 'متصل' : 'غير متصل'}</p>
                     </div>
                     ${isOnline && window.gameState.currentStatus === 'waiting' ? `
@@ -2428,12 +2429,12 @@ async function joinRoom(uid, username) {
                 
                 container.appendChild(item);
                 const fnEl = item.querySelector(`[data-uid="${friendUid}"]`);
-                if (fnEl && window.NameThemes && friendData.nameTheme) {
+                if (fnEl && window.NameThemes && friendPlayer) {
                     window.NameThemes.applyPlayerStyle(fnEl, {
-                        username: friendData.username,
-                        nameTheme: friendData.nameTheme || 'default',
-                        nameTag: friendData.nameTag || null,
-                        rankPoints: friendData.rankPoints || 0
+                        username: friendPlayer.username || friendData.username,
+                        nameTheme: friendPlayer.activeTheme || friendPlayer.nameTheme || 'default',
+                        nameTag: friendPlayer.activeTitle || friendPlayer.nameTag || null,
+                        rankPoints: friendPlayer.rankPoints || 0
                     });
                 }
             });
