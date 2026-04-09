@@ -1,0 +1,2272 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>لوحة الإدارة | El Jasus</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+    <link rel="icon" type="image/png" href="ElJasus.png">
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700;900&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        :root{--primary:#00f2ff;--secondary:#7c30ff;--bg:#0a0e1a;}
+        *{box-sizing:border-box;}
+        body{font-family:'Cairo',sans-serif;background:var(--bg);color:#fff;min-height:100vh;display:flex;overflow:auto;}
+        
+        /* Sidebar */
+        #admin-sidebar{width:220px;flex-shrink:0;background:linear-gradient(180deg,rgba(15,20,35,.98),rgba(10,14,26,.98));
+            border-left:2px solid rgba(0,242,255,.15);display:flex;flex-direction:column;padding:20px 0;overflow-y:auto;}
+        .admin-logo{padding:0 20px 24px;border-bottom:1px solid rgba(255,255,255,.07);}
+        .admin-logo h1{font-family:'Orbitron',sans-serif;font-size:14px;font-weight:900;color:#00f2ff;letter-spacing:2px;}
+        .admin-logo p{font-size:10px;color:#444;margin-top:2px;}
+        .nav-section{padding:16px 20px 4px;font-size:9px;font-weight:900;text-transform:uppercase;letter-spacing:3px;color:#333;}
+        .nav-item{display:flex;align-items:center;gap:10px;padding:10px 20px;font-size:12px;font-weight:700;
+            color:#888;cursor:pointer;transition:all .2s;border-right:3px solid transparent;}
+        .nav-item:hover{color:#ccc;background:rgba(255,255,255,.04);}
+        .nav-item.active{color:#00f2ff;background:rgba(0,242,255,.08);border-right-color:#00f2ff;}
+        .nav-item i{width:18px;text-align:center;font-size:14px;}
+        
+        /* Main content */
+        #admin-main{flex:1;overflow-y:auto;padding:24px;}
+        
+        /* Cards */
+        .glass{background:linear-gradient(135deg,rgba(15,20,35,.9),rgba(25,30,50,.8));
+            border:2px solid rgba(0,242,255,.15);border-radius:16px;box-shadow:0 4px 20px rgba(0,0,0,.4);}
+        .kpi-card{padding:20px;transition:all .3s;}
+        .kpi-card:hover{border-color:rgba(0,242,255,.4);transform:translateY(-2px);}
+        .kpi-num{font-family:'Orbitron',sans-serif;font-size:2rem;font-weight:900;}
+        
+        /* Tables */
+        table{width:100%;border-collapse:collapse;}
+        thead tr{border-bottom:2px solid rgba(0,242,255,.15);}
+        th{padding:10px 12px;text-align:right;font-size:11px;font-weight:900;text-transform:uppercase;
+            letter-spacing:1px;color:#666;}
+        tbody tr{border-bottom:1px solid rgba(255,255,255,.04);transition:background .2s;}
+        tbody tr:hover{background:rgba(255,255,255,.03);}
+        td{padding:10px 12px;font-size:13px;}
+        
+        /* Badges */
+        .badge{padding:3px 10px;border-radius:20px;font-size:10px;font-weight:900;}
+        .badge-pending{background:rgba(251,191,36,.15);color:#fbbf24;border:1px solid rgba(251,191,36,.3);}
+        .badge-resolved{background:rgba(34,197,94,.15);color:#22c55e;border:1px solid rgba(34,197,94,.3);}
+        .badge-warned{background:rgba(249,115,22,.15);color:#f97316;border:1px solid rgba(249,115,22,.3);}
+        .badge-banned{background:rgba(239,68,68,.15);color:#ef4444;border:1px solid rgba(239,68,68,.3);}
+        .badge-active{background:rgba(0,242,255,.15);color:#00f2ff;border:1px solid rgba(0,242,255,.3);}
+        
+        /* Input */
+        .admin-input{background:rgba(255,255,255,.05);border:2px solid rgba(0,242,255,.2);
+            border-radius:10px;padding:10px 14px;color:#fff;font-family:'Cairo',sans-serif;
+            font-size:13px;outline:none;transition:border .2s;width:100%;}
+        .admin-input:focus{border-color:rgba(0,242,255,.5);}
+        textarea.admin-input{resize:vertical;min-height:80px;}
+        
+        /* Buttons */
+        .btn-primary{padding:10px 20px;border-radius:10px;font-weight:900;font-size:12px;cursor:pointer;
+            border:none;background:linear-gradient(135deg,#00f2ff,#7c30ff);color:white;transition:all .2s;}
+        .btn-primary:hover{opacity:.9;transform:scale(1.02);}
+        .btn-primary:disabled{opacity:.5;cursor:not-allowed;transform:none;}
+        .btn-danger{padding:8px 16px;border-radius:8px;font-weight:900;font-size:11px;cursor:pointer;
+            border:2px solid rgba(239,68,68,.4);background:rgba(239,68,68,.15);color:#ef4444;transition:all .2s;}
+        .btn-danger:hover{background:rgba(239,68,68,.3);}
+        .btn-success{padding:8px 16px;border-radius:8px;font-weight:900;font-size:11px;cursor:pointer;
+            border:2px solid rgba(34,197,94,.4);background:rgba(34,197,94,.15);color:#22c55e;transition:all .2s;}
+        .btn-sm{padding:6px 12px;border-radius:8px;font-weight:900;font-size:11px;cursor:pointer;
+            border:2px solid rgba(255,255,255,.1);background:rgba(255,255,255,.06);color:#ccc;transition:all .2s;}
+        .btn-sm:hover{background:rgba(255,255,255,.1);}
+        .btn-sm.active-filter{background:rgba(0,242,255,.15);border-color:rgba(0,242,255,.3);color:#00f2ff;}
+        
+        /* Sections */
+        .section{display:none;}
+        .section.active{display:block;}
+        canvas{max-height:220px;}
+        
+        /* Word category tag */
+        .word-tag{display:inline-flex;align-items:center;gap:6px;padding:4px 12px;
+            border-radius:20px;background:rgba(0,242,255,.1);border:1px solid rgba(0,242,255,.25);
+            font-size:12px;font-weight:700;margin:3px;}
+        .word-tag button{background:none;border:none;color:#ef4444;cursor:pointer;font-size:12px;padding:0;}
+        
+        /* Announcement priority */
+        .ann-info{border-left:4px solid #3b82f6;}
+        .ann-warning{border-left:4px solid #f59e0b;}
+        .ann-critical{border-left:4px solid #ef4444;}
+        
+        /* Scrollbars */
+        ::-webkit-scrollbar{width:4px;}
+        ::-webkit-scrollbar-track{background:transparent;}
+        ::-webkit-scrollbar-thumb{background:rgba(0,242,255,.2);border-radius:2px;}
+
+        /* Diagnostics */
+        .test-item {
+            display: flex; align-items: flex-start; gap: 12px;
+            padding: 11px 14px; border-radius: 10px;
+            margin-bottom: 6px; font-size: 12px;
+            border: 1px solid transparent;
+            animation: testFadeIn .25s ease;
+            transition: all .2s;
+        }
+        .test-item:hover { filter: brightness(1.08); }
+        @keyframes testFadeIn {
+            from { opacity:0; transform: translateX(8px); }
+            to   { opacity:1; transform: translateX(0); }
+        }
+        .test-major  { background:rgba(239,68,68,.1);  border-color:rgba(239,68,68,.3);  color:#fca5a5; }
+        .test-error  { background:rgba(249,115,22,.1); border-color:rgba(249,115,22,.3); color:#fdba74; }
+        .test-warning{ background:rgba(251,191,36,.08); border-color:rgba(251,191,36,.25); color:#fde68a; }
+        .test-pass   { background:rgba(34,197,94,.07); border-color:rgba(34,197,94,.2);  color:#86efac; }
+        .test-info   { background:rgba(0,242,255,.07); border-color:rgba(0,242,255,.2);  color:#a5f3fc; }
+        .test-running{ background:rgba(255,255,255,.04); border-color:rgba(255,255,255,.1); color:#888; }
+        .test-icon   { width:20px; text-align:center; flex-shrink:0; margin-top:1px; font-size:14px; }
+        .test-name   { font-weight:900; margin-bottom:2px; }
+        .test-detail { font-size:11px; opacity:.7; line-height:1.5; }
+
+        .severity-counter {
+            display: flex; align-items: center; gap: 6px;
+            padding: 8px 14px; border-radius: 10px;
+            font-size:12px; font-weight:900;
+        }
+        .sev-major  { background:rgba(239,68,68,.12); color:#ef4444; border:1px solid rgba(239,68,68,.3); }
+        .sev-error  { background:rgba(249,115,22,.12); color:#f97316; border:1px solid rgba(249,115,22,.3); }
+        .sev-warning{ background:rgba(251,191,36,.1);  color:#fbbf24; border:1px solid rgba(251,191,36,.3); }
+        .sev-pass   { background:rgba(34,197,94,.1);   color:#22c55e; border:1px solid rgba(34,197,94,.3); }
+
+        .test-progress-bar {
+            height: 4px; border-radius: 2px;
+            background: linear-gradient(90deg, #00f2ff, #7c30ff);
+            transition: width .3s ease;
+        }
+        .pulse-dot {
+            width:8px; height:8px; border-radius:50%;
+            animation: pulseDot 1s ease-in-out infinite;
+        }
+        @keyframes pulseDot {
+            0%,100% { transform: scale(1); opacity:1; }
+            50% { transform: scale(1.4); opacity:.5; }
+        }
+
+        /* Firebase Viewer Styles */
+        .firebase-tree {
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            line-height: 1.8;
+        }
+        .firebase-node {
+            padding: 4px 0;
+            position: relative;
+        }
+        .firebase-node-header {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 6px 10px;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all .2s;
+            position: relative;
+        }
+        .firebase-node-header:hover {
+            background: rgba(0, 242, 255, .08);
+        }
+        .firebase-node-header.selected {
+            background: rgba(0, 242, 255, .15);
+            border-left: 3px solid #00f2ff;
+        }
+        .firebase-toggle {
+            width: 16px;
+            height: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 10px;
+            color: #888;
+            cursor: pointer;
+            transition: transform .2s;
+        }
+        .firebase-toggle.expanded {
+            transform: rotate(90deg);
+        }
+        .firebase-key {
+            font-weight: 700;
+            color: #00f2ff;
+        }
+        .firebase-type {
+            font-size: 10px;
+            color: #888;
+            font-weight: 400;
+        }
+        .firebase-value {
+            color: #fbbf24;
+            font-size: 11px;
+            margin-left: 8px;
+        }
+        .firebase-value.string {
+            color: #22c55e;
+        }
+        .firebase-value.number {
+            color: #a855f7;
+        }
+        .firebase-value.boolean {
+            color: #ef4444;
+        }
+        .firebase-value.null {
+            color: #666;
+            font-style: italic;
+        }
+        .firebase-children {
+            margin-left: 24px;
+            border-left: 1px solid rgba(255, 255, 255, .07);
+            padding-left: 8px;
+            display: none;
+        }
+        .firebase-children.expanded {
+            display: block;
+        }
+        .firebase-path {
+            font-family: 'Courier New', monospace;
+            font-size: 11px;
+            color: #555;
+            background: rgba(0, 0, 0, .3);
+            padding: 4px 10px;
+            border-radius: 6px;
+            display: inline-block;
+            margin-bottom: 4px;
+        }
+        .firebase-count {
+            font-size: 10px;
+            color: #666;
+            background: rgba(255, 255, 255, .04);
+            padding: 2px 8px;
+            border-radius: 10px;
+        }
+        .firebase-actions {
+            margin-left: auto;
+            display: none;
+            gap: 4px;
+        }
+        .firebase-node-header:hover .firebase-actions {
+            display: flex;
+        }
+        .firebase-action-btn {
+            padding: 4px 8px;
+            border-radius: 4px;
+            border: 1px solid rgba(255, 255, 255, .1);
+            background: rgba(255, 255, 255, .05);
+            color: #aaa;
+            cursor: pointer;
+            font-size: 10px;
+            transition: all .2s;
+        }
+        .firebase-action-btn:hover {
+            background: rgba(0, 242, 255, .15);
+            border-color: rgba(0, 242, 255, .3);
+            color: #00f2ff;
+        }
+        .firebase-action-btn.danger:hover {
+            background: rgba(239, 68, 68, .15);
+            border-color: rgba(239, 68, 68, .3);
+            color: #ef4444;
+        }
+        .firebase-search {
+            position: sticky;
+            top: 0;
+            z-index: 10;
+            background: var(--bg);
+            padding: 12px 0;
+            margin-bottom: 12px;
+            border-bottom: 1px solid rgba(255, 255, 255, .07);
+        }
+        .firebase-breadcrumb {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 11px;
+            color: #666;
+            margin-bottom: 12px;
+            flex-wrap: wrap;
+        }
+        .firebase-breadcrumb-item {
+            cursor: pointer;
+            transition: color .2s;
+        }
+        .firebase-breadcrumb-item:hover {
+            color: #00f2ff;
+        }
+        .firebase-breadcrumb-separator {
+            color: #444;
+        }
+        .firebase-loading {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 40px;
+            color: #555;
+            font-size: 13px;
+        }
+        .firebase-empty {
+            text-align: center;
+            padding: 40px;
+            color: #555;
+            font-size: 13px;
+        }
+        .firebase-details-panel {
+            background: rgba(255, 255, 255, .02);
+            border: 1px solid rgba(255, 255, 255, .07);
+            border-radius: 12px;
+            padding: 16px;
+            margin-top: 12px;
+        }
+        .firebase-json {
+            background: rgba(0, 0, 0, .4);
+            border: 1px solid rgba(255, 255, 255, .07);
+            border-radius: 8px;
+            padding: 12px;
+            font-family: 'Courier New', monospace;
+            font-size: 11px;
+            color: #aaa;
+            max-height: 300px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+            direction: ltr;
+            text-align: left;
+        }
+        
+        /* Error state */
+        .error-state {
+            background: rgba(239, 68, 68, .1);
+            border: 2px solid rgba(239, 68, 68, .3);
+            border-radius: 12px;
+            padding: 20px;
+            text-align: center;
+            color: #ef4444;
+        }
+        .error-state i {
+            font-size: 48px;
+            margin-bottom: 12px;
+            display: block;
+        }
+    </style>
+</head>
+<body>
+
+<!-- SIDEBAR -->
+<nav id="admin-sidebar">
+    <div class="admin-logo">
+        <h1>EL JASUS</h1>
+        <p>ADMIN PANEL</p>
+    </div>
+
+    <div class="nav-section">لوحة التحكم</div>
+    <div class="nav-item active" onclick="showSection('overview')"><i class="fas fa-tachometer-alt"></i> نظرة عامة</div>
+    <div class="nav-item" onclick="showSection('analytics')"><i class="fas fa-chart-line"></i> التحليلات</div>
+
+    <div class="nav-section">الإشراف</div>
+    <div class="nav-item" onclick="showSection('reports')"><i class="fas fa-flag"></i> البلاغات <span id="report-badge" style="margin-right:auto;background:#ef4444;color:white;font-size:9px;padding:2px 7px;border-radius:10px;display:none;">0</span></div>
+    <div class="nav-item" onclick="showSection('bans')"><i class="fas fa-ban"></i> الحظر</div>
+    <div class="nav-item" onclick="showSection('players')"><i class="fas fa-users"></i> اللاعبون</div>
+
+    <div class="nav-section">المحتوى</div>
+    <div class="nav-item" onclick="showSection('words')"><i class="fas fa-list"></i> قوائم الكلمات</div>
+    <div class="nav-item" onclick="showSection('announcements')"><i class="fas fa-bullhorn"></i> الإعلانات</div>
+
+    <div class="nav-section">الأمان</div>
+    <div class="nav-item" onclick="showSection('admin-access')"><i class="fas fa-user-shield"></i> صلاحيات الإدارة</div>
+
+    <div class="nav-section">أدوات</div>
+    <div class="nav-item" onclick="showSection('diagnostics')"><i class="fas fa-flask"></i> تشخيص النظام <span id="diag-badge" style="margin-right:auto;background:#f97316;color:white;font-size:9px;padding:2px 7px;border-radius:10px;display:none;">!</span></div>
+    <div class="nav-item" onclick="showSection('firebase-viewer')"><i class="fas fa-database"></i> قاعدة البيانات</div>
+
+    <div style="flex:1;"></div>
+    <div style="padding:16px 20px;border-top:1px solid rgba(255,255,255,.05);">
+        <a href="home.html" style="font-size:12px;color:#555;text-decoration:none;">← العودة للعبة</a>
+    </div>
+</nav>
+
+<!-- MAIN -->
+<main id="admin-main">
+
+    <!-- ── OVERVIEW ────────────────────────────── -->
+    <section id="section-overview" class="section active">
+        <div class="flex items-center justify-between mb-6">
+            <div>
+                <h2 style="font-family:'Orbitron',sans-serif;font-size:20px;font-weight:900;color:#00f2ff;">نظرة عامة</h2>
+                <p style="font-size:12px;color:#555;" id="overview-date"></p>
+            </div>
+            <button class="btn-primary" onclick="refreshAll()" id="refresh-btn"><i class="fas fa-sync-alt ml-2"></i>تحديث</button>
+        </div>
+
+        <!-- KPI Row -->
+        <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+            <div class="glass kpi-card"><p style="font-size:10px;color:#666;text-transform:uppercase;font-weight:900;letter-spacing:1px;margin-bottom:8px;">إجمالي اللاعبين</p><p id="kpi-players" class="kpi-num text-cyan-400">-</p></div>
+            <div class="glass kpi-card"><p style="font-size:10px;color:#666;text-transform:uppercase;font-weight:900;letter-spacing:1px;margin-bottom:8px;">غرف نشطة</p><p id="kpi-rooms" class="kpi-num text-green-400">-</p></div>
+            <div class="glass kpi-card"><p style="font-size:10px;color:#666;text-transform:uppercase;font-weight:900;letter-spacing:1px;margin-bottom:8px;">بلاغات معلقة</p><p id="kpi-reports" class="kpi-num text-red-400">-</p></div>
+            <div class="glass kpi-card"><p style="font-size:10px;color:#666;text-transform:uppercase;font-weight:900;letter-spacing:1px;margin-bottom:8px;">لاعبون محظورون</p><p id="kpi-bans" class="kpi-num text-orange-400">-</p></div>
+        </div>
+
+        <!-- Rank distribution + Recent activity -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div class="glass" style="padding:20px;">
+                <h3 style="font-size:14px;font-weight:900;margin-bottom:16px;">توزيع الرتب</h3>
+                <canvas id="rank-dist-chart"></canvas>
+            </div>
+            <div class="glass" style="padding:20px;">
+                <h3 style="font-size:14px;font-weight:900;margin-bottom:16px;">أحدث اللاعبين</h3>
+                <div id="recent-players-list" style="font-size:12px;"></div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ── ANALYTICS ──────────────────────────── -->
+    <section id="section-analytics" class="section">
+        <h2 style="font-family:'Orbitron',sans-serif;font-size:20px;font-weight:900;color:#00f2ff;margin-bottom:24px;">التحليلات</h2>
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+            <div class="glass" style="padding:20px;">
+                <h3 style="font-size:14px;font-weight:900;margin-bottom:16px;">توزيع المباريات حسب الفئة</h3>
+                <canvas id="category-chart"></canvas>
+            </div>
+            <div class="glass" style="padding:20px;">
+                <h3 style="font-size:14px;font-weight:900;margin-bottom:16px;">أكثر الكلمات استخداماً</h3>
+                <div id="top-words-list"></div>
+            </div>
+        </div>
+        <div class="glass" style="padding:20px;">
+            <h3 style="font-size:14px;font-weight:900;margin-bottom:16px;">أفضل اللاعبين — جميع الأوقات</h3>
+            <table><thead><tr><th>#</th><th>اللاعب</th><th>الرتبة</th><th>النقاط</th><th>المباريات</th><th>نسبة الفوز</th></tr></thead>
+            <tbody id="top-players-table"></tbody></table>
+        </div>
+    </section>
+
+    <!-- ── REPORTS ────────────────────────────── -->
+    <section id="section-reports" class="section">
+        <h2 style="font-family:'Orbitron',sans-serif;font-size:20px;font-weight:900;color:#ef4444;margin-bottom:24px;">البلاغات</h2>
+        
+        <div class="flex gap-3 mb-4 flex-wrap">
+            <button class="btn-sm active-filter" onclick="filterReports('all',this)">الكل</button>
+            <button class="btn-sm" onclick="filterReports('pending',this)">معلقة</button>
+            <button class="btn-sm" onclick="filterReports('resolved',this)">محلولة</button>
+            <button class="btn-sm" onclick="filterReports('warned',this)">تم التحذير</button>
+            <button class="btn-sm" onclick="filterReports('banned',this)">تم الحظر</button>
+            <div style="margin-right:auto;display:flex;align-items:center;gap:8px;">
+                <input id="report-search" class="admin-input" type="text" placeholder="🔍 ابحث..."
+                    style="max-width:200px;" oninput="searchReports(this.value)">
+            </div>
+        </div>
+
+        <div class="glass" style="padding:20px;">
+            <table>
+                <thead>
+                    <tr>
+                        <th>المُبلَّغ عنه</th>
+                        <th>السبب</th>
+                        <th>مخالفة القواعد</th>
+                        <th>من</th>
+                        <th>الغرفة</th>
+                        <th>التاريخ</th>
+                        <th>الحالة</th>
+                        <th>إجراء</th>
+                    </tr>
+                </thead>
+                <tbody id="reports-table">
+                    <tr><td colspan="8" style="text-align:center;padding:30px;color:#555;">جاري التحميل...</td></tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Report Detail Modal -->
+        <div id="report-detail-modal" style="display:none;position:fixed;inset:0;z-index:9990;
+            background:rgba(0,0,0,.85);backdrop-filter:blur(12px);
+            align-items:center;justify-content:center;padding:20px;">
+            <div class="glass" style="max-width:600px;width:100%;border-radius:20px;padding:28px;
+                max-height:90vh;overflow-y:auto;position:relative;">
+                <button onclick="closeReportDetail()"
+                    style="position:absolute;top:16px;left:16px;background:none;border:none;
+                    color:#555;cursor:pointer;font-size:20px;padding:4px 8px;border-radius:6px;">✕</button>
+                <div id="report-detail-content"></div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ── BANS ───────────────────────────────── -->
+    <section id="section-bans" class="section">
+        <h2 style="font-family:'Orbitron',sans-serif;font-size:20px;font-weight:900;color:#f97316;margin-bottom:24px;">إدارة الحظر</h2>
+
+        <!-- Ban form -->
+        <div class="glass" style="padding:20px;margin-bottom:20px;">
+            <h3 style="font-size:14px;font-weight:900;margin-bottom:16px;color:#f97316;">حظر لاعب جديد</h3>
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-4">
+                <div>
+                    <label style="font-size:11px;color:#666;font-weight:700;display:block;margin-bottom:6px;">اسم المستخدم</label>
+                    <input id="ban-username" class="admin-input" type="text" placeholder="أدخل اسم المستخدم">
+                </div>
+                <div>
+                    <label style="font-size:11px;color:#666;font-weight:700;display:block;margin-bottom:6px;">مدة الحظر</label>
+                    <select id="ban-duration" class="admin-input">
+                        <option value="86400000">24 ساعة</option>
+                        <option value="604800000">أسبوع</option>
+                        <option value="2592000000">شهر</option>
+                        <option value="-1">دائم</option>
+                    </select>
+                </div>
+                <div>
+                    <label style="font-size:11px;color:#666;font-weight:700;display:block;margin-bottom:6px;">السبب</label>
+                    <input id="ban-reason" class="admin-input" type="text" placeholder="سبب الحظر">
+                </div>
+            </div>
+            <button class="btn-danger" onclick="banPlayer()">
+                <i class="fas fa-ban ml-2"></i>تطبيق الحظر
+            </button>
+        </div>
+
+        <!-- Active bans -->
+        <div class="glass" style="padding:20px;">
+            <h3 style="font-size:14px;font-weight:900;margin-bottom:16px;">الحظورات النشطة</h3>
+            <table><thead><tr><th>اللاعب</th><th>السبب</th><th>ينتهي</th><th>حُظر بواسطة</th><th>إجراء</th></tr></thead>
+            <tbody id="bans-table"><tr><td colspan="5" style="text-align:center;padding:30px;color:#555;">جاري التحميل...</td></tr></tbody></table>
+        </div>
+    </section>
+
+    <!-- ── PLAYERS ────────────────────────────── -->
+    <section id="section-players" class="section">
+        <h2 style="font-family:'Orbitron',sans-serif;font-size:20px;font-weight:900;color:#00f2ff;margin-bottom:24px;">اللاعبون</h2>
+
+        <!-- ── REPAIR TOOL ─────────────────────── -->
+        <div class="glass" style="padding:20px;margin-bottom:16px;border-color:rgba(251,191,36,.3);background:rgba(251,191,36,.04);">
+            <p style="font-size:14px;font-weight:900;color:#fbbf24;margin-bottom:16px;">
+                <i class="fas fa-tools ml-2"></i>أدوات إصلاح البيانات
+            </p>
+
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+
+                <!-- Auto repair -->
+                <div style="border:1px solid rgba(251,191,36,.2);border-radius:12px;padding:16px;">
+                    <p style="font-size:12px;font-weight:900;color:#fbbf24;margin-bottom:6px;">إصلاح تلقائي</p>
+                    <p style="font-size:11px;color:#888;margin-bottom:12px;line-height:1.6;">
+                        يُصلح الحقول المفقودة (uid, rank, coins...) ويضع اسماً مؤقتاً للسجلات بلا username.
+                        <strong style="color:#fbbf24;">البريد الإلكتروني لا يُسترد تلقائياً</strong> — استخدم الإصلاح اليدوي أدناه.
+                    </p>
+                    <button onclick="repairPlayerRecords()" class="btn-primary" style="background:linear-gradient(135deg,#f59e0b,#d97706);font-size:12px;">
+                        <i class="fas fa-wrench ml-2"></i>إصلاح تلقائي
+                    </button>
+                    <div id="repair-log" style="display:none;margin-top:12px;padding:10px;
+                        background:rgba(0,0,0,.3);border-radius:8px;font-size:11px;
+                        font-family:monospace;color:#aaa;max-height:120px;overflow-y:auto;direction:ltr;text-align:left;"></div>
+                </div>
+
+                <!-- Manual patch -->
+                <div style="border:1px solid rgba(0,242,255,.2);border-radius:12px;padding:16px;">
+                    <p style="font-size:12px;font-weight:900;color:#00f2ff;margin-bottom:6px;">إصلاح يدوي — تعديل بيانات لاعب</p>
+                    <p style="font-size:11px;color:#888;margin-bottom:12px;line-height:1.6;">
+                        أدخل الـ UID من Firebase Console ثم البيانات الصحيحة لهذا المستخدم.
+                        يمكنك نسخ الـ UID من صفحة
+                        <strong style="color:#00f2ff;">Authentication → Users</strong> في Firebase.
+                    </p>
+
+                    <!-- UID picker: dropdown of broken players OR manual input -->
+                    <div style="margin-bottom:10px;">
+                        <label style="font-size:10px;color:#666;font-weight:700;display:block;margin-bottom:4px;">اختر لاعباً من القائمة أو أدخل UID يدوياً</label>
+                        <select id="patch-uid-select" class="admin-input" style="margin-bottom:6px;" onchange="onPatchSelectChange(this.value)">
+                            <option value="">— اختر لاعباً —</option>
+                        </select>
+                        <input id="patch-uid" class="admin-input" placeholder="UID (من Firebase Auth)" style="font-family:monospace;font-size:11px;">
+                    </div>
+
+                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px;">
+                        <div>
+                            <label style="font-size:10px;color:#666;font-weight:700;display:block;margin-bottom:4px;">اسم المستخدم</label>
+                            <input id="patch-username" class="admin-input" placeholder="username">
+                        </div>
+                        <div>
+                            <label style="font-size:10px;color:#666;font-weight:700;display:block;margin-bottom:4px;">الاسم الكامل</label>
+                            <input id="patch-fullname" class="admin-input" placeholder="الاسم الكامل">
+                        </div>
+                    </div>
+                    <div style="margin-bottom:12px;">
+                        <label style="font-size:10px;color:#666;font-weight:700;display:block;margin-bottom:4px;">البريد الإلكتروني</label>
+                        <input id="patch-email" class="admin-input" placeholder="email@example.com" type="email">
+                    </div>
+
+                    <button onclick="manualPatchPlayer()" class="btn-primary" style="font-size:12px;">
+                        <i class="fas fa-save ml-2"></i>حفظ البيانات
+                    </button>
+                    <div id="patch-result" style="display:none;margin-top:10px;font-size:11px;font-weight:700;padding:8px 12px;border-radius:8px;"></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="flex gap-3 mb-4">
+            <input id="player-search" class="admin-input" type="text" placeholder="ابحث عن لاعب..." style="max-width:300px;" oninput="searchPlayers(this.value)">
+        </div>
+        <div class="glass" style="padding:20px;">
+            <table><thead><tr><th>اللاعب</th><th>الرتبة</th><th>النقاط</th><th>المباريات</th><th>العملات</th><th>آخر نشاط</th><th>إجراء</th></tr></thead>
+            <tbody id="players-table"><tr><td colspan="7" style="text-align:center;padding:30px;color:#555;">جاري التحميل...</td></tr></tbody></table>
+        </div>
+    </section>
+
+    <!-- ── WORDS ──────────────────────────────── -->
+    <section id="section-words" class="section">
+        <h2 style="font-family:'Orbitron',sans-serif;font-size:20px;font-weight:900;color:#a855f7;margin-bottom:24px;">قوائم الكلمات</h2>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <!-- Category selector -->
+            <div class="glass" style="padding:20px;">
+                <h3 style="font-size:14px;font-weight:900;margin-bottom:16px;">الفئات</h3>
+                <div id="category-list" style="space-y:8px;"></div>
+                <hr style="border:none;border-top:1px solid rgba(255,255,255,.07);margin:16px 0;">
+                <div>
+                    <label style="font-size:11px;color:#666;font-weight:700;display:block;margin-bottom:6px;">فئة جديدة</label>
+                    <input id="new-category" class="admin-input" type="text" placeholder="اسم الفئة">
+                    <button class="btn-primary" style="margin-top:10px;width:100%;" onclick="addCategory()">إضافة فئة</button>
+                </div>
+            </div>
+
+            <!-- Words in category -->
+            <div class="glass lg:col-span-2" style="padding:20px;">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 style="font-size:14px;font-weight:900;">كلمات الفئة: <span id="active-cat-name" style="color:#a855f7;">—</span></h3>
+                    <span id="word-count" style="font-size:11px;color:#666;"></span>
+                </div>
+                <div id="words-cloud" style="min-height:100px;max-height:420px;overflow-y:auto;margin-bottom:16px;padding-right:4px;"></div>
+                <div class="flex gap-3">
+                    <input id="new-word" class="admin-input" type="text" placeholder="كلمة جديدة">
+                    <button class="btn-primary" onclick="addWord()" style="white-space:nowrap;">+ إضافة</button>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ── ANNOUNCEMENTS ──────────────────────── -->
+    <section id="section-announcements" class="section">
+        <h2 style="font-family:'Orbitron',sans-serif;font-size:20px;font-weight:900;color:#00f2ff;margin-bottom:24px;">الإعلانات</h2>
+
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <!-- Create announcement -->
+            <div class="glass" style="padding:20px;">
+                <h3 style="font-size:14px;font-weight:900;margin-bottom:16px;">إعلان جديد</h3>
+                <div class="mb-4">
+                    <label style="font-size:11px;color:#666;font-weight:700;display:block;margin-bottom:6px;">الأولوية</label>
+                    <div class="flex gap-3">
+                        <button class="btn-sm" id="pri-info" onclick="setPriority('info',this)" style="border-color:rgba(59,130,246,.4);color:#3b82f6;">ℹ️ معلومة</button>
+                        <button class="btn-sm" id="pri-warning" onclick="setPriority('warning',this)" style="border-color:rgba(245,158,11,.4);color:#f59e0b;">⚠️ تحذير</button>
+                        <button class="btn-sm" id="pri-critical" onclick="setPriority('critical',this)" style="border-color:rgba(239,68,68,.4);color:#ef4444;">🚨 طارئ</button>
+                    </div>
+                </div>
+                <div class="mb-4">
+                    <label style="font-size:11px;color:#666;font-weight:700;display:block;margin-bottom:6px;">نص الإعلان</label>
+                    <textarea id="ann-text" class="admin-input" placeholder="اكتب إعلانك هنا..."></textarea>
+                </div>
+                <div class="mb-4">
+                    <label style="font-size:11px;color:#666;font-weight:700;display:block;margin-bottom:6px;">مدة الظهور</label>
+                    <select id="ann-duration" class="admin-input">
+                        <option value="3600000">ساعة</option>
+                        <option value="21600000">6 ساعات</option>
+                        <option value="86400000" selected>24 ساعة</option>
+                        <option value="604800000">أسبوع</option>
+                    </select>
+                </div>
+                <button class="btn-primary w-full" onclick="sendAnnouncement()">
+                    <i class="fas fa-bullhorn ml-2"></i>إرسال الإعلان
+                </button>
+            </div>
+
+            <!-- Active announcements -->
+            <div class="glass" style="padding:20px;">
+                <h3 style="font-size:14px;font-weight:900;margin-bottom:16px;">الإعلانات النشطة</h3>
+                <div id="active-announcements" style="space-y:10px;"></div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ── ADMIN ACCESS MANAGEMENT ────────────── -->
+    <section id="section-admin-access" class="section">
+        <h2 style="font-family:'Orbitron',sans-serif;font-size:20px;font-weight:900;color:#00f2ff;margin-bottom:24px;">إدارة صلاحيات الإدارة</h2>
+
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <!-- Admin code info -->
+            <div class="glass" style="padding:20px;">
+                <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;">
+                    <div style="width:48px;height:48px;border-radius:12px;
+                        background:rgba(0,242,255,.15);border:2px solid rgba(0,242,255,.3);
+                        display:flex;align-items:center;justify-content:center;">
+                        <i class="fas fa-key" style="font-size:20px;color:#00f2ff;"></i>
+                    </div>
+                    <div>
+                        <h3 style="font-size:14px;font-weight:900;color:#00f2ff;">رمز الإدارة الحالي</h3>
+                        <p style="font-size:11px;color:#666;">استخدم هذا الرمز لمنح صلاحيات الإدارة</p>
+                    </div>
+                </div>
+                
+                <div style="background:rgba(0,242,255,.08);border:2px solid rgba(0,242,255,.2);
+                    border-radius:12px;padding:16px;margin-bottom:16px;text-align:center;">
+                    <p style="font-family:'Orbitron',sans-serif;font-size:24px;font-weight:900;
+                        color:#00f2ff;letter-spacing:4px;" id="current-admin-code">ADMIN26</p>
+                    <button onclick="copyAdminCode()" 
+                        style="margin-top:12px;padding:8px 16px;border-radius:8px;
+                        background:rgba(0,242,255,.15);border:2px solid rgba(0,242,255,.3);
+                        color:#00f2ff;cursor:pointer;font-size:12px;font-weight:700;
+                        font-family:'Cairo',sans-serif;">
+                        <i class="fas fa-copy ml-1"></i> نسخ الرمز
+                    </button>
+                </div>
+                
+                <div style="background:rgba(251,191,36,.08);border-left:4px solid #fbbf24;
+                    padding:12px;border-radius:8px;margin-bottom:16px;">
+                    <p style="font-size:12px;color:#fbbf24;line-height:1.6;">
+                        <i class="fas fa-exclamation-triangle ml-1"></i>
+                        <strong>تنبيه أمني:</strong><br>
+                        لا تشارك هذا الرمز إلا مع من تثق بهم. أي شخص لديه هذا الرمز سيحصل على صلاحيات كاملة.
+                    </p>
+                </div>
+                
+                <button onclick="generateNewCode()" class="btn-primary" style="width:100%;">
+                    <i class="fas fa-sync-alt ml-2"></i>
+                    إنشاء رمز جديد
+                </button>
+            </div>
+
+            <!-- Current admins list -->
+            <div class="glass" style="padding:20px;">
+                <h3 style="font-size:14px;font-weight:900;margin-bottom:16px;">المسؤولون الحاليون</h3>
+                
+                <div id="admins-list" style="max-height:400px;overflow-y:auto;">
+                    <p style="color:#555;font-size:12px;text-align:center;padding:20px;">
+                        جاري التحميل...
+                    </p>
+                </div>
+                
+                <button onclick="loadAdminsList()" class="btn-sm" style="width:100%;margin-top:12px;">
+                    <i class="fas fa-sync-alt ml-1"></i> تحديث القائمة
+                </button>
+            </div>
+        </div>
+        
+        <!-- Instructions -->
+        <div class="glass" style="padding:20px;margin-top:20px;">
+            <h3 style="font-size:14px;font-weight:900;margin-bottom:16px;color:#00f2ff;">
+                <i class="fas fa-info-circle ml-2"></i>
+                كيفية منح صلاحيات الإدارة
+            </h3>
+            <ol style="padding-right:24px;color:#ccc;font-size:13px;line-height:2;">
+                <li>انسخ الرمز الحالي من الأعلى</li>
+                <li>أرسل الرمز للشخص المطلوب عبر وسيلة آمنة</li>
+                <li>اطلب منه فتح صفحة <code style="background:rgba(0,242,255,.1);padding:2px 8px;border-radius:4px;color:#00f2ff;">admin.html</code></li>
+                <li>سيُطلب منه إدخال الرمز — بعد التحقق سيحصل على الصلاحيات</li>
+                <li>يمكنك إنشاء رمز جديد في أي وقت لإلغاء الرموز القديمة</li>
+            </ol>
+        </div>
+    </section>
+
+    <!-- ── DIAGNOSTICS TEST WINDOW ───────────── -->
+    <section id="section-diagnostics" class="section">
+        <div class="flex items-center justify-between mb-6 flex-wrap gap-3">
+            <div>
+                <h2 style="font-family:'Orbitron',sans-serif;font-size:20px;font-weight:900;color:#00f2ff;">
+                    <i class="fas fa-flask ml-2" style="color:#a855f7;"></i>تشخيص النظام
+                </h2>
+                <p style="font-size:12px;color:#555;" id="diag-last-run">لم يتم التشغيل بعد</p>
+            </div>
+            <div class="flex gap-3 flex-wrap">
+                <button class="btn-primary" id="run-tests-btn" onclick="runDiagnostics()">
+                    <i class="fas fa-play ml-2"></i>تشغيل الفحص
+                </button>
+                <button class="btn-sm" onclick="clearDiagnostics()" style="padding:10px 18px;">
+                    <i class="fas fa-trash ml-2"></i>مسح
+                </button>
+            </div>
+        </div>
+
+        <!-- Summary counters -->
+        <div class="flex gap-3 mb-6 flex-wrap" id="diag-summary" style="display:none!important;">
+            <div class="severity-counter sev-major"><span id="cnt-major">0</span> خطأ جسيم</div>
+            <div class="severity-counter sev-error"><span id="cnt-error">0</span> خطأ</div>
+            <div class="severity-counter sev-warning"><span id="cnt-warning">0</span> تحذير</div>
+            <div class="severity-counter sev-pass"><span id="cnt-pass">0</span> ناجح</div>
+        </div>
+
+        <!-- Progress bar -->
+        <div id="diag-progress-wrap" style="display:none;margin-bottom:20px;">
+            <div style="display:flex;justify-content:space-between;font-size:11px;color:#555;margin-bottom:6px;">
+                <span id="diag-progress-label">جاري الفحص...</span>
+                <span id="diag-progress-pct">0%</span>
+            </div>
+            <div style="background:rgba(255,255,255,.06);border-radius:4px;overflow:hidden;height:4px;">
+                <div class="test-progress-bar" id="diag-progress-bar" style="width:0%;"></div>
+            </div>
+        </div>
+
+        <!-- Results grid -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+
+            <!-- Left: test groups -->
+            <div>
+                <div class="glass" style="padding:20px;margin-bottom:16px;">
+                    <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px;">
+                        <div class="pulse-dot" id="dot-connection" style="background:#555;"></div>
+                        <h3 style="font-size:13px;font-weight:900;color:#00f2ff;">🔌 الاتصال والمصادقة</h3>
+                    </div>
+                    <div id="tests-connection"></div>
+                </div>
+
+                <div class="glass" style="padding:20px;margin-bottom:16px;">
+                    <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px;">
+                        <div class="pulse-dot" id="dot-data" style="background:#555;"></div>
+                        <h3 style="font-size:13px;font-weight:900;color:#a855f7;">🗄️ قاعدة البيانات</h3>
+                    </div>
+                    <div id="tests-data"></div>
+                </div>
+
+                <div class="glass" style="padding:20px;">
+                    <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px;">
+                        <div class="pulse-dot" id="dot-functions" style="background:#555;"></div>
+                        <h3 style="font-size:13px;font-weight:900;color:#f59e0b;">⚙️ الوظائف</h3>
+                    </div>
+                    <div id="tests-functions"></div>
+                </div>
+            </div>
+
+            <!-- Right: test groups -->
+            <div>
+                <div class="glass" style="padding:20px;margin-bottom:16px;">
+                    <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px;">
+                        <div class="pulse-dot" id="dot-stats" style="background:#555;"></div>
+                        <h3 style="font-size:13px;font-weight:900;color:#22c55e;">📊 الإحصائيات</h3>
+                    </div>
+                    <div id="tests-stats"></div>
+                </div>
+
+                <div class="glass" style="padding:20px;margin-bottom:16px;">
+                    <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px;">
+                        <div class="pulse-dot" id="dot-integrity" style="background:#555;"></div>
+                        <h3 style="font-size:13px;font-weight:900;color:#ef4444;">🛡️ سلامة البيانات</h3>
+                    </div>
+                    <div id="tests-integrity"></div>
+                </div>
+
+                <div class="glass" style="padding:20px;">
+                    <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px;">
+                        <div class="pulse-dot" id="dot-content" style="background:#555;"></div>
+                        <h3 style="font-size:13px;font-weight:900;color:#06b6d4;">📝 المحتوى</h3>
+                    </div>
+                    <div id="tests-content"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Raw log -->
+        <div class="glass" style="padding:20px;margin-top:16px;">
+            <div class="flex items-center justify-between mb-3">
+                <h3 style="font-size:13px;font-weight:900;">📋 سجل التشخيص</h3>
+                <button class="btn-sm" onclick="copyDiagLog()" style="font-size:10px;padding:5px 10px;">
+                    <i class="fas fa-copy ml-1"></i>نسخ السجل
+                </button>
+            </div>
+            <div id="diag-log" style="
+                background:rgba(0,0,0,.4);border:1px solid rgba(255,255,255,.07);
+                border-radius:10px;padding:14px;
+                font-family:'Courier New',monospace;font-size:11px;
+                color:#888;line-height:1.7;max-height:220px;overflow-y:auto;
+                white-space:pre-wrap;direction:ltr;text-align:left;">
+جاهز للتشخيص — اضغط "تشغيل الفحص" للبدء</div>
+        </div>
+    </section>
+
+    <!-- ── FIREBASE DATABASE VIEWER ───────────── -->
+    <section id="section-firebase-viewer" class="section">
+        <div class="flex items-center justify-between mb-6 flex-wrap gap-3">
+            <div>
+                <h2 style="font-family:'Orbitron',sans-serif;font-size:20px;font-weight:900;color:#00f2ff;">
+                    <i class="fas fa-database ml-2" style="color:#a855f7;"></i>عرض قاعدة البيانات
+                </h2>
+                <p style="font-size:12px;color:#555;">استعرض وأدر بيانات Firebase في الوقت الفعلي</p>
+            </div>
+            <div class="flex gap-3 flex-wrap">
+                <button class="btn-primary" onclick="refreshFirebaseViewer()">
+                    <i class="fas fa-sync-alt ml-2"></i>تحديث
+                </button>
+                <button class="btn-sm" onclick="expandAllNodes()" style="padding:10px 18px;">
+                    <i class="fas fa-expand ml-2"></i>توسيع الكل
+                </button>
+                <button class="btn-sm" onclick="collapseAllNodes()" style="padding:10px 18px;">
+                    <i class="fas fa-compress ml-2"></i>طي الكل
+                </button>
+            </div>
+        </div>
+
+        <!-- Breadcrumb Navigation -->
+        <div id="firebase-breadcrumb" class="firebase-breadcrumb"></div>
+
+        <!-- Search and Filter -->
+        <div class="firebase-search">
+            <div class="flex gap-3 flex-wrap">
+                <input id="firebase-search-input" class="admin-input" type="text" 
+                    placeholder="🔍 ابحث في المحاور أو القيم..." 
+                    style="flex:1;min-width:300px;"
+                    oninput="filterFirebaseNodes(this.value)">
+                <select id="firebase-root-select" class="admin-input" onchange="loadFirebaseRoot(this.value)" style="max-width:200px;">
+                    <option value="">/ (الجذر)</option>
+                    <option value="players">players</option>
+                    <option value="rooms">rooms</option>
+                    <option value="reports">reports</option>
+                    <option value="bans">bans</option>
+                    <option value="wordLists">wordLists</option>
+                    <option value="announcements">announcements</option>
+                    <option value="adminConfig">adminConfig</option>
+                </select>
+            </div>
+        </div>
+
+        <!-- Database Tree View -->
+        <div class="glass" style="padding:20px;">
+            <div id="firebase-tree-container" class="firebase-tree">
+                <div class="firebase-loading">
+                    <i class="fas fa-spinner fa-spin ml-2"></i>
+                    جاري تحميل البيانات...
+                </div>
+            </div>
+        </div>
+
+        <!-- Node Details Panel -->
+        <div id="firebase-details" style="display:none;">
+            <div class="glass firebase-details-panel" style="margin-top:20px;">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 style="font-size:14px;font-weight:900;color:#00f2ff;">
+                        <i class="fas fa-info-circle ml-2"></i>تفاصيل العقدة
+                    </h3>
+                    <button onclick="closeFirebaseDetails()" style="background:none;border:none;color:#555;cursor:pointer;font-size:16px;">✕</button>
+                </div>
+                
+                <div class="mb-4">
+                    <p style="font-size:11px;color:#666;margin-bottom:6px;font-weight:700;">المحور</p>
+                    <div id="firebase-details-path" class="firebase-path"></div>
+                </div>
+
+                <div class="mb-4">
+                    <p style="font-size:11px;color:#666;margin-bottom:6px;font-weight:700;">النوع</p>
+                    <span id="firebase-details-type" style="font-size:12px;color:#00f2ff;"></span>
+                </div>
+
+                <div class="mb-4">
+                    <p style="font-size:11px;color:#666;margin-bottom:6px;font-weight:700;">القيمة (JSON)</p>
+                    <div id="firebase-details-json" class="firebase-json"></div>
+                </div>
+
+                <div class="flex gap-3">
+                    <button class="btn-primary" onclick="copyFirebaseNodeData()">
+                        <i class="fas fa-copy ml-2"></i>نسخ JSON
+                    </button>
+                    <button class="btn-sm" onclick="exportFirebaseNode()">
+                        <i class="fas fa-download ml-2"></i>تصدير
+                    </button>
+                    <button class="btn-danger" onclick="deleteFirebaseNode()">
+                        <i class="fas fa-trash ml-2"></i>حذف
+                    </button>
+                </div>
+            </div>
+        </div>
+    </section>
+
+</main>
+
+<!-- Load dialogs.js FIRST, then Firebase -->
+<script src="dialogs.js"></script>
+<script>
+// Override native dialogs AFTER dialogs.js loads
+window.alert   = (msg)             => UIAlert(msg);
+window.confirm = (msg)             => UIConfirm(msg);
+window.prompt  = (msg, defaultVal) => UIPrompt(msg, { defaultValue: defaultVal });
+</script>
+
+<!-- Firebase -->
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/12.7.0/firebase-app.js";
+import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.7.0/firebase-auth.js";
+import { getDatabase, ref, get, set, update, remove, push, onValue, query, orderByChild } from "https://www.gstatic.com/firebasejs/12.7.0/firebase-database.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyDnd-pmKEatI3DaFz6xHWB5ucurtHXt9tk",
+  authDomain: "el-jasus.firebaseapp.com",
+  databaseURL: "https://el-jasus-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "el-jasus",
+  storageBucket: "el-jasus.firebasestorage.app",
+  messagingSenderId: "415659587906",
+  appId: "1:415659587906:web:782f7940176ea4097eb0db",
+  measurementId: "G-N4K79FP56N"
+};
+
+const app  = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db   = getDatabase(app);
+
+// Expose to window for global access
+window.db = db;
+window.auth = auth;
+window.ref = ref;
+window.get = get;
+window.set = set;
+window.update = update;
+window.remove = remove;
+window.push = push;
+
+// ADMIN ACCESS VIA CODE REDEMPTION
+const ADMIN_CODE = 'ADMIN26';
+
+let allPlayers = {};
+let isAdmin = false;
+let allReports = {};
+let allBans    = {};
+let activePriority = 'info';
+let activeCategory = null;
+let wordListData   = {};
+let rankChart = null;
+let catChart  = null;
+
+// Report filtering
+let currentReportFilter = 'all';
+let allReportsArray = [];
+
+// ── AUTH GUARD ────────────────────────────
+onAuthStateChanged(auth, async user => {
+    if (!user) { window.location.href = 'login.html'; return; }
+    
+    // Check if user has admin access via redeemed code
+    try {
+        const adminSnap = await get(ref(db, `players/${user.uid}/isAdmin`));
+        isAdmin = adminSnap.val() === true;
+    } catch(e) {
+        console.error('Admin check failed:', e);
+        isAdmin = false;
+    }
+    
+    if (!isAdmin) {
+        // Show code redemption modal
+        showAdminCodeModal();
+        return;
+    }
+    
+    // Admin verified - load dashboard
+    document.getElementById('overview-date').textContent =
+        new Date().toLocaleDateString('ar-SA', {weekday:'long',year:'numeric',month:'long',day:'numeric'});
+    await refreshAll();
+});
+
+// ── ADMIN CODE REDEMPTION ────────────────
+function showAdminCodeModal() {
+    const modal = document.createElement('div');
+    modal.id = 'admin-code-modal';
+    modal.style.cssText = 'position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.95);' +
+        'display:flex;align-items:center;justify-content:center;padding:20px;' +
+        'backdrop-filter:blur(12px);';
+    modal.innerHTML = `
+        <div style="background:linear-gradient(135deg,rgba(15,20,35,.98),rgba(25,30,50,.98));
+            border:2px solid rgba(0,242,255,.3);border-radius:24px;padding:40px;
+            max-width:420px;width:100%;text-align:center;
+            box-shadow:0 8px 32px rgba(0,0,0,.5);">
+            
+            <div style="width:80px;height:80px;margin:0 auto 24px;border-radius:50%;
+                background:linear-gradient(135deg,rgba(0,242,255,.15),rgba(124,48,255,.15));
+                border:3px solid rgba(0,242,255,.4);display:flex;align-items:center;justify-content:center;">
+                <i class="fas fa-lock" style="font-size:36px;color:#00f2ff;"></i>
+            </div>
+            
+            <h2 style="font-family:'Orbitron',sans-serif;font-size:24px;font-weight:900;
+                color:#00f2ff;margin-bottom:12px;letter-spacing:2px;">
+                وصول الإدارة
+            </h2>
+            
+            <p style="font-size:14px;color:#888;margin-bottom:32px;line-height:1.6;">
+                يتطلب الوصول إلى لوحة الإدارة رمز خاص.<br>
+                أدخل رمز الإدارة أدناه للمتابعة.
+            </p>
+            
+            <div style="margin-bottom:24px;">
+                <input type="text" id="admin-code-input" 
+                    placeholder="أدخل رمز الإدارة"
+                    style="width:100%;padding:16px;background:rgba(255,255,255,.05);
+                    border:2px solid rgba(0,242,255,.2);border-radius:12px;
+                    color:white;font-family:'Orbitron',sans-serif;font-size:16px;
+                    text-align:center;letter-spacing:3px;font-weight:700;
+                    outline:none;transition:border .3s;"
+                    onfocus="this.style.borderColor='rgba(0,242,255,.5)'"
+                    onblur="this.style.borderColor='rgba(0,242,255,.2)'">
+            </div>
+            
+            <div id="code-error" style="display:none;color:#ef4444;font-size:13px;
+                font-weight:700;margin-bottom:16px;padding:12px;
+                background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.3);
+                border-radius:10px;">
+                رمز غير صحيح. حاول مرة أخرى.
+            </div>
+            
+            <div style="display:flex;gap:12px;">
+                <button id="verify-code-btn" onclick="window.verifyAdminCode()"
+                    style="flex:1;padding:14px;border-radius:12px;
+                    background:linear-gradient(135deg,#00f2ff,#7c30ff);
+                    border:none;color:white;font-weight:900;cursor:pointer;
+                    font-family:'Cairo',sans-serif;font-size:14px;
+                    transition:all .3s;">
+                    <i class="fas fa-check ml-2"></i>
+                    تحقق
+                </button>
+                <button onclick="window.location.href='home.html'"
+                    style="padding:14px 24px;border-radius:12px;
+                    background:rgba(255,255,255,.08);
+                    border:2px solid rgba(255,255,255,.1);
+                    color:#888;cursor:pointer;font-family:'Cairo',sans-serif;
+                    font-weight:900;font-size:14px;">
+                    إلغاء
+                </button>
+            </div>
+            
+            <p style="margin-top:24px;font-size:11px;color:#444;line-height:1.5;">
+                💡 <strong>للحصول على رمز الإدارة:</strong><br>
+                تواصل مع مطور اللعبة أو استخدم الرمز المخصص لك
+            </p>
+        </div>
+    `;
+    document.body.appendChild(modal);
+    
+    // Focus input
+    setTimeout(() => document.getElementById('admin-code-input').focus(), 100);
+    
+    // Allow Enter key to verify
+    document.getElementById('admin-code-input').addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') window.verifyAdminCode();
+    });
+}
+
+window.verifyAdminCode = async function() {
+    const input = document.getElementById('admin-code-input');
+    const code  = input.value.trim().toUpperCase();
+    const error = document.getElementById('code-error');
+    const btn   = document.getElementById('verify-code-btn');
+    
+    if (!code) {
+        error.textContent = 'الرجاء إدخال الرمز';
+        error.style.display = 'block';
+        return;
+    }
+    
+    // Disable button during verification
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin ml-2"></i> جاري التحقق...';
+    
+    // Verify code against Firebase
+    let validCode = ADMIN_CODE; // Default
+    try {
+        const codeSnap = await get(ref(db, 'adminConfig/accessCode'));
+        if (codeSnap.exists()) validCode = codeSnap.val();
+    } catch(e) {
+        console.warn('Could not read admin code from Firebase, using default');
+    }
+    
+    if (code === validCode) {
+        // Valid code - grant admin access
+        try {
+            const user = auth.currentUser;
+            await set(ref(db, `players/${user.uid}/isAdmin`), true);
+            await set(ref(db, `players/${user.uid}/adminSince`), Date.now());
+            
+            // Success animation
+            error.style.display = 'none';
+            btn.innerHTML = '<i class="fas fa-check ml-2"></i> تم التحقق!';
+            btn.style.background = 'linear-gradient(135deg,#22c55e,#16a34a)';
+            
+            setTimeout(() => {
+                const modal = document.getElementById('admin-code-modal');
+                if (modal) modal.remove();
+                isAdmin = true;
+                document.getElementById('overview-date').textContent =
+                    new Date().toLocaleDateString('ar-SA', {weekday:'long',year:'numeric',month:'long',day:'numeric'});
+                refreshAll();
+            }, 1500);
+            
+        } catch (e) {
+            error.textContent = 'خطأ في التحقق. حاول مرة أخرى.';
+            error.style.display = 'block';
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fas fa-check ml-2"></i> تحقق';
+        }
+    } else {
+        // Invalid code
+        error.textContent = '❌ رمز غير صحيح. حاول مرة أخرى.';
+        error.style.display = 'block';
+        input.value = '';
+        input.style.borderColor = '#ef4444';
+        setTimeout(() => input.style.borderColor = 'rgba(0,242,255,.2)', 2000);
+        
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fas fa-check ml-2"></i> تحقق';
+        
+        // Shake animation
+        input.style.animation = 'shake 0.5s';
+        setTimeout(() => input.style.animation = '', 500);
+    }
+};
+
+// Add shake animation
+const style = document.createElement('style');
+style.textContent = `
+    @keyframes shake {
+        0%, 100% { transform: translateX(0); }
+        25% { transform: translateX(-10px); }
+        75% { transform: translateX(10px); }
+    }
+    #verify-code-btn:hover { opacity: 0.9; transform: scale(1.02); }
+    #verify-code-btn:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
+`;
+document.head.appendChild(style);
+
+// ── NAVIGATION ────────────────────────────
+window.showSection = (name) => {
+    document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+    document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+    document.getElementById('section-' + name)?.classList.add('active');
+    event?.currentTarget?.classList.add('active');
+
+    // Lazy load section data
+    if (name === 'reports')   loadReports();
+    if (name === 'bans')      loadBans();
+    if (name === 'players')   loadPlayers();
+    if (name === 'words')     loadWords();
+    if (name === 'announcements') loadAnnouncements();
+    if (name === 'analytics') loadAnalytics();
+    if (name === 'admin-access') {
+        loadAdminsList();
+        get(ref(db, 'adminConfig/accessCode')).then(snap => {
+            if (snap.exists()) {
+                document.getElementById('current-admin-code').textContent = snap.val();
+            }
+        }).catch(()=>{});
+    }
+    if (name === 'firebase-viewer' && !window.firebaseViewerData) {
+        refreshFirebaseViewer();
+    }
+};
+
+window.refreshAll = async () => {
+    const btn = document.getElementById('refresh-btn');
+    if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin ml-2"></i>جاري التحديث...';
+    }
+
+    try {
+        // Initialize admin code in Firebase if not exists
+        try {
+            const codeSnap = await get(ref(db, 'adminConfig/accessCode'));
+            if (!codeSnap.exists()) {
+                await set(ref(db, 'adminConfig/accessCode'), ADMIN_CODE);
+                await set(ref(db, 'adminConfig/codeCreatedAt'), Date.now());
+            }
+        } catch(e) {
+            console.warn('Could not initialize admin code:', e);
+        }
+
+        // Players: Firebase rules may restrict reading entire tree — handle gracefully
+        let playerSnap = null;
+        try {
+            playerSnap = await get(ref(db, 'players'));
+            allPlayers = playerSnap.exists() ? playerSnap.val() : {};
+        } catch(e) {
+            console.warn('[Admin] players read failed (check Firebase rules):', e.message);
+            allPlayers = {};
+        }
+
+        const [roomSnap, reportSnap, banSnap] = await Promise.all([
+            get(ref(db, 'rooms')).catch(() => ({ exists: () => false })),
+            get(ref(db, 'reports')).catch(() => ({ exists: () => false })),
+            get(ref(db, 'bans')).catch(() => ({ exists: () => false }))
+        ]);
+
+        allReports = reportSnap.exists() ? reportSnap.val() : {};
+        allBans    = banSnap.exists() ? banSnap.val() : {};
+
+        const playerCount = Object.keys(allPlayers).length;
+        const roomCount   = roomSnap.exists() ? Object.values(roomSnap.val()).filter(r => r.status === 'waiting' || r.status === 'playing').length : 0;
+        const pendingReps = Object.values(allReports).filter(r => r.status === 'pending').length;
+        const activeBans  = Object.keys(allBans).length;
+
+        document.getElementById('kpi-players').textContent = playerCount;
+        document.getElementById('kpi-rooms').textContent   = roomCount;
+        document.getElementById('kpi-reports').textContent = pendingReps;
+        document.getElementById('kpi-bans').textContent    = activeBans;
+
+        // Report badge
+        const badge = document.getElementById('report-badge');
+        badge.textContent = pendingReps;
+        badge.style.display = pendingReps > 0 ? 'inline-block' : 'none';
+
+        renderRankDist();
+        renderRecentPlayers();
+    } catch(e) {
+        console.error('Refresh failed:', e);
+        await UIAlert('حدث خطأ أثناء التحديث: ' + e.message, { title: 'خطأ', type: 'error', icon: '❌' });
+    } finally {
+        if (btn) {
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fas fa-sync-alt ml-2"></i>تحديث';
+        }
+    }
+};
+
+// ── RANK DISTRIBUTION ─────────────────────
+function renderRankDist() {
+    const counts = {Bronze:0, Silver:0, Gold:0, Platinum:0, Diamond:0};
+    Object.values(allPlayers).forEach(p => { 
+        if (counts[p.rank] !== undefined) counts[p.rank]++; 
+        else counts.Bronze++; 
+    });
+    if (rankChart) rankChart.destroy();
+    const ctx = document.getElementById('rank-dist-chart');
+    if (!ctx) return;
+    rankChart = new Chart(ctx, {
+        type: 'doughnut',
+        data: { labels: Object.keys(counts), datasets:[{
+            data: Object.values(counts),
+            backgroundColor: ['#cd7f32','#c0c0c0','#ffd700','#e5e4e2','#00f2ff'],
+            borderColor: 'transparent', hoverOffset: 6
+        }]},
+        options: { plugins:{ legend:{ position:'right', labels:{ color:'#aaa', font:{family:'Cairo'} } } }, cutout:'65%', responsive:true }
+    });
+}
+
+// ── RECENT PLAYERS ────────────────────────
+function renderRecentPlayers() {
+    const sorted = Object.values(allPlayers)
+        .filter(p => p.username && p.stats?.lastPlayed)
+        .sort((a,b) => (b.stats.lastPlayed||0) - (a.stats.lastPlayed||0))
+        .slice(0, 8);
+
+    document.getElementById('recent-players-list').innerHTML = sorted.length ? sorted.map(p => `
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid rgba(255,255,255,.05);">
+            <div style="display:flex;align-items:center;gap:10px;">
+                <div style="width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,#00f2ff,#7c30ff);display:flex;align-items:center;justify-content:center;font-size:12px;">
+                    <i class="fas fa-user" style="color:white;"></i>
+                </div>
+                <div>
+                    <p style="font-size:12px;font-weight:700;">${p.username}</p>
+                    <p style="font-size:10px;color:#555;">${new Date(p.stats.lastPlayed).toLocaleDateString('ar-SA')}</p>
+                </div>
+            </div>
+            <span style="font-size:11px;font-weight:900;color:#00f2ff;">${p.rank || 'Bronze'}</span>
+        </div>`).join('') : '<p style="color:#555;font-size:12px;text-align:center;padding:20px;">لا يوجد لاعبون</p>';
+}
+
+// ── ANALYTICS ────────────────────────────
+function loadAnalytics() {
+    // Category distribution
+    const catCounts = {};
+    Object.values(allPlayers).forEach(p => {
+        if (p.categoryStats) {
+            Object.entries(p.categoryStats).forEach(([cat,cnt]) => {
+                catCounts[cat] = (catCounts[cat]||0) + cnt;
+            });
+        }
+    });
+    const cats = Object.entries(catCounts).sort((a,b)=>b[1]-a[1]).slice(0,8);
+    if (catChart) catChart.destroy();
+    const ctx = document.getElementById('category-chart');
+    if (!ctx) return;
+    catChart = new Chart(ctx, {
+        type:'bar',
+        data:{ labels: cats.map(c=>c[0]), datasets:[{ label:'مباريات', data: cats.map(c=>c[1]),
+            backgroundColor:'rgba(0,242,255,.3)', borderColor:'#00f2ff', borderWidth:2, borderRadius:6 }]},
+        options:{ plugins:{legend:{display:false}},
+            scales:{ x:{ticks:{color:'#aaa',font:{family:'Cairo'}}}, y:{ticks:{color:'#aaa'}} },
+            responsive:true }
+    });
+
+    // Top words
+    get(ref(db,'wordLists')).then(wSnap => {
+        const container = document.getElementById('top-words-list');
+        if (!container) return;
+        if (!wSnap.exists()) { container.innerHTML = '<p style="color:#555;font-size:12px;text-align:center;padding:20px;">لا توجد كلمات</p>'; return; }
+        const wData = wSnap.val();
+        const wordFreq = {};
+        Object.entries(wData).forEach(([cat, words]) => {
+            const arr = Array.isArray(words) ? words : Object.keys(words);
+            arr.forEach(w => { wordFreq[w] = (wordFreq[w]||0) + 1; });
+        });
+        const topWords = Object.entries(wordFreq).sort((a,b)=>b[1]-a[1]).slice(0,15);
+        container.innerHTML = topWords.length
+            ? topWords.map(([w,c],i) => `
+                <div style="display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid rgba(255,255,255,.04);">
+                    <span style="font-size:10px;color:#555;width:20px;text-align:center;">${i+1}</span>
+                    <span style="flex:1;font-size:13px;font-weight:700;">${w}</span>
+                    <span style="font-size:11px;color:#00f2ff;font-weight:900;">${c} فئ${c>1?'ات':'ة'}</span>
+                </div>`).join('')
+            : '<p style="color:#555;font-size:12px;text-align:center;padding:20px;">لا توجد بيانات</p>';
+    }).catch(()=>{});
+
+    const topPlayers = Object.values(allPlayers)
+        .sort((a,b)=>(b.rankPoints||0)-(a.rankPoints||0))
+        .slice(0,20);
+
+    const tbody = document.getElementById('top-players-table');
+    if (tbody) {
+        tbody.innerHTML = topPlayers.map((p,i)=>{
+            const total = p.stats?.totalGames||0;
+            const wins  = (p.stats?.spyWins||0) + (p.stats?.innocentWins||0);
+            const wr    = total ? Math.round(wins/total*100) : 0;
+            return `<tr><td style="color:#555;">${i+1}</td>
+                <td style="font-weight:700;">${p.username}</td>
+                <td><span class="badge badge-active">${p.rank||'Bronze'}</span></td>
+                <td style="font-family:'Orbitron',sans-serif;color:#00f2ff;font-size:12px;">${p.rankPoints||0}</td>
+                <td>${total}</td>
+                <td style="color:${wr>=50?'#22c55e':'#ef4444'};">${wr}%</td></tr>`;
+        }).join('');
+    }
+}
+
+// ── REPORTS ──────────────────────────────
+function loadReports() {
+    get(ref(db,'reports')).then(snap => {
+        allReports = snap.exists() ? snap.val() : {};
+        renderReports();
+    }).catch(e => {
+        console.error('Failed to load reports:', e);
+        const tbody = document.getElementById('reports-table');
+        if (tbody) tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;padding:30px;color:#ef4444;">فشل التحميل</td></tr>';
+    });
+}
+window.loadReports = loadReports;
+
+function renderReports() {
+    const tbody = document.getElementById('reports-table');
+    if (!tbody) return;
+    
+    allReportsArray = Object.entries(allReports);
+    let reports = allReportsArray;
+    
+    // Apply filter
+    if (currentReportFilter !== 'all') {
+        reports = reports.filter(([,r]) => r.status === currentReportFilter);
+    }
+    
+    reports.sort((a,b) => (b[1].timestamp||0) - (a[1].timestamp||0));
+
+    if (!reports.length) { 
+        tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;padding:30px;color:#555;">لا توجد بلاغات</td></tr>'; 
+        return; 
+    }
+
+    tbody.innerHTML = reports.map(([id,r]) => {
+        const statusClass = r.status === 'pending' ? 'badge-pending' : 
+                          r.status === 'warned' ? 'badge-warned' :
+                          r.status === 'banned' ? 'badge-banned' : 'badge-resolved';
+        const statusText = r.status === 'pending' ? 'معلق' : 
+                         r.status === 'warned' ? 'محذّر' :
+                         r.status === 'banned' ? 'محظور' : 'محلول';
+        
+        return `
+        <tr>
+            <td style="font-weight:700;">${r.reportedUsername || 'مجهول'}</td>
+            <td>${reasonAr(r.reason)}</td>
+            <td style="font-size:11px;color:#888;">${r.ruleViolation || '—'}</td>
+            <td style="color:#888;font-size:11px;">${r.reportedByUsername || 'مجهول'}</td>
+            <td style="font-family:'Orbitron',sans-serif;font-size:11px;color:#555;">${r.roomCode || '—'}</td>
+            <td style="font-size:11px;color:#555;">${r.timestamp ? new Date(r.timestamp).toLocaleDateString('ar-SA') : '—'}</td>
+            <td><span class="badge ${statusClass}">${statusText}</span></td>
+            <td>
+                <div style="display:flex;gap:6px;">
+                    ${r.status === 'pending' ? `
+                        <button class="btn-sm" onclick="viewReportDetail('${id}')">عرض</button>
+                        <button class="btn-success" onclick="resolveReport('${id}')">حل</button>
+                        <button class="btn-danger" onclick="banFromReport('${r.reportedUsername}')">حظر</button>
+                    ` : `<button class="btn-sm" onclick="viewReportDetail('${id}')">عرض</button>`}
+                </div>
+            </td>
+        </tr>`;
+    }).join('');
+}
+
+window.filterReports = (f, btn) => {
+    currentReportFilter = f;
+    document.querySelectorAll('.active-filter').forEach(b => b.classList.remove('active-filter'));
+    btn.classList.add('active-filter');
+    renderReports();
+};
+
+window.searchReports = (query) => {
+    if (!query.trim()) {
+        renderReports();
+        return;
+    }
+    
+    const tbody = document.getElementById('reports-table');
+    if (!tbody) return;
+    
+    const q = query.toLowerCase();
+    const filtered = allReportsArray.filter(([id, r]) => {
+        return (r.reportedUsername && r.reportedUsername.toLowerCase().includes(q)) ||
+               (r.reportedByUsername && r.reportedByUsername.toLowerCase().includes(q)) ||
+               (r.roomCode && r.roomCode.toLowerCase().includes(q)) ||
+               (r.reason && r.reason.toLowerCase().includes(q));
+    });
+    
+    if (!filtered.length) {
+        tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;padding:30px;color:#555;">لا توجد نتائج</td></tr>';
+        return;
+    }
+    
+    tbody.innerHTML = filtered.map(([id,r]) => {
+        const statusClass = r.status === 'pending' ? 'badge-pending' : 
+                          r.status === 'warned' ? 'badge-warned' :
+                          r.status === 'banned' ? 'badge-banned' : 'badge-resolved';
+        const statusText = r.status === 'pending' ? 'معلق' : 
+                         r.status === 'warned' ? 'محذّر' :
+                         r.status === 'banned' ? 'محظور' : 'محلول';
+        
+        return `
+        <tr>
+            <td style="font-weight:700;">${r.reportedUsername || 'مجهول'}</td>
+            <td>${reasonAr(r.reason)}</td>
+            <td style="font-size:11px;color:#888;">${r.ruleViolation || '—'}</td>
+            <td style="color:#888;font-size:11px;">${r.reportedByUsername || 'مجهول'}</td>
+            <td style="font-family:'Orbitron',sans-serif;font-size:11px;color:#555;">${r.roomCode || '—'}</td>
+            <td style="font-size:11px;color:#555;">${r.timestamp ? new Date(r.timestamp).toLocaleDateString('ar-SA') : '—'}</td>
+            <td><span class="badge ${statusClass}">${statusText}</span></td>
+            <td>
+                <div style="display:flex;gap:6px;">
+                    ${r.status === 'pending' ? `
+                        <button class="btn-sm" onclick="viewReportDetail('${id}')">عرض</button>
+                        <button class="btn-success" onclick="resolveReport('${id}')">حل</button>
+                        <button class="btn-danger" onclick="banFromReport('${r.reportedUsername}')">حظر</button>
+                    ` : `<button class="btn-sm" onclick="viewReportDetail('${id}')">عرض</button>`}
+                </div>
+            </td>
+        </tr>`;
+    }).join('');
+};
+
+window.viewReportDetail = function(reportId) {
+    const report = allReports[reportId];
+    if (!report) return;
+    
+    const modal = document.getElementById('report-detail-modal');
+    const content = document.getElementById('report-detail-content');
+    
+    if (!modal || !content) return;
+    
+    content.innerHTML = `
+        <h3 style="font-size:18px;font-weight:900;color:#ef4444;margin-bottom:20px;">
+            <i class="fas fa-flag ml-2"></i>تفاصيل البلاغ
+        </h3>
+        
+        <div style="margin-bottom:16px;">
+            <p style="font-size:11px;color:#666;margin-bottom:6px;font-weight:700;">المُبلَّغ عنه</p>
+            <p style="font-size:14px;color:#fff;font-weight:700;">${report.reportedUsername || 'مجهول'}</p>
+        </div>
+        
+        <div style="margin-bottom:16px;">
+            <p style="font-size:11px;color:#666;margin-bottom:6px;font-weight:700;">السبب</p>
+            <p style="font-size:13px;color:#ccc;">${reasonAr(report.reason)}</p>
+        </div>
+        
+        ${report.ruleViolation ? `
+        <div style="margin-bottom:16px;">
+            <p style="font-size:11px;color:#666;margin-bottom:6px;font-weight:700;">مخالفة القواعد</p>
+            <p style="font-size:13px;color:#ccc;">${report.ruleViolation}</p>
+        </div>
+        ` : ''}
+        
+        ${report.description ? `
+        <div style="margin-bottom:16px;">
+            <p style="font-size:11px;color:#666;margin-bottom:6px;font-weight:700;">الوصف</p>
+            <p style="font-size:13px;color:#ccc;line-height:1.6;">${report.description}</p>
+        </div>
+        ` : ''}
+        
+        <div style="margin-bottom:16px;">
+            <p style="font-size:11px;color:#666;margin-bottom:6px;font-weight:700;">المُبلِّغ</p>
+            <p style="font-size:13px;color:#ccc;">${report.reportedByUsername || 'مجهول'}</p>
+        </div>
+        
+        <div style="margin-bottom:16px;">
+            <p style="font-size:11px;color:#666;margin-bottom:6px;font-weight:700;">رمز الغرفة</p>
+            <p style="font-size:13px;color:#ccc;font-family:'Orbitron',sans-serif;">${report.roomCode || '—'}</p>
+        </div>
+        
+        <div style="margin-bottom:16px;">
+            <p style="font-size:11px;color:#666;margin-bottom:6px;font-weight:700;">التاريخ</p>
+            <p style="font-size:13px;color:#ccc;">${report.timestamp ? new Date(report.timestamp).toLocaleString('ar-SA') : '—'}</p>
+        </div>
+        
+        <div style="margin-bottom:24px;">
+            <p style="font-size:11px;color:#666;margin-bottom:6px;font-weight:700;">الحالة</p>
+            <span class="badge ${report.status === 'pending' ? 'badge-pending' : 
+                               report.status === 'warned' ? 'badge-warned' :
+                               report.status === 'banned' ? 'badge-banned' : 'badge-resolved'}">
+                ${report.status === 'pending' ? 'معلق' : 
+                  report.status === 'warned' ? 'محذّر' :
+                  report.status === 'banned' ? 'محظور' : 'محلول'}
+            </span>
+        </div>
+        
+        ${report.status === 'pending' ? `
+        <div class="flex gap-3">
+            <button class="btn-success" onclick="resolveReport('${reportId}'); closeReportDetail();">
+                <i class="fas fa-check ml-2"></i>حل البلاغ
+            </button>
+            <button class="btn-danger" onclick="banFromReport('${report.reportedUsername}'); closeReportDetail();">
+                <i class="fas fa-ban ml-2"></i>حظر اللاعب
+            </button>
+        </div>
+        ` : ''}
+    `;
+    
+    modal.style.display = 'flex';
+};
+
+window.closeReportDetail = function() {
+    const modal = document.getElementById('report-detail-modal');
+    if (modal) modal.style.display = 'none';
+};
+
+window.resolveReport = async (id) => {
+    try {
+        await update(ref(db, `reports/${id}`), { status:'resolved', resolvedAt: Date.now() });
+        loadReports();
+        closeReportDetail();
+    } catch(e) {
+        await UIAlert('فشل حل البلاغ: ' + e.message, { title: 'خطأ', type: 'error', icon: '❌' });
+    }
+};
+
+window.banFromReport = (username) => {
+    document.getElementById('ban-username').value = username || '';
+    showSection('bans');
+    closeReportDetail();
+};
+
+function reasonAr(r) {
+    const m = {cheating:'غش',spam:'سبام',harassment:'تحرش',offensive:'محتوى مسيء',other:'أخرى',inappropriate:'غير لائق'};
+    return m[r] || r || '—';
+}
+
+// ── BAN MANAGEMENT ────────────────────────
+function loadBans() {
+    get(ref(db,'bans')).then(snap => {
+        allBans = snap.exists() ? snap.val() : {};
+        renderBans();
+    }).catch(e => {
+        console.error('Failed to load bans:', e);
+        const tbody = document.getElementById('bans-table');
+        if (tbody) tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:30px;color:#ef4444;">فشل التحميل</td></tr>';
+    });
+}
+window.loadBans = loadBans;
+
+function renderBans() {
+    const tbody = document.getElementById('bans-table');
+    if (!tbody) return;
+    const bans  = Object.entries(allBans);
+    if (!bans.length) { tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:30px;color:#555;">لا توجد حظورات</td></tr>'; return; }
+
+    tbody.innerHTML = bans.map(([uid,ban]) => `
+        <tr>
+            <td style="font-weight:700;">${ban.username || uid.slice(0,12)}</td>
+            <td>${ban.reason || '—'}</td>
+            <td style="font-size:11px;color:${ban.permanent?'#ef4444':'#aaa'};">${ban.permanent ? '🔴 دائم' : new Date(ban.expiresAt).toLocaleDateString('ar-SA')}</td>
+            <td style="font-size:11px;color:#555;">${ban.bannedByName || 'Admin'}</td>
+            <td><button class="btn-success" onclick="unban('${uid}')">رفع الحظر</button></td>
+        </tr>`).join('');
+}
+
+window.banPlayer = async () => {
+    const username = document.getElementById('ban-username').value.trim();
+    const reason   = document.getElementById('ban-reason').value.trim();
+    const duration = parseInt(document.getElementById('ban-duration').value);
+    if (!username) { await UIAlert('الرجاء إدخال اسم المستخدم', { title: 'حقل مطلوب', type: 'warning', icon: '✏️' }); return; }
+
+    // Find player UID
+    let targetUid = null;
+    try {
+        const snap = await get(ref(db,'players'));
+        if (snap.exists()) {
+            const players = snap.val();
+            for (const uid in players) {
+                if (players[uid].username === username) { targetUid = uid; break; }
+            }
+        }
+    } catch(e) {
+        await UIAlert('خطأ في البحث عن اللاعب: ' + e.message, { title: 'خطأ', type: 'error', icon: '❌' });
+        return;
+    }
+
+    if (!targetUid) { 
+        await UIAlert('لا يوجد لاعب بهذا الاسم في قاعدة البيانات', { title: 'المستخدم غير موجود', type: 'error', icon: '🔍' }); 
+        return; 
+    }
+
+    try {
+        await set(ref(db, `bans/${targetUid}`), {
+            username,
+            reason: reason || 'مخالفة اللوائح',
+            bannedAt:  Date.now(),
+            expiresAt: duration === -1 ? null : Date.now() + duration,
+            permanent: duration === -1,
+            bannedByName: 'Admin'
+        });
+
+        await UIAlert(`تم حظر ${username} بنجاح`, { title: '🚫 تم الحظر', type: 'success', icon: '✅' });
+        document.getElementById('ban-username').value = '';
+        document.getElementById('ban-reason').value = '';
+        loadBans();
+    } catch(e) {
+        await UIAlert('فشل الحظر: ' + e.message, { title: 'خطأ', type: 'error', icon: '❌' });
+    }
+};
+
+window.unban = async (uid) => {
+    const ok = await UIConfirm('هل أنت متأكد من رفع الحظر عن هذا اللاعب؟', { title: 'رفع الحظر', type: 'warning', confirmText: 'رفع الحظر', icon: '✅' });
+    if (!ok) return;
+    try {
+        await remove(ref(db, `bans/${uid}`));
+        loadBans();
+    } catch(e) {
+        await UIAlert('فشل رفع الحظر: ' + e.message, { title: 'خطأ', type: 'error', icon: '❌' });
+    }
+};
+
+// ── PLAYERS ──────────────────────────────
+let filteredPlayers = [];
+function loadPlayers() {
+    filteredPlayers = Object.values(allPlayers);
+    renderPlayersTable(filteredPlayers);
+    populatePatchDropdown();
+}
+window.loadPlayers = loadPlayers;
+
+function populatePatchDropdown() {
+    const select = document.getElementById('patch-uid-select');
+    if (!select) return;
+    const broken = Object.entries(allPlayers).filter(([uid, p]) =>
+        !p.username || p.username === 'undefined' || !p.email || p.email === 'undefined'
+    );
+    if (broken.length === 0) {
+        select.innerHTML = '<option value="">✅ لا يوجد سجلات فارغة</option>';
+        return;
+    }
+    select.innerHTML = '<option value="">— اختر لاعباً فارغاً —</option>' +
+        broken.map(([uid, p]) =>
+            `<option value="${uid}">${uid.slice(0,14)}... | username="${p.username || '?'}" | email="${p.email || '?'}"</option>`
+        ).join('');
+}
+
+window.onPatchSelectChange = function(uid) {
+    if (!uid) return;
+    document.getElementById('patch-uid').value = uid;
+    const p = allPlayers[uid];
+    if (p) {
+        if (p.username && p.username !== 'undefined')
+            document.getElementById('patch-username').value = p.username;
+        if (p.fullName)
+            document.getElementById('patch-fullname').value = p.fullName;
+        if (p.email && p.email !== 'undefined')
+            document.getElementById('patch-email').value = p.email;
+    }
+};
+
+window.manualPatchPlayer = async function() {
+    const uid      = document.getElementById('patch-uid').value.trim();
+    const username = document.getElementById('patch-username').value.trim();
+    const fullName = document.getElementById('patch-fullname').value.trim();
+    const email    = document.getElementById('patch-email').value.trim();
+    const resultEl = document.getElementById('patch-result');
+
+    const showResult = (msg, ok) => {
+        resultEl.textContent = msg;
+        resultEl.style.display = 'block';
+        resultEl.style.background  = ok ? 'rgba(34,197,94,.15)' : 'rgba(239,68,68,.15)';
+        resultEl.style.border      = ok ? '1px solid rgba(34,197,94,.4)' : '1px solid rgba(239,68,68,.4)';
+        resultEl.style.color       = ok ? '#22c55e' : '#ef4444';
+    };
+
+    if (!uid)      { showResult('❌ الرجاء إدخال الـ UID', false); return; }
+    if (!username) { showResult('❌ الرجاء إدخال اسم المستخدم', false); return; }
+    if (!email)    { showResult('❌ الرجاء إدخال البريد الإلكتروني', false); return; }
+
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+        showResult('❌ البريد الإلكتروني غير صحيح', false); return;
+    }
+
+    try {
+        const snap = await get(ref(db, `players/${uid}`));
+        if (!snap.exists()) {
+            showResult('❌ لا يوجد سجل بهذا الـ UID في قاعدة البيانات', false);
+            return;
+        }
+    } catch(e) {
+        showResult('❌ خطأ في القراءة: ' + e.message, false);
+        return;
+    }
+
+    const emailLower = email.toLowerCase();
+    for (const [existingUid, p] of Object.entries(allPlayers)) {
+        if (existingUid !== uid && p.email?.toLowerCase() === emailLower) {
+            showResult(`❌ البريد الإلكتروني مستخدم بالفعل للاعب: ${p.username || existingUid}`, false);
+            return;
+        }
+    }
+
+    try {
+        const patch = { uid, username, email };
+        if (fullName) patch.fullName = fullName;
+
+        await update(ref(db, `players/${uid}`), patch);
+
+        if (allPlayers[uid]) {
+            allPlayers[uid] = { ...allPlayers[uid], ...patch };
+        }
+
+        showResult(`✅ تم تحديث بيانات اللاعب بنجاح — ${username} (${email})`, true);
+
+        document.getElementById('patch-uid').value       = '';
+        document.getElementById('patch-username').value  = '';
+        document.getElementById('patch-fullname').value  = '';
+        document.getElementById('patch-email').value     = '';
+        document.getElementById('patch-uid-select').value = '';
+
+        loadPlayers();
+        populatePatchDropdown();
+
+    } catch(e) {
+        showResult('❌ فشل الحفظ: ' + e.message, false);
+    }
+};
+
+window.repairPlayerRecords = async function() {
+    const logEl  = document.getElementById('repair-log');
+    logEl.innerHTML = '';
+    logEl.style.display = 'block';
+
+    const log = (msg, color = '#aaa') => {
+        logEl.innerHTML += `<span style="color:${color}">${msg}</span>\n`;
+        logEl.scrollTop = logEl.scrollHeight;
+    };
+
+    log('جاري قراءة جميع السجلات...', '#fbbf24');
+
+    let snap;
+    try {
+        snap = await get(ref(db, 'players'));
+    } catch(e) {
+        log('❌ فشل القراءة: ' + e.message, '#ef4444');
+        return;
+    }
+
+    if (!snap.exists()) { log('لا يوجد لاعبون في قاعدة البيانات.', '#888'); return; }
+
+    const players = snap.val();
+    let fixed = 0, skipped = 0, already = 0;
+
+    for (const [uid, p] of Object.entries(players)) {
+        const patch = {};
+        let needsFix = false;
+
+        if (!p.uid) {
+            patch.uid = uid;
+            needsFix = true;
+        }
+
+        if (!p.username || p.username === 'undefined') {
+            patch.username = p.fullName || `مجهول_${uid.slice(0, 6)}`;
+            needsFix = true;
+        }
+
+        if (!p.email || p.email === 'undefined') {
+            patch.email = '';
+            needsFix = true;
+        }
+
+        if (p.coins       == null) { patch.coins       = 100;     needsFix = true; }
+        if (p.hints       == null) { patch.hints       = 3;       needsFix = true; }
+        if (p.rankPoints  == null) { patch.rankPoints  = 0;       needsFix = true; }
+        if (!p.rank)               { patch.rank        = 'Bronze'; needsFix = true; }
+        if (!p.activeTheme)        { patch.activeTheme = 'cyan';  needsFix = true; }
+        if (!p.activeTitle)        { patch.activeTitle = 'rookie'; needsFix = true; }
+        if (!p.stats)              {
+            patch.stats = { totalGames:0, spyWins:0, innocentWins:0, currentStreak:0, longestWinStreak:0 };
+            needsFix = true;
+        }
+        if (p.moderationWarnings == null) { patch.moderationWarnings = 0; needsFix = true; }
+        if (p.totalBans          == null) { patch.totalBans          = 0; needsFix = true; }
+
+        if (needsFix) {
+            try {
+                await update(ref(db, `players/${uid}`), patch);
+                log(`✅ أصلح: ${uid.slice(0,12)}... → username="${patch.username || p.username}"`, '#22c55e');
+                fixed++;
+            } catch(e) {
+                log(`❌ فشل إصلاح ${uid.slice(0,12)}: ${e.message}`, '#ef4444');
+                skipped++;
+            }
+        } else {
+            already++;
+        }
+    }
+
+    log(`\nاكتمل: ${fixed} تم إصلاحه | ${already} سليم | ${skipped} فشل`, '#00f2ff');
+
+    if (fixed > 0) {
+        log('⚠️ ملاحظة: البريد الإلكتروني لا يمكن استرداده إلا عندما يُسجّل المستخدم الدخول مجدداً.', '#fbbf24');
+        try {
+            const freshSnap = await get(ref(db, 'players'));
+            if (freshSnap.exists()) {
+                allPlayers = freshSnap.val();
+                loadPlayers();
+            }
+        } catch(e) {}
+    }
+};
+
+window.searchPlayers = (q) => {
+    const results = filteredPlayers.filter(p => p.username?.toLowerCase().includes(q.toLowerCase()));
+    renderPlayersTable(results);
+};
+
+function renderPlayersTable(players) {
+    const tbody = document.getElementById('players-table');
+    if (!tbody) return;
+    if (!players.length) { tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:30px;color:#555;">لا يوجد لاعبون</td></tr>'; return; }
+    const RANK_COLORS = {Diamond:'#00f2ff',Platinum:'#e5e4e2',Gold:'#ffd700',Silver:'#c0c0c0',Bronze:'#cd7f32'};
+
+    tbody.innerHTML = players.sort((a,b)=>(b.rankPoints||0)-(a.rankPoints||0)).map((p,i) => {
+        const total   = p.stats?.totalGames||0;
+        const wins    = (p.stats?.spyWins||0)+(p.stats?.innocentWins||0);
+        const wr      = total ? Math.round(wins/total*100) : 0;
+        const color   = RANK_COLORS[p.rank] || '#888';
+        const last    = p.stats?.lastPlayed ? new Date(p.stats.lastPlayed).toLocaleDateString('ar-SA') : '—';
+
+        const isBroken = !p.username || p.username === 'undefined' || !p.email || p.email === 'undefined';
+        const rowStyle = isBroken ? 'background:rgba(251,191,36,.04);border-right:3px solid #fbbf24;' : '';
+        const nameDisplay = p.username && p.username !== 'undefined'
+            ? p.username
+            : `<span style="color:#fbbf24;font-style:italic;">⚠️ غير معروف (${p.uid?.slice(0,8) || '?'}...)</span>`;
+
+        return `<tr style="${rowStyle}">
+            <td style="font-weight:700;">${nameDisplay}</td>
+            <td style="color:${color};font-weight:900;font-size:12px;">${p.rank||'Bronze'}</td>
+            <td style="font-family:'Orbitron',sans-serif;font-size:11px;color:${color};">${p.rankPoints||0}</td>
+            <td>${total}</td>
+            <td style="color:#ffd700;font-weight:700;">🪙 ${p.coins||0}</td>
+            <td style="font-size:11px;color:#555;">${last}</td>
+            <td>
+                <div style="display:flex;gap:6px;">
+                    ${isBroken
+                        ? `<span style="font-size:10px;color:#fbbf24;font-weight:700;">يحتاج إصلاح</span>`
+                        : `<button class="btn-sm" onclick="viewPlayer('${p.username}')">عرض</button>
+                           <button class="btn-danger" onclick="document.getElementById('ban-username').value='${p.username}';showSection('bans')">حظر</button>`
+                    }
+                </div>
+            </td>
+        </tr>`;
+    }).join('');
+}
+
+window.viewPlayer = (username) => {
+    const p = Object.values(allPlayers).find(pl => pl.username === username);
+    if (!p) return;
+    const total = p.stats?.totalGames || 0;
+    const wins  = (p.stats?.spyWins||0) + (p.stats?.innocentWins||0);
+    const wr    = total ? Math.round(wins/total*100) : 0;
+    UIAlert(
+        `<div style="text-align:right;direction:rtl;line-height:2;font-size:13px;">
+            <b>الرتبة:</b> ${p.rank || 'Bronze'}<br>
+            <b>النقاط:</b> ${p.rankPoints || 0}<br>
+            <b>المباريات:</b> ${total}<br>
+            <b>انتصارات جاسوس:</b> ${p.stats?.spyWins || 0}<br>
+            <b>انتصارات بريء:</b> ${p.stats?.innocentWins || 0}<br>
+            <b>نسبة الفوز:</b> ${wr}%<br>
+            <b>العملات:</b> 🪙 ${p.coins || 0}
+        </div>`,
+        { title: `👤 ${username}`, type: 'info', icon: '' }
+    );
+};
+
+// ── WORD MANAGEMENT ──────────────────────
+async function loadWords() {
+    try {
+        const snap = await get(ref(db, 'wordLists'));
+        wordListData = snap.exists() ? snap.val() : {};
+        renderCategoryList();
+    } catch(e) {
+        console.error('Failed to load words:', e);
+    }
+}
+window.loadWords = loadWords;
+
+function renderCategoryList() {
+    const list = document.getElementById('category-list');
+    if (!list) return;
+    const cats  = Object.keys(wordListData);
+    list.innerHTML = cats.map(cat => `
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 12px;
+            border-radius:10px;margin-bottom:4px;cursor:pointer;transition:all .2s;
+            background:${activeCategory===cat?'rgba(168,85,247,.2)':'rgba(255,255,255,.04)'};"
+            onclick="selectCategory('${cat}')">
+            <span style="font-size:13px;font-weight:700;">${cat}</span>
+            <span style="font-size:10px;color:#555;">${Array.isArray(wordListData[cat])?wordListData[cat].length:Object.keys(wordListData[cat]).length} كلمة</span>
+        </div>`).join('') || '<p style="color:#555;font-size:12px;">لا توجد فئات</p>';
+}
+
+window.selectCategory = (cat) => {
+    activeCategory = cat;
+    document.getElementById('active-cat-name').textContent = cat;
+    const words = Array.isArray(wordListData[cat]) ? wordListData[cat] : Object.keys(wordListData[cat]);
+    document.getElementById('word-count').textContent = words.length + ' كلمة';
+    document.getElementById('words-cloud').innerHTML = words.map(w => `
+        <span class="word-tag">${w}
+            <button onclick="deleteWord('${cat}','${w}')">✕</button>
+        </span>`).join('');
+    renderCategoryList();
+};
+
+window.addWord = async () => {
+    const word = document.getElementById('new-word').value.trim();
+    if (!word || !activeCategory) { 
+        await UIAlert('اختر فئة أولاً وأدخل كلمة', { title: 'تنبيه', type: 'warning', icon: '⚠️' }); 
+        return; 
+    }
+    const words = Array.isArray(wordListData[activeCategory]) ? [...wordListData[activeCategory]] : Object.keys(wordListData[activeCategory]);
+    if (!words.includes(word)) {
+        words.push(word);
+        wordListData[activeCategory] = words;
+        try {
+            await set(ref(db, `wordLists/${activeCategory}`), words);
+            document.getElementById('new-word').value = '';
+            selectCategory(activeCategory);
+        } catch(e) {
+            await UIAlert('فشل إضافة الكلمة: ' + e.message, { title: 'خطأ', type: 'error', icon: '❌' });
+        }
+    } else { 
+        await UIAlert(`الكلمة "${word}" موجودة بالفعل في هذه الفئة`, { title: 'كلمة مكررة', type: 'warning', icon: '⚠️' }); 
+    }
+};
+
+window.deleteWord = async (cat, word) => {
+    const ok = await UIConfirm(`هل تريد حذف الكلمة "${word}" من الفئة "${cat}"؟`, { title: 'حذف كلمة', type: 'error', confirmText: 'حذف', cancelText: 'إلغاء', icon: '🗑️' });
+    if (!ok) return;
+    try {
+        const words = Array.isArray(wordListData[cat]) ? [...wordListData[cat]] : Object.keys(wordListData[cat]);
+        const updated = words.filter(w => w !== word);
+        wordListData[cat] = updated;
+        await set(ref(db, `wordLists/${cat}`), updated);
+        selectCategory(cat);
+    } catch(e) {
+        await UIAlert('فشل حذف الكلمة: ' + e.message, { title: 'خطأ', type: 'error', icon: '❌' });
+    }
+};
+
+window.addCategory = async () => {
+    const cat = document.getElementById('new-category').value.trim();
+    if (!cat) return;
+    if (wordListData[cat]) { 
+        await UIAlert(`الفئة "${cat}" موجودة بالفعل`, { title: 'فئة مكررة', type: 'warning', icon: '⚠️' }); 
+        return; 
+    }
+    try {
+        wordListData[cat] = [];
+        await set(ref(db, `wordLists/${cat}`), []);
+        document.getElementById('new-category').value = '';
+        renderCategoryList();
+        selectCategory(cat);
+    } catch(e) {
+        await UIAlert('فشل إضافة الفئة: ' + e.message, { title: 'خطأ', type: 'error', icon: '❌' });
+    }
+};
+
+// ── ANNOUNCEMENTS ─────────────────────────
+window.setPriority = (p, btn) => {
+    activePriority = p;
+    document.querySelectorAll('[id^="pri-"]').forEach(b => { b.style.fontWeight = '700'; b.style.boxShadow = 'none'; });
+    btn.style.fontWeight = '900'; btn.style.boxShadow = '0 0 10px currentColor';
+};
+
+window.sendAnnouncement = async () => {
+    const text = document.getElementById('ann-text').value.trim();
+    if (!text) { 
+        await UIAlert('الرجاء كتابة نص الإعلان أولاً', { title: 'النص مطلوب', type: 'warning', icon: '✏️' }); 
+        return; 
+    }
+    const duration = parseInt(document.getElementById('ann-duration').value);
+
+    try {
+        await push(ref(db, 'announcements'), {
+            message:   text,
+            priority:  activePriority,
+            timestamp: Date.now(),
+            expiresAt: Date.now() + duration
+        });
+
+        document.getElementById('ann-text').value = '';
+        await UIAlert('تم إرسال الإعلان لجميع اللاعبين بنجاح', { title: '📣 إعلان مُرسل', type: 'success', icon: '✅' });
+        loadAnnouncements();
+    } catch(e) {
+        await UIAlert('فشل إرسال الإعلان: ' + e.message, { title: 'خطأ', type: 'error', icon: '❌' });
+    }
+};
+
+function loadAnnouncements() {
+    get(ref(db,'announcements')).then(snap => {
+        const container = document.getElementById('active-announcements');
+        if (!container) return;
+        if (!snap.exists()) { container.innerHTML='<p style="color:#555;font-size:12px;text-align:center;padding:20px;">لا توجد إعلانات</p>'; return; }
+        const anns = Object.entries(snap.val())
+            .filter(([,a]) => a.expiresAt > Date.now())
+            .sort((a,b) => b[1].timestamp - a[1].timestamp);
+
+        if (!anns.length) { container.innerHTML='<p style="color:#555;font-size:12px;text-align:center;padding:20px;">لا توجد إعلانات نشطة</p>'; return; }
+
+        const priColor = {info:'#3b82f6', warning:'#f59e0b', critical:'#ef4444'};
+        container.innerHTML = anns.map(([id,a]) => `
+            <div style="padding:12px 16px;border-radius:10px;background:rgba(255,255,255,.04);
+                border-right:4px solid ${priColor[a.priority]||'#3b82f6'};margin-bottom:10px;">
+                <div style="display:flex;justify-content:space-between;align-items:start;gap:8px;">
+                    <p style="font-size:13px;font-weight:700;flex:1;">${a.message}</p>
+                    <button onclick="deleteAnn('${id}')" style="background:none;border:none;color:#ef4444;cursor:pointer;font-size:16px;flex-shrink:0;">✕</button>
+                </div>
+                <p style="font-size:10px;color:#555;margin-top:6px;">ينتهي: ${new Date(a.expiresAt).toLocaleDateString('ar-SA')}</p>
+            </div>`).join('');
+    }).catch(()=>{});
+}
+window.loadAnnouncements = loadAnnouncements;
+
+window.deleteAnn = async (id) => {
+    try {
+        await remove(ref(db, `announcements/${id}`));
+        loadAnnouncements();
+    } catch(e) {
+        await UIAlert('فشل حذف الإعلان: ' + e.message, { title: 'خطأ', type: 'error', icon: '❌' });
+    }
+};
+
+// ── ADMIN ACCESS MANAGEMENT ───────────────────
+window.copyAdminCode = function() {
+    const code = document.getElementById('current-admin-code').textContent;
+    navigator.clipboard.writeText(code).then(() => {
+        UIAlert(`تم نسخ الرمز: <span style="font-family:'Orbitron',sans-serif;font-size:18px;color:#00f2ff;letter-spacing:3px;">${code}</span>`, { title: 'تم النسخ', type: 'success', icon: '📋' });
+    });
+};
+
+window.generateNewCode = async function() {
+    const ok = await UIConfirm(
+        'إنشاء رمز جديد سيُبطل الرمز الحالي.<br>جميع من يملكون الرمز القديم لن يتمكنوا من استخدامه.',
+        { title: '⚠️ تأكيد الإنشاء', type: 'warning', confirmText: 'إنشاء رمز جديد', cancelText: 'إلغاء', icon: '🔑' }
+    );
+    if (!ok) return;
+
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+    let newCode = 'ADMIN';
+    for (let i = 0; i < 6; i++) { newCode += chars[Math.floor(Math.random() * chars.length)]; }
+
+    try {
+        await set(ref(db, 'adminConfig/accessCode'), newCode);
+        await set(ref(db, 'adminConfig/codeCreatedAt'), Date.now());
+        await set(ref(db, 'adminConfig/codeCreatedBy'), auth.currentUser.uid);
+        document.getElementById('current-admin-code').textContent = newCode;
+        await UIAlert(
+            `الرمز الجديد: <span style="font-family:'Orbitron',sans-serif;font-size:22px;color:#00f2ff;letter-spacing:4px;">${newCode}</span><br><span style="font-size:11px;color:#888;">احتفظ بهذا الرمز في مكان آمن</span>`,
+            { title: '✅ تم الإنشاء', type: 'success', icon: '' }
+        );
+    } catch (e) {
+        await UIAlert('خطأ في إنشاء الرمز: ' + e.message, { title: 'خطأ', type: 'error', icon: '❌' });
+    }
+};
+
+window.loadAdminsList = async function() {
+    const container = document.getElementById('admins-list');
+    if (!container) return;
+    container.innerHTML = '<p style="color:#555;font-size:12px;text-align:center;padding:20px;">جاري التحميل...</p>';
+
+    try {
+        const snap = await get(ref(db, 'players'));
+        if (!snap.exists()) {
+            container.innerHTML = '<p style="color:#555;font-size:12px;text-align:center;padding:20px;">لا يوجد مسؤولون</p>';
+            return;
+        }
+
+        const players = snap.val();
+        const admins = Object.entries(players)
+            .filter(([uid, p]) => p.isAdmin === true)
+            .sort((a, b) => (b[1].adminSince || 0) - (a[1].adminSince || 0));
+
+        if (!admins.length) {
+            container.innerHTML = '<p style="color:#555;font-size:12px;text-align:center;padding:20px;">لا يوجد مسؤولون</p>';
+            return;
+        }
+
+        container.innerHTML = admins.map(([uid, p]) => {
+            const since = p.adminSince ? new Date(p.adminSince).toLocaleDateString('ar-SA') : '—';
+            const isSelf = uid === auth.currentUser.uid;
+            return `
+                <div style="display:flex;align-items:center;justify-content:space-between;
+                    padding:12px;border-bottom:1px solid rgba(255,255,255,.05);
+                    ${isSelf ? 'background:rgba(0,242,255,.05);' : ''}">
+                    <div style="display:flex;align-items:center;gap:12px;">
+                        <div style="width:40px;height:40px;border-radius:50%;
+                            background:linear-gradient(135deg,#00f2ff,#7c30ff);
+                            display:flex;align-items:center;justify-content:center;">
+                            <i class="fas fa-user-shield" style="color:white;font-size:16px;"></i>
+                        </div>
+                        <div>
+                            <p style="font-size:13px;font-weight:700;">${p.username || 'مسؤول'}
+                                ${isSelf ? '<span style="color:#00f2ff;font-size:11px;margin-right:6px;">(أنت)</span>' : ''}</p>
+                            <p style="font-size:11px;color:#666;">منذ: ${since}</p>
+                        </div>
+                    </div>
+                    ${!isSelf ? `<button onclick="revokeAdmin('${uid}', '${p.username || 'هذا المسؤول'}')"
+                        class="btn-danger" style="font-size:11px;padding:6px 12px;">
+                        <i class="fas fa-user-times ml-1"></i> إلغاء
+                    </button>` : ''}
+                </div>`;
+        }).join('');
+
+    } catch (e) {
+        container.innerHTML = '<p style="color:#ef4444;font-size:12px;text-align:center;padding:20px;">خطأ في التحميل</p>';
+    }
+};
+
+window.revokeAdmin = async function(uid, username) {
+    const ok = await UIConfirm(
+        `لن يتمكن <b>${username}</b> من الوصول لهذه اللوحة بعد الآن.`,
+        { title: 'إلغاء صلاحيات الإدارة', type: 'error', confirmText: 'إلغاء الصلاحيات', cancelText: 'تراجع', icon: '👤' }
+    );
+    if (!ok) return;
+
+    try {
+        await set(ref(db, `players/${uid}/isAdmin`), false);
+        await set(ref(db, `players/${uid}/adminRevokedAt`), Date.now());
+        await UIAlert('تم إلغاء الصلاحيات بنجاح', { title: '✅ تم', type: 'success', icon: '' });
+        loadAdminsList();
+    } catch (e) {
+        await UIAlert('خطأ: ' + e.message, { title: 'خطأ', type: 'error', icon: '❌' });
+    }
+};
+
+// ═══════════════════════════════════════════════
+// DIAGNOSTICS ENGINE - see separate script
+// ═══════════════════════════════════════════════
+// Load diagnostics script
+const diagScript = document.createElement('script');
+diagScript.src = 'admin-diagnostics.js';
+diagScript.onerror = () => {
+    console.warn('Diagnostics script failed to load - diagnostics section will not work');
+};
+document.head.appendChild(diagScript);
+
+// ═══════════════════════════════════════════════
+// FIREBASE DATABASE VIEWER - see separate script
+// ═══════════════════════════════════════════════
+// Load viewer script
+const viewerScript = document.createElement('script');
+viewerScript.src = 'firebase-viewer.js';
+viewerScript.onerror = () => {
+    console.warn('Firebase viewer script failed to load - viewer section will not work');
+};
+document.head.appendChild(viewerScript);
+
+</script>
+</body>
+</html>
