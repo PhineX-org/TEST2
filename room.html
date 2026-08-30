@@ -1154,6 +1154,13 @@
             loadingRoomCodeEl.textContent = `كود الغرفة: ${roomCode}`;
         }
 
+        // FIX: nothing was ever setting the actual waiting-screen room-code
+        // display — it just showed its static "----" placeholder forever.
+        const roomCodeDisplayEl = document.getElementById('roomCodeDisplay');
+        if (roomCodeDisplayEl) {
+            roomCodeDisplayEl.textContent = roomCode;
+        }
+
         // Loading timeout
         const loadingTimeout = setTimeout(() => {
             const loadingScreen = document.getElementById('loadingScreen');
@@ -2505,8 +2512,14 @@ async function joinRoom(uid, username) {
                 const snap = await get(friendPlayerRef);
                 const friendPlayer = snap.val();
                 
-                const isOnline = friendPlayer?.status === 'online';
+                // FIX: this checked players/{uid}/status, a top-level field
+                // nothing actually writes for general "is this player
+                // online" purposes — only presence.online (written on
+                // home.html and room.html now) is ever kept accurate. This
+                // was the same field friends-panel.js and friends.html
+                // already correctly check.
                 const friendPresence = friendPlayer?.presence || {};
+                const isOnline = !!friendPresence.online;
                 const friendInWaitingRoom = !!(friendPresence.inGame && friendPresence.phase === 'waiting' && friendPresence.room);
                 
                 const item = document.createElement('div');

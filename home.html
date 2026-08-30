@@ -19,7 +19,7 @@
     <meta property="og:site_name" content="El Jasus">
     <meta property="og:locale" content="ar_EG">
     <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="icon" type="image/png" href="ElJasus.jpg">
+    <link rel="icon" type="image/png" href="ElJasus.png">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css"/>
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700;900&display=swap" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet">
@@ -1128,7 +1128,7 @@
         <!-- Header with Logo -->
         <header class="text-center py-6 animate__animated animate__fadeIn">
             <div class="logo-hex mx-auto mb-4">
-                <img src="ElJasus.jpg" alt="Logo" class="w-16 h-16 rounded-full">
+                <img src="ElJasus.png" alt="Logo" class="w-16 h-16 rounded-full">
             </div>
            
             <!-- DROP-IN REPLACEMENT -->
@@ -1551,6 +1551,24 @@
                 window.location.href = `room.html?room=${roomCode}`;
             });
         }
+
+        // FIX: nothing on this page ever marked a logged-in player "online" —
+        // only actually being inside a room (via room.html's own joinRoom())
+        // did that. Since home.html is where most people sit *before*
+        // joining a room, friends could never be invited or asked-to-join
+        // while just browsing the menu; they'd show offline until they
+        // were already in a room, which defeats the point of inviting them.
+        // Only sets `online`/`lastSeen` — inGame/phase/room stay whatever
+        // room.html's own onDisconnect last left them as, since a same-site
+        // page navigation (home.html -> room.html) closes and reopens the
+        // Firebase connection just like a real disconnect would.
+        const presenceRef = ref(db, `players/${user.uid}/presence`);
+        update(presenceRef, { online: true, lastSeen: serverTimestamp() }).catch(() => {});
+        onValue(ref(db, '.info/connected'), (snap) => {
+            if (snap.val() === true) {
+                onDisconnect(presenceRef).update({ online: false, lastSeen: serverTimestamp() });
+            }
+        });
     }
 
     await loadCustomCategories();
