@@ -1349,7 +1349,7 @@ window.runDiagFix = async function(i) {
 // database writes as a fenced ```action block rather than doing anything
 // itself — there is no code path here that executes a write without the
 // admin clicking "تنفيذ" on the resulting card first.
-const AI_WORKER_URL = 'https://super-paper-1cd0.ahmedelgoharymessi.workers.dev/';
+const AI_WORKER_URL = 'https://xcode.ahmedelgoharymessi.workers.dev/';
 const AI_SYSTEM_PROMPT = `أنت مساعد لوحة إدارة لعبة "الجاسوس" (El Jasus). لديك معرفة بهيكل قاعدة البيانات:
 - players/{uid}: username, email, coins, hints, rankPoints, rank, isAdmin, presence{online,inGame,phase,room}, stats{...}
 - rooms/{code}: hostId, status(waiting/playing/discussion/voting/reveal), category, visibility, players{uid:{isHost,username,...}}
