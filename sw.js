@@ -1,9 +1,16 @@
 // ============================================
-// EL JASUS — SERVICE WORKER v1
+// EL JASUS — SERVICE WORKER v2
 // Offline support + background sync
+// FIX: was cache-first with a cache name that never changed between
+// deploys, so once a file was cached it stayed served forever — normal
+// reloads never saw new deployments, only a hard reload (which bypasses
+// the SW entirely for that one navigation) did. Now network-first: the
+// cache is only ever used as an offline fallback, which is what it's
+// actually for. Bumping v1 -> v2 also makes the activate handler below
+// wipe out the old, permanently-stale v1 cache on install.
 // ============================================
 
-const CACHE_NAME    = 'eljasus-v1';
+const CACHE_NAME    = 'eljasus-v2';
 const STATIC_ASSETS = [
     '/',
     '/home.html',
@@ -25,7 +32,7 @@ const STATIC_ASSETS = [
     '/qr-notifications.js',
     '/voice-chat.js',
     '/screenshot.js',
-    '/ElJasus.jpg',
+    '/ElJasus.png',
     '/manifest.json',
     'https://cdn.tailwindcss.com',
     'https://fonts.googleapis.com/css2?family=Cairo:wght@400;700;900&display=swap',
@@ -67,17 +74,18 @@ self.addEventListener('fetch', event => {
     if (event.request.url.includes('firebasedatabase') || event.request.url.includes('googleapis.com/identitytoolkit')) return;
 
     event.respondWith(
-        caches.match(event.request).then(cached => {
-            if (cached) return cached;
-
-            return fetch(event.request).then(response => {
-                // Cache successful responses for local assets
-                if (response.ok && event.request.url.startsWith(self.location.origin)) {
-                    const clone = response.clone();
-                    caches.open(CACHE_NAME).then(cache => cache.put(event.request, clone));
-                }
-                return response;
-            }).catch(() => {
+        // Network-first: always try to get the current version. The
+        // cache is only ever consulted when the network request itself
+        // fails (i.e. actually offline) — not as a first-choice source.
+        fetch(event.request).then(response => {
+            if (response.ok && event.request.url.startsWith(self.location.origin)) {
+                const clone = response.clone();
+                caches.open(CACHE_NAME).then(cache => cache.put(event.request, clone));
+            }
+            return response;
+        }).catch(() => {
+            return caches.match(event.request).then(cached => {
+                if (cached) return cached;
                 // Offline fallback
                 if (event.request.destination === 'document') {
                     return caches.match('/home.html');
@@ -93,8 +101,8 @@ self.addEventListener('push', event => {
     event.waitUntil(
         self.registration.showNotification(data.title || 'El Jasus', {
             body:    data.body || 'إشعار جديد',
-            icon:    '/ElJasus.jpg',
-            badge:   '/ElJasus.jpg',
+            icon:    '/ElJasus.png',
+            badge:   '/ElJasus.png',
             tag:     data.tag || 'eljasus',
             data:    { url: data.url || '/' },
             actions: data.actions || []

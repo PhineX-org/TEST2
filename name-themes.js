@@ -459,6 +459,14 @@
       bgColor: 'rgba(47, 79, 79, 0.25)',
       border: '1px solid rgba(47, 79, 79, 0.5)',
       price: 320
+    },
+    gameowner: {
+      name: 'GAME OWNER',
+      icon: '👑',
+      color: '#ffe100',
+      bgColor: 'rgba(255, 0, 0, 0.15)',
+      border: '1px solid rgba(255, 196, 0, 0.4)',
+      price: null // Special tag, not purchasable
     }
   };
 

@@ -2,2271 +2,1493 @@
 <html lang="ar" dir="rtl">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>لوحة الإدارة | El Jasus</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
-    <link rel="icon" type="image/png" href="ElJasus.jpg">
+    <link rel="icon" type="image/png" href="ElJasus.png">
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700;900&display=swap" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <script src="dialogs.js"></script>
     <style>
-        :root{--primary:#00f2ff;--secondary:#7c30ff;--bg:#0a0e1a;}
-        *{box-sizing:border-box;}
-        body{font-family:'Cairo',sans-serif;background:var(--bg);color:#fff;min-height:100vh;display:flex;overflow:auto;}
-        
-        /* Sidebar */
-        #admin-sidebar{width:220px;flex-shrink:0;background:linear-gradient(180deg,rgba(15,20,35,.98),rgba(10,14,26,.98));
-            border-left:2px solid rgba(0,242,255,.15);display:flex;flex-direction:column;padding:20px 0;overflow-y:auto;}
-        .admin-logo{padding:0 20px 24px;border-bottom:1px solid rgba(255,255,255,.07);}
-        .admin-logo h1{font-family:'Orbitron',sans-serif;font-size:14px;font-weight:900;color:#00f2ff;letter-spacing:2px;}
-        .admin-logo p{font-size:10px;color:#444;margin-top:2px;}
-        .nav-section{padding:16px 20px 4px;font-size:9px;font-weight:900;text-transform:uppercase;letter-spacing:3px;color:#333;}
-        .nav-item{display:flex;align-items:center;gap:10px;padding:10px 20px;font-size:12px;font-weight:700;
-            color:#888;cursor:pointer;transition:all .2s;border-right:3px solid transparent;}
-        .nav-item:hover{color:#ccc;background:rgba(255,255,255,.04);}
-        .nav-item.active{color:#00f2ff;background:rgba(0,242,255,.08);border-right-color:#00f2ff;}
-        .nav-item i{width:18px;text-align:center;font-size:14px;}
-        
-        /* Main content */
-        #admin-main{flex:1;overflow-y:auto;padding:24px;}
-        
-        /* Cards */
-        .glass{background:linear-gradient(135deg,rgba(15,20,35,.9),rgba(25,30,50,.8));
-            border:2px solid rgba(0,242,255,.15);border-radius:16px;box-shadow:0 4px 20px rgba(0,0,0,.4);}
-        .kpi-card{padding:20px;transition:all .3s;}
-        .kpi-card:hover{border-color:rgba(0,242,255,.4);transform:translateY(-2px);}
-        .kpi-num{font-family:'Orbitron',sans-serif;font-size:2rem;font-weight:900;}
-        
-        /* Tables */
-        table{width:100%;border-collapse:collapse;}
-        thead tr{border-bottom:2px solid rgba(0,242,255,.15);}
-        th{padding:10px 12px;text-align:right;font-size:11px;font-weight:900;text-transform:uppercase;
-            letter-spacing:1px;color:#666;}
-        tbody tr{border-bottom:1px solid rgba(255,255,255,.04);transition:background .2s;}
-        tbody tr:hover{background:rgba(255,255,255,.03);}
-        td{padding:10px 12px;font-size:13px;}
-        
-        /* Badges */
-        .badge{padding:3px 10px;border-radius:20px;font-size:10px;font-weight:900;}
-        .badge-pending{background:rgba(251,191,36,.15);color:#fbbf24;border:1px solid rgba(251,191,36,.3);}
-        .badge-resolved{background:rgba(34,197,94,.15);color:#22c55e;border:1px solid rgba(34,197,94,.3);}
-        .badge-warned{background:rgba(249,115,22,.15);color:#f97316;border:1px solid rgba(249,115,22,.3);}
-        .badge-banned{background:rgba(239,68,68,.15);color:#ef4444;border:1px solid rgba(239,68,68,.3);}
-        .badge-active{background:rgba(0,242,255,.15);color:#00f2ff;border:1px solid rgba(0,242,255,.3);}
-        
-        /* Input */
-        .admin-input{background:rgba(255,255,255,.05);border:2px solid rgba(0,242,255,.2);
-            border-radius:10px;padding:10px 14px;color:#fff;font-family:'Cairo',sans-serif;
-            font-size:13px;outline:none;transition:border .2s;width:100%;}
-        .admin-input:focus{border-color:rgba(0,242,255,.5);}
-        textarea.admin-input{resize:vertical;min-height:80px;}
-        
-        /* Buttons */
-        .btn-primary{padding:10px 20px;border-radius:10px;font-weight:900;font-size:12px;cursor:pointer;
-            border:none;background:linear-gradient(135deg,#00f2ff,#7c30ff);color:white;transition:all .2s;}
-        .btn-primary:hover{opacity:.9;transform:scale(1.02);}
-        .btn-primary:disabled{opacity:.5;cursor:not-allowed;transform:none;}
-        .btn-danger{padding:8px 16px;border-radius:8px;font-weight:900;font-size:11px;cursor:pointer;
-            border:2px solid rgba(239,68,68,.4);background:rgba(239,68,68,.15);color:#ef4444;transition:all .2s;}
-        .btn-danger:hover{background:rgba(239,68,68,.3);}
-        .btn-success{padding:8px 16px;border-radius:8px;font-weight:900;font-size:11px;cursor:pointer;
-            border:2px solid rgba(34,197,94,.4);background:rgba(34,197,94,.15);color:#22c55e;transition:all .2s;}
-        .btn-sm{padding:6px 12px;border-radius:8px;font-weight:900;font-size:11px;cursor:pointer;
-            border:2px solid rgba(255,255,255,.1);background:rgba(255,255,255,.06);color:#ccc;transition:all .2s;}
-        .btn-sm:hover{background:rgba(255,255,255,.1);}
-        .btn-sm.active-filter{background:rgba(0,242,255,.15);border-color:rgba(0,242,255,.3);color:#00f2ff;}
-        
-        /* Sections */
-        .section{display:none;}
-        .section.active{display:block;}
-        canvas{max-height:220px;}
-        
-        /* Word category tag */
-        .word-tag{display:inline-flex;align-items:center;gap:6px;padding:4px 12px;
-            border-radius:20px;background:rgba(0,242,255,.1);border:1px solid rgba(0,242,255,.25);
-            font-size:12px;font-weight:700;margin:3px;}
-        .word-tag button{background:none;border:none;color:#ef4444;cursor:pointer;font-size:12px;padding:0;}
-        
-        /* Announcement priority */
-        .ann-info{border-left:4px solid #3b82f6;}
-        .ann-warning{border-left:4px solid #f59e0b;}
-        .ann-critical{border-left:4px solid #ef4444;}
-        
-        /* Scrollbars */
-        ::-webkit-scrollbar{width:4px;}
-        ::-webkit-scrollbar-track{background:transparent;}
-        ::-webkit-scrollbar-thumb{background:rgba(0,242,255,.2);border-radius:2px;}
-
-        /* Diagnostics */
-        .test-item {
-            display: flex; align-items: flex-start; gap: 12px;
-            padding: 11px 14px; border-radius: 10px;
-            margin-bottom: 6px; font-size: 12px;
-            border: 1px solid transparent;
-            animation: testFadeIn .25s ease;
-            transition: all .2s;
+        /* ═══════════════════════════════════════════════════
+           CLASSIC ADMIN DASHBOARD — design system
+           Restrained: one accent (cyan), dark neutral surfaces,
+           real data tables, no heavy neon/glow. Mobile-first:
+           the sidebar is a real off-canvas drawer below 1024px,
+           a fixed column above it.
+           ═══════════════════════════════════════════════════ */
+        :root {
+            --bg: #0b0e14;
+            --surface: #11151f;
+            --surface-2: #161b28;
+            --border: rgba(255,255,255,.08);
+            --border-accent: rgba(0,242,255,.25);
+            --accent: #00e5ff;
+            --text: #e8eaf0;
+            --text-dim: #8891a3;
+            --text-faint: #545d70;
+            --danger: #ef4444;
+            --warn: #f59e0b;
+            --ok: #22c55e;
+            --sidebar-w: 240px;
         }
-        .test-item:hover { filter: brightness(1.08); }
-        @keyframes testFadeIn {
-            from { opacity:0; transform: translateX(8px); }
-            to   { opacity:1; transform: translateX(0); }
-        }
-        .test-major  { background:rgba(239,68,68,.1);  border-color:rgba(239,68,68,.3);  color:#fca5a5; }
-        .test-error  { background:rgba(249,115,22,.1); border-color:rgba(249,115,22,.3); color:#fdba74; }
-        .test-warning{ background:rgba(251,191,36,.08); border-color:rgba(251,191,36,.25); color:#fde68a; }
-        .test-pass   { background:rgba(34,197,94,.07); border-color:rgba(34,197,94,.2);  color:#86efac; }
-        .test-info   { background:rgba(0,242,255,.07); border-color:rgba(0,242,255,.2);  color:#a5f3fc; }
-        .test-running{ background:rgba(255,255,255,.04); border-color:rgba(255,255,255,.1); color:#888; }
-        .test-icon   { width:20px; text-align:center; flex-shrink:0; margin-top:1px; font-size:14px; }
-        .test-name   { font-weight:900; margin-bottom:2px; }
-        .test-detail { font-size:11px; opacity:.7; line-height:1.5; }
-
-        .severity-counter {
-            display: flex; align-items: center; gap: 6px;
-            padding: 8px 14px; border-radius: 10px;
-            font-size:12px; font-weight:900;
-        }
-        .sev-major  { background:rgba(239,68,68,.12); color:#ef4444; border:1px solid rgba(239,68,68,.3); }
-        .sev-error  { background:rgba(249,115,22,.12); color:#f97316; border:1px solid rgba(249,115,22,.3); }
-        .sev-warning{ background:rgba(251,191,36,.1);  color:#fbbf24; border:1px solid rgba(251,191,36,.3); }
-        .sev-pass   { background:rgba(34,197,94,.1);   color:#22c55e; border:1px solid rgba(34,197,94,.3); }
-
-        .test-progress-bar {
-            height: 4px; border-radius: 2px;
-            background: linear-gradient(90deg, #00f2ff, #7c30ff);
-            transition: width .3s ease;
-        }
-        .pulse-dot {
-            width:8px; height:8px; border-radius:50%;
-            animation: pulseDot 1s ease-in-out infinite;
-        }
-        @keyframes pulseDot {
-            0%,100% { transform: scale(1); opacity:1; }
-            50% { transform: scale(1.4); opacity:.5; }
-        }
-
-        /* Firebase Viewer Styles */
-        .firebase-tree {
-            font-family: 'Courier New', monospace;
-            font-size: 12px;
-            line-height: 1.8;
-        }
-        .firebase-node {
-            padding: 4px 0;
-            position: relative;
-        }
-        .firebase-node-header {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            padding: 6px 10px;
-            border-radius: 6px;
-            cursor: pointer;
-            transition: all .2s;
-            position: relative;
-        }
-        .firebase-node-header:hover {
-            background: rgba(0, 242, 255, .08);
-        }
-        .firebase-node-header.selected {
-            background: rgba(0, 242, 255, .15);
-            border-left: 3px solid #00f2ff;
-        }
-        .firebase-toggle {
-            width: 16px;
-            height: 16px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 10px;
-            color: #888;
-            cursor: pointer;
-            transition: transform .2s;
-        }
-        .firebase-toggle.expanded {
-            transform: rotate(90deg);
-        }
-        .firebase-key {
-            font-weight: 700;
-            color: #00f2ff;
-        }
-        .firebase-type {
-            font-size: 10px;
-            color: #888;
-            font-weight: 400;
-        }
-        .firebase-value {
-            color: #fbbf24;
-            font-size: 11px;
-            margin-left: 8px;
-        }
-        .firebase-value.string {
-            color: #22c55e;
-        }
-        .firebase-value.number {
-            color: #a855f7;
-        }
-        .firebase-value.boolean {
-            color: #ef4444;
-        }
-        .firebase-value.null {
-            color: #666;
-            font-style: italic;
-        }
-        .firebase-children {
-            margin-left: 24px;
-            border-left: 1px solid rgba(255, 255, 255, .07);
-            padding-left: 8px;
-            display: none;
-        }
-        .firebase-children.expanded {
-            display: block;
-        }
-        .firebase-path {
-            font-family: 'Courier New', monospace;
-            font-size: 11px;
-            color: #555;
-            background: rgba(0, 0, 0, .3);
-            padding: 4px 10px;
-            border-radius: 6px;
-            display: inline-block;
-            margin-bottom: 4px;
-        }
-        .firebase-count {
-            font-size: 10px;
-            color: #666;
-            background: rgba(255, 255, 255, .04);
-            padding: 2px 8px;
-            border-radius: 10px;
-        }
-        .firebase-actions {
-            margin-left: auto;
-            display: none;
-            gap: 4px;
-        }
-        .firebase-node-header:hover .firebase-actions {
-            display: flex;
-        }
-        .firebase-action-btn {
-            padding: 4px 8px;
-            border-radius: 4px;
-            border: 1px solid rgba(255, 255, 255, .1);
-            background: rgba(255, 255, 255, .05);
-            color: #aaa;
-            cursor: pointer;
-            font-size: 10px;
-            transition: all .2s;
-        }
-        .firebase-action-btn:hover {
-            background: rgba(0, 242, 255, .15);
-            border-color: rgba(0, 242, 255, .3);
-            color: #00f2ff;
-        }
-        .firebase-action-btn.danger:hover {
-            background: rgba(239, 68, 68, .15);
-            border-color: rgba(239, 68, 68, .3);
-            color: #ef4444;
-        }
-        .firebase-search {
-            position: sticky;
-            top: 0;
-            z-index: 10;
+        * { box-sizing: border-box; }
+        html, body { height: 100%; }
+        body {
+            font-family: 'Cairo', sans-serif;
             background: var(--bg);
-            padding: 12px 0;
-            margin-bottom: 12px;
-            border-bottom: 1px solid rgba(255, 255, 255, .07);
+            color: var(--text);
+            min-height: 100vh;
+            overflow-x: hidden;
         }
-        .firebase-breadcrumb {
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            font-size: 11px;
-            color: #666;
-            margin-bottom: 12px;
-            flex-wrap: wrap;
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: rgba(255,255,255,.12); border-radius: 8px; }
+
+        #app-shell { display: flex; min-height: 100vh; }
+
+        /* ── Sidebar ── */
+        #admin-sidebar {
+            width: var(--sidebar-w); flex-shrink: 0;
+            background: var(--surface);
+            border-left: 1px solid var(--border);
+            display: flex; flex-direction: column;
+            position: fixed; top: 0; right: 0; bottom: 0;
+            z-index: 900;
+            transition: transform .25s ease;
         }
-        .firebase-breadcrumb-item {
-            cursor: pointer;
-            transition: color .2s;
+        .admin-logo { padding: 18px 20px; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 10px; }
+        .admin-logo img { width: 30px; height: 30px; border-radius: 8px; }
+        .admin-logo h1 { font-family: 'Orbitron', sans-serif; font-size: 13px; font-weight: 900; color: var(--accent); letter-spacing: 1.5px; }
+        .admin-logo p { font-size: 9px; color: var(--text-faint); }
+        #nav-scroll { flex: 1; overflow-y: auto; padding: 10px 0; }
+        .nav-section { padding: 16px 20px 6px; font-size: 9px; font-weight: 900; text-transform: uppercase; letter-spacing: 2px; color: var(--text-faint); }
+        .nav-item {
+            display: flex; align-items: center; gap: 10px; padding: 10px 20px;
+            font-size: 13px; font-weight: 700; color: var(--text-dim); cursor: pointer;
+            transition: all .15s; border-right: 3px solid transparent; position: relative;
         }
-        .firebase-breadcrumb-item:hover {
-            color: #00f2ff;
+        .nav-item:hover { color: var(--text); background: rgba(255,255,255,.03); }
+        .nav-item.active { color: var(--accent); background: rgba(0,229,255,.06); border-right-color: var(--accent); }
+        .nav-item i { width: 16px; text-align: center; font-size: 13px; }
+        .nav-item .nav-count {
+            margin-right: auto; font-size: 10px; font-weight: 900; padding: 1px 7px; border-radius: 20px;
+            background: rgba(255,255,255,.08); color: var(--text-dim);
         }
-        .firebase-breadcrumb-separator {
-            color: #444;
+        .nav-item.active .nav-count { background: rgba(0,229,255,.18); color: var(--accent); }
+        #sidebar-foot { padding: 14px 20px; border-top: 1px solid var(--border); font-size: 10px; color: var(--text-faint); }
+
+        /* ── Topbar + main ── */
+        #admin-main { flex: 1; margin-right: var(--sidebar-w); min-width: 0; }
+        #admin-topbar {
+            position: sticky; top: 0; z-index: 500;
+            background: rgba(11,14,20,.92); backdrop-filter: blur(12px);
+            border-bottom: 1px solid var(--border);
+            padding: 14px 24px; display: flex; align-items: center; gap: 14px;
         }
-        .firebase-loading {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 40px;
-            color: #555;
-            font-size: 13px;
+        #hamburger-btn { display: none; width: 36px; height: 36px; border-radius: 9px; background: rgba(255,255,255,.05); border: 1px solid var(--border); color: var(--text); align-items: center; justify-content: center; cursor: pointer; }
+        #page-title { font-size: 16px; font-weight: 900; }
+        #page-sub { font-size: 11px; color: var(--text-dim); }
+        .topbar-btn {
+            width: 38px; height: 38px; border-radius: 10px; background: rgba(255,255,255,.05);
+            border: 1px solid var(--border); color: var(--text-dim); display: flex; align-items: center;
+            justify-content: center; cursor: pointer; transition: all .15s; position: relative; font-size: 14px;
         }
-        .firebase-empty {
-            text-align: center;
-            padding: 40px;
-            color: #555;
-            font-size: 13px;
+        .topbar-btn:hover { color: var(--accent); border-color: var(--border-accent); }
+        .topbar-btn .dot { position:absolute; top:-3px; left:-3px; width:9px; height:9px; border-radius:50%; background: var(--danger); display:none; }
+        #content-area { padding: 22px 24px 60px; max-width: 1400px; }
+        .admin-section { display: none; }
+        .admin-section.active { display: block; }
+
+        #sidebar-backdrop {
+            position: fixed; inset: 0; z-index: 850; background: rgba(0,0,0,.6);
+            backdrop-filter: blur(3px); display: none;
         }
-        .firebase-details-panel {
-            background: rgba(255, 255, 255, .02);
-            border: 1px solid rgba(255, 255, 255, .07);
-            border-radius: 12px;
-            padding: 16px;
-            margin-top: 12px;
+        #sidebar-backdrop.show { display: block; }
+
+        @media (max-width: 1023px) {
+            #admin-sidebar { transform: translateX(100%); }
+            #admin-sidebar.open { transform: translateX(0); }
+            #admin-main { margin-right: 0; }
+            #hamburger-btn { display: flex; }
+            #content-area { padding: 16px 14px 50px; }
         }
-        .firebase-json {
-            background: rgba(0, 0, 0, .4);
-            border: 1px solid rgba(255, 255, 255, .07);
-            border-radius: 8px;
-            padding: 12px;
-            font-family: 'Courier New', monospace;
-            font-size: 11px;
-            color: #aaa;
-            max-height: 300px;
-            overflow-y: auto;
-            white-space: pre-wrap;
-            direction: ltr;
-            text-align: left;
+
+        /* ── Cards / KPIs ── */
+        .card { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; }
+        .kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 14px; }
+        .kpi-card { padding: 18px; }
+        .kpi-card .kpi-icon { width: 34px; height: 34px; border-radius: 9px; display: flex; align-items: center; justify-content: center; margin-bottom: 10px; background: rgba(0,229,255,.1); color: var(--accent); font-size: 14px; }
+        .kpi-num { font-family: 'Orbitron', sans-serif; font-size: 1.6rem; font-weight: 900; }
+        .kpi-label { font-size: 11px; color: var(--text-dim); font-weight: 700; margin-top: 2px; }
+
+        /* ── Tables ── */
+        .table-wrap { overflow-x: auto; }
+        table { width: 100%; border-collapse: collapse; min-width: 560px; }
+        thead tr { border-bottom: 1px solid var(--border); }
+        th { padding: 10px 12px; text-align: right; font-size: 10px; font-weight: 900; text-transform: uppercase; letter-spacing: .5px; color: var(--text-faint); white-space: nowrap; }
+        tbody tr { border-bottom: 1px solid var(--border); transition: background .15s; }
+        tbody tr:hover { background: rgba(255,255,255,.02); }
+        td { padding: 10px 12px; font-size: 12.5px; }
+
+        /* ── Badges ── */
+        .badge { padding: 3px 10px; border-radius: 20px; font-size: 10px; font-weight: 900; white-space: nowrap; }
+        .badge-pending { background: rgba(245,158,11,.12); color: var(--warn); border: 1px solid rgba(245,158,11,.3); }
+        .badge-resolved { background: rgba(34,197,94,.12); color: var(--ok); border: 1px solid rgba(34,197,94,.3); }
+        .badge-warned { background: rgba(249,115,22,.12); color: #f97316; border: 1px solid rgba(249,115,22,.3); }
+        .badge-banned { background: rgba(239,68,68,.12); color: var(--danger); border: 1px solid rgba(239,68,68,.3); }
+        .badge-active { background: rgba(0,229,255,.12); color: var(--accent); border: 1px solid rgba(0,229,255,.3); }
+        .badge-critical { background: rgba(239,68,68,.14); color: var(--danger); border: 1px solid rgba(239,68,68,.35); }
+        .badge-warn { background: rgba(245,158,11,.14); color: var(--warn); border: 1px solid rgba(245,158,11,.35); }
+        .badge-ok { background: rgba(34,197,94,.14); color: var(--ok); border: 1px solid rgba(34,197,94,.35); }
+        .badge-info { background: rgba(148,163,184,.14); color: #94a3b8; border: 1px solid rgba(148,163,184,.3); }
+
+        /* ── Buttons ── */
+        .btn { padding: 9px 16px; border-radius: 10px; font-size: 12px; font-weight: 800; cursor: pointer; border: 1px solid transparent; transition: all .15s; display: inline-flex; align-items: center; gap: 6px; }
+        .btn-primary { background: var(--accent); color: #05161a; }
+        .btn-primary:hover { filter: brightness(1.1); }
+        .btn-ghost { background: rgba(255,255,255,.05); border-color: var(--border); color: var(--text); }
+        .btn-ghost:hover { border-color: var(--border-accent); color: var(--accent); }
+        .btn-danger { background: rgba(239,68,68,.12); border-color: rgba(239,68,68,.35); color: var(--danger); }
+        .btn-danger:hover { background: rgba(239,68,68,.22); }
+        .btn-success { background: rgba(34,197,94,.12); border-color: rgba(34,197,94,.35); color: var(--ok); }
+        .btn-success:hover { background: rgba(34,197,94,.22); }
+        .btn-sm { padding: 6px 12px; font-size: 11px; }
+        .btn:disabled { opacity: .5; cursor: not-allowed; }
+
+        /* ── Inputs ── */
+        .admin-input, .admin-select, textarea.admin-input {
+            background: rgba(255,255,255,.04); border: 1px solid var(--border); border-radius: 10px;
+            padding: 10px 13px; color: var(--text); font-family: 'Cairo', sans-serif; font-size: 13px; width: 100%;
         }
-        
-        /* Error state */
-        .error-state {
-            background: rgba(239, 68, 68, .1);
-            border: 2px solid rgba(239, 68, 68, .3);
-            border-radius: 12px;
-            padding: 20px;
-            text-align: center;
-            color: #ef4444;
+        .admin-input:focus, .admin-select:focus, textarea.admin-input:focus { outline: none; border-color: var(--border-accent); }
+        label.field-label { font-size: 11px; font-weight: 800; color: var(--text-dim); margin-bottom: 6px; display: block; }
+
+        .section-head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 18px; }
+        .section-head h2 { font-size: 18px; font-weight: 900; }
+        .section-head p { font-size: 12px; color: var(--text-dim); }
+
+        /* ── AI assistant slide-over ── */
+        #ai-panel {
+            position: fixed; top: 0; left: 0; bottom: 0; width: min(420px, 100vw);
+            background: var(--surface); border-left: 1px solid var(--border);
+            z-index: 1200; transform: translateX(-100%); transition: transform .25s ease;
+            display: flex; flex-direction: column;
         }
-        .error-state i {
-            font-size: 48px;
-            margin-bottom: 12px;
-            display: block;
-        }
+        #ai-panel.open { transform: translateX(0); }
+        #ai-backdrop { position: fixed; inset: 0; z-index: 1150; background: rgba(0,0,0,.55); display: none; }
+        #ai-backdrop.show { display: block; }
+        #ai-head { padding: 16px 18px; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 10px; }
+        #ai-messages { flex: 1; overflow-y: auto; padding: 16px 16px 8px; display: flex; flex-direction: column; gap: 12px; }
+        .ai-msg { max-width: 90%; padding: 10px 13px; border-radius: 12px; font-size: 13px; line-height: 1.6; white-space: pre-wrap; }
+        .ai-msg.user { align-self: flex-start; background: rgba(0,229,255,.1); border: 1px solid rgba(0,229,255,.25); }
+        .ai-msg.bot { align-self: flex-end; background: rgba(255,255,255,.04); border: 1px solid var(--border); }
+        .ai-msg.error { align-self: center; background: rgba(239,68,68,.1); border: 1px solid rgba(239,68,68,.3); color: var(--danger); font-size: 11.5px; }
+        .ai-action-card { align-self: flex-end; max-width: 92%; background: rgba(245,158,11,.08); border: 1px solid rgba(245,158,11,.35); border-radius: 12px; padding: 12px; }
+        .ai-action-card pre { font-size: 10.5px; background: rgba(0,0,0,.35); padding: 8px; border-radius: 8px; overflow-x: auto; margin: 8px 0; direction: ltr; text-align: left; }
+        #ai-input-row { padding: 12px 14px; border-top: 1px solid var(--border); display: flex; gap: 8px; }
+        #ai-input-row textarea { resize: none; height: 44px; }
+
+        .diag-item { padding: 12px 14px; border-radius: 12px; border: 1px solid var(--border); background: rgba(255,255,255,.02); margin-bottom: 8px; }
+        .diag-item.sev-critical { border-color: rgba(239,68,68,.35); background: rgba(239,68,68,.05); }
+        .diag-item.sev-warn { border-color: rgba(245,158,11,.3); background: rgba(245,158,11,.04); }
+        .diag-item.sev-ok { border-color: rgba(34,197,94,.25); }
+
+        .db-tree-node { font-family: 'Consolas', monospace; font-size: 12px; }
+        .db-tree-key { color: var(--accent); cursor: pointer; }
+        .db-tree-val { color: #d1d5db; }
     </style>
 </head>
 <body>
 
-<!-- SIDEBAR -->
-<nav id="admin-sidebar">
-    <div class="admin-logo">
-        <h1>EL JASUS</h1>
-        <p>ADMIN PANEL</p>
-    </div>
+    <div id="app-shell">
+        <div id="sidebar-backdrop" onclick="closeSidebar()"></div>
 
-    <div class="nav-section">لوحة التحكم</div>
-    <div class="nav-item active" onclick="showSection('overview')"><i class="fas fa-tachometer-alt"></i> نظرة عامة</div>
-    <div class="nav-item" onclick="showSection('analytics')"><i class="fas fa-chart-line"></i> التحليلات</div>
-
-    <div class="nav-section">الإشراف</div>
-    <div class="nav-item" onclick="showSection('reports')"><i class="fas fa-flag"></i> البلاغات <span id="report-badge" style="margin-right:auto;background:#ef4444;color:white;font-size:9px;padding:2px 7px;border-radius:10px;display:none;">0</span></div>
-    <div class="nav-item" onclick="showSection('bans')"><i class="fas fa-ban"></i> الحظر</div>
-    <div class="nav-item" onclick="showSection('players')"><i class="fas fa-users"></i> اللاعبون</div>
-
-    <div class="nav-section">المحتوى</div>
-    <div class="nav-item" onclick="showSection('words')"><i class="fas fa-list"></i> قوائم الكلمات</div>
-    <div class="nav-item" onclick="showSection('announcements')"><i class="fas fa-bullhorn"></i> الإعلانات</div>
-
-    <div class="nav-section">الأمان</div>
-    <div class="nav-item" onclick="showSection('admin-access')"><i class="fas fa-user-shield"></i> صلاحيات الإدارة</div>
-
-    <div class="nav-section">أدوات</div>
-    <div class="nav-item" onclick="showSection('diagnostics')"><i class="fas fa-flask"></i> تشخيص النظام <span id="diag-badge" style="margin-right:auto;background:#f97316;color:white;font-size:9px;padding:2px 7px;border-radius:10px;display:none;">!</span></div>
-    <div class="nav-item" onclick="showSection('firebase-viewer')"><i class="fas fa-database"></i> قاعدة البيانات</div>
-
-    <div style="flex:1;"></div>
-    <div style="padding:16px 20px;border-top:1px solid rgba(255,255,255,.05);">
-        <a href="home.html" style="font-size:12px;color:#555;text-decoration:none;">← العودة للعبة</a>
-    </div>
-</nav>
-
-<!-- MAIN -->
-<main id="admin-main">
-
-    <!-- ── OVERVIEW ────────────────────────────── -->
-    <section id="section-overview" class="section active">
-        <div class="flex items-center justify-between mb-6">
-            <div>
-                <h2 style="font-family:'Orbitron',sans-serif;font-size:20px;font-weight:900;color:#00f2ff;">نظرة عامة</h2>
-                <p style="font-size:12px;color:#555;" id="overview-date"></p>
-            </div>
-            <button class="btn-primary" onclick="refreshAll()" id="refresh-btn"><i class="fas fa-sync-alt ml-2"></i>تحديث</button>
-        </div>
-
-        <!-- KPI Row -->
-        <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-            <div class="glass kpi-card"><p style="font-size:10px;color:#666;text-transform:uppercase;font-weight:900;letter-spacing:1px;margin-bottom:8px;">إجمالي اللاعبين</p><p id="kpi-players" class="kpi-num text-cyan-400">-</p></div>
-            <div class="glass kpi-card"><p style="font-size:10px;color:#666;text-transform:uppercase;font-weight:900;letter-spacing:1px;margin-bottom:8px;">غرف نشطة</p><p id="kpi-rooms" class="kpi-num text-green-400">-</p></div>
-            <div class="glass kpi-card"><p style="font-size:10px;color:#666;text-transform:uppercase;font-weight:900;letter-spacing:1px;margin-bottom:8px;">بلاغات معلقة</p><p id="kpi-reports" class="kpi-num text-red-400">-</p></div>
-            <div class="glass kpi-card"><p style="font-size:10px;color:#666;text-transform:uppercase;font-weight:900;letter-spacing:1px;margin-bottom:8px;">لاعبون محظورون</p><p id="kpi-bans" class="kpi-num text-orange-400">-</p></div>
-        </div>
-
-        <!-- Rank distribution + Recent activity -->
-        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <div class="glass" style="padding:20px;">
-                <h3 style="font-size:14px;font-weight:900;margin-bottom:16px;">توزيع الرتب</h3>
-                <canvas id="rank-dist-chart"></canvas>
-            </div>
-            <div class="glass" style="padding:20px;">
-                <h3 style="font-size:14px;font-weight:900;margin-bottom:16px;">أحدث اللاعبين</h3>
-                <div id="recent-players-list" style="font-size:12px;"></div>
-            </div>
-        </div>
-    </section>
-
-    <!-- ── ANALYTICS ──────────────────────────── -->
-    <section id="section-analytics" class="section">
-        <h2 style="font-family:'Orbitron',sans-serif;font-size:20px;font-weight:900;color:#00f2ff;margin-bottom:24px;">التحليلات</h2>
-        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-            <div class="glass" style="padding:20px;">
-                <h3 style="font-size:14px;font-weight:900;margin-bottom:16px;">توزيع المباريات حسب الفئة</h3>
-                <canvas id="category-chart"></canvas>
-            </div>
-            <div class="glass" style="padding:20px;">
-                <h3 style="font-size:14px;font-weight:900;margin-bottom:16px;">أكثر الكلمات استخداماً</h3>
-                <div id="top-words-list"></div>
-            </div>
-        </div>
-        <div class="glass" style="padding:20px;">
-            <h3 style="font-size:14px;font-weight:900;margin-bottom:16px;">أفضل اللاعبين — جميع الأوقات</h3>
-            <table><thead><tr><th>#</th><th>اللاعب</th><th>الرتبة</th><th>النقاط</th><th>المباريات</th><th>نسبة الفوز</th></tr></thead>
-            <tbody id="top-players-table"></tbody></table>
-        </div>
-    </section>
-
-    <!-- ── REPORTS ────────────────────────────── -->
-    <section id="section-reports" class="section">
-        <h2 style="font-family:'Orbitron',sans-serif;font-size:20px;font-weight:900;color:#ef4444;margin-bottom:24px;">البلاغات</h2>
-        
-        <div class="flex gap-3 mb-4 flex-wrap">
-            <button class="btn-sm active-filter" onclick="filterReports('all',this)">الكل</button>
-            <button class="btn-sm" onclick="filterReports('pending',this)">معلقة</button>
-            <button class="btn-sm" onclick="filterReports('resolved',this)">محلولة</button>
-            <button class="btn-sm" onclick="filterReports('warned',this)">تم التحذير</button>
-            <button class="btn-sm" onclick="filterReports('banned',this)">تم الحظر</button>
-            <div style="margin-right:auto;display:flex;align-items:center;gap:8px;">
-                <input id="report-search" class="admin-input" type="text" placeholder="🔍 ابحث..."
-                    style="max-width:200px;" oninput="searchReports(this.value)">
-            </div>
-        </div>
-
-        <div class="glass" style="padding:20px;">
-            <table>
-                <thead>
-                    <tr>
-                        <th>المُبلَّغ عنه</th>
-                        <th>السبب</th>
-                        <th>مخالفة القواعد</th>
-                        <th>من</th>
-                        <th>الغرفة</th>
-                        <th>التاريخ</th>
-                        <th>الحالة</th>
-                        <th>إجراء</th>
-                    </tr>
-                </thead>
-                <tbody id="reports-table">
-                    <tr><td colspan="8" style="text-align:center;padding:30px;color:#555;">جاري التحميل...</td></tr>
-                </tbody>
-            </table>
-        </div>
-
-        <!-- Report Detail Modal -->
-        <div id="report-detail-modal" style="display:none;position:fixed;inset:0;z-index:9990;
-            background:rgba(0,0,0,.85);backdrop-filter:blur(12px);
-            align-items:center;justify-content:center;padding:20px;">
-            <div class="glass" style="max-width:600px;width:100%;border-radius:20px;padding:28px;
-                max-height:90vh;overflow-y:auto;position:relative;">
-                <button onclick="closeReportDetail()"
-                    style="position:absolute;top:16px;left:16px;background:none;border:none;
-                    color:#555;cursor:pointer;font-size:20px;padding:4px 8px;border-radius:6px;">✕</button>
-                <div id="report-detail-content"></div>
-            </div>
-        </div>
-    </section>
-
-    <!-- ── BANS ───────────────────────────────── -->
-    <section id="section-bans" class="section">
-        <h2 style="font-family:'Orbitron',sans-serif;font-size:20px;font-weight:900;color:#f97316;margin-bottom:24px;">إدارة الحظر</h2>
-
-        <!-- Ban form -->
-        <div class="glass" style="padding:20px;margin-bottom:20px;">
-            <h3 style="font-size:14px;font-weight:900;margin-bottom:16px;color:#f97316;">حظر لاعب جديد</h3>
-            <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-4">
+        <aside id="admin-sidebar">
+            <div class="admin-logo">
+                <img src="ElJasus.png" alt="">
                 <div>
-                    <label style="font-size:11px;color:#666;font-weight:700;display:block;margin-bottom:6px;">اسم المستخدم</label>
-                    <input id="ban-username" class="admin-input" type="text" placeholder="أدخل اسم المستخدم">
-                </div>
-                <div>
-                    <label style="font-size:11px;color:#666;font-weight:700;display:block;margin-bottom:6px;">مدة الحظر</label>
-                    <select id="ban-duration" class="admin-input">
-                        <option value="86400000">24 ساعة</option>
-                        <option value="604800000">أسبوع</option>
-                        <option value="2592000000">شهر</option>
-                        <option value="-1">دائم</option>
-                    </select>
-                </div>
-                <div>
-                    <label style="font-size:11px;color:#666;font-weight:700;display:block;margin-bottom:6px;">السبب</label>
-                    <input id="ban-reason" class="admin-input" type="text" placeholder="سبب الحظر">
+                    <h1>EL JASUS</h1>
+                    <p>لوحة الإدارة</p>
                 </div>
             </div>
-            <button class="btn-danger" onclick="banPlayer()">
-                <i class="fas fa-ban ml-2"></i>تطبيق الحظر
-            </button>
-        </div>
+            <nav id="nav-scroll">
+                <div class="nav-section">عام</div>
+                <div class="nav-item active" data-sec="overview" onclick="showSection('overview')"><i class="fas fa-chart-line"></i><span>نظرة عامة</span></div>
+                <div class="nav-item" data-sec="rooms" onclick="showSection('rooms')"><i class="fas fa-door-open"></i><span>الغرف</span><span class="nav-count" id="nc-rooms">0</span></div>
+                <div class="nav-item" data-sec="players" onclick="showSection('players')"><i class="fas fa-users"></i><span>اللاعبون</span></div>
 
-        <!-- Active bans -->
-        <div class="glass" style="padding:20px;">
-            <h3 style="font-size:14px;font-weight:900;margin-bottom:16px;">الحظورات النشطة</h3>
-            <table><thead><tr><th>اللاعب</th><th>السبب</th><th>ينتهي</th><th>حُظر بواسطة</th><th>إجراء</th></tr></thead>
-            <tbody id="bans-table"><tr><td colspan="5" style="text-align:center;padding:30px;color:#555;">جاري التحميل...</td></tr></tbody></table>
-        </div>
-    </section>
+                <div class="nav-section">الإشراف</div>
+                <div class="nav-item" data-sec="reports" onclick="showSection('reports')"><i class="fas fa-flag"></i><span>البلاغات</span><span class="nav-count" id="nc-reports">0</span></div>
+                <div class="nav-item" data-sec="bans" onclick="showSection('bans')"><i class="fas fa-ban"></i><span>الحظر</span></div>
+                <div class="nav-item" data-sec="announcements" onclick="showSection('announcements')"><i class="fas fa-bullhorn"></i><span>الإعلانات</span></div>
 
-    <!-- ── PLAYERS ────────────────────────────── -->
-    <section id="section-players" class="section">
-        <h2 style="font-family:'Orbitron',sans-serif;font-size:20px;font-weight:900;color:#00f2ff;margin-bottom:24px;">اللاعبون</h2>
+                <div class="nav-section">المحتوى</div>
+                <div class="nav-item" data-sec="words" onclick="showSection('words')"><i class="fas fa-font"></i><span>الكلمات والفئات</span></div>
 
-        <!-- ── REPAIR TOOL ─────────────────────── -->
-        <div class="glass" style="padding:20px;margin-bottom:16px;border-color:rgba(251,191,36,.3);background:rgba(251,191,36,.04);">
-            <p style="font-size:14px;font-weight:900;color:#fbbf24;margin-bottom:16px;">
-                <i class="fas fa-tools ml-2"></i>أدوات إصلاح البيانات
-            </p>
+                <div class="nav-section">النظام</div>
+                <div class="nav-item" data-sec="database" onclick="showSection('database')"><i class="fas fa-database"></i><span>قاعدة البيانات</span></div>
+                <div class="nav-item" data-sec="diagnostics" onclick="showSection('diagnostics')"><i class="fas fa-stethoscope"></i><span>فحص النظام</span><span class="nav-count" id="nc-diag" style="display:none;"></span></div>
+                <div class="nav-item" data-sec="settings" onclick="showSection('settings')"><i class="fas fa-shield-halved"></i><span>الإعدادات والأمان</span></div>
+            </nav>
+            <div id="sidebar-foot">
+                <span id="admin-identity">—</span>
+            </div>
+        </aside>
 
-            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-
-                <!-- Auto repair -->
-                <div style="border:1px solid rgba(251,191,36,.2);border-radius:12px;padding:16px;">
-                    <p style="font-size:12px;font-weight:900;color:#fbbf24;margin-bottom:6px;">إصلاح تلقائي</p>
-                    <p style="font-size:11px;color:#888;margin-bottom:12px;line-height:1.6;">
-                        يُصلح الحقول المفقودة (uid, rank, coins...) ويضع اسماً مؤقتاً للسجلات بلا username.
-                        <strong style="color:#fbbf24;">البريد الإلكتروني لا يُسترد تلقائياً</strong> — استخدم الإصلاح اليدوي أدناه.
-                    </p>
-                    <button onclick="repairPlayerRecords()" class="btn-primary" style="background:linear-gradient(135deg,#f59e0b,#d97706);font-size:12px;">
-                        <i class="fas fa-wrench ml-2"></i>إصلاح تلقائي
-                    </button>
-                    <div id="repair-log" style="display:none;margin-top:12px;padding:10px;
-                        background:rgba(0,0,0,.3);border-radius:8px;font-size:11px;
-                        font-family:monospace;color:#aaa;max-height:120px;overflow-y:auto;direction:ltr;text-align:left;"></div>
+        <div id="admin-main">
+            <div id="admin-topbar">
+                <button id="hamburger-btn" onclick="openSidebar()"><i class="fas fa-bars"></i></button>
+                <div style="flex:1;min-width:0;">
+                    <div id="page-title">نظرة عامة</div>
+                    <div id="page-sub"></div>
                 </div>
+                <button class="topbar-btn" onclick="refreshAll()" title="تحديث"><i class="fas fa-rotate"></i></button>
+                <button class="topbar-btn" onclick="toggleAiPanel(true)" title="المساعد الذكي">
+                    <i class="fas fa-robot"></i>
+                </button>
+            </div>
+            <div id="content-area">
 
-                <!-- Manual patch -->
-                <div style="border:1px solid rgba(0,242,255,.2);border-radius:12px;padding:16px;">
-                    <p style="font-size:12px;font-weight:900;color:#00f2ff;margin-bottom:6px;">إصلاح يدوي — تعديل بيانات لاعب</p>
-                    <p style="font-size:11px;color:#888;margin-bottom:12px;line-height:1.6;">
-                        أدخل الـ UID من Firebase Console ثم البيانات الصحيحة لهذا المستخدم.
-                        يمكنك نسخ الـ UID من صفحة
-                        <strong style="color:#00f2ff;">Authentication → Users</strong> في Firebase.
-                    </p>
-
-                    <!-- UID picker: dropdown of broken players OR manual input -->
-                    <div style="margin-bottom:10px;">
-                        <label style="font-size:10px;color:#666;font-weight:700;display:block;margin-bottom:4px;">اختر لاعباً من القائمة أو أدخل UID يدوياً</label>
-                        <select id="patch-uid-select" class="admin-input" style="margin-bottom:6px;" onchange="onPatchSelectChange(this.value)">
-                            <option value="">— اختر لاعباً —</option>
-                        </select>
-                        <input id="patch-uid" class="admin-input" placeholder="UID (من Firebase Auth)" style="font-family:monospace;font-size:11px;">
+                <!-- ═══ OVERVIEW ═══ -->
+                <section class="admin-section active" id="sec-overview">
+                    <div class="section-head">
+                        <div><h2>نظرة عامة</h2><p id="overview-date"></p></div>
                     </div>
-
-                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px;">
-                        <div>
-                            <label style="font-size:10px;color:#666;font-weight:700;display:block;margin-bottom:4px;">اسم المستخدم</label>
-                            <input id="patch-username" class="admin-input" placeholder="username">
+                    <div class="kpi-grid" style="margin-bottom:20px;">
+                        <div class="card kpi-card"><div class="kpi-icon"><i class="fas fa-users"></i></div><div class="kpi-num" id="kpi-players">—</div><div class="kpi-label">إجمالي اللاعبين</div></div>
+                        <div class="card kpi-card"><div class="kpi-icon"><i class="fas fa-door-open"></i></div><div class="kpi-num" id="kpi-rooms">—</div><div class="kpi-label">غرف نشطة</div></div>
+                        <div class="card kpi-card"><div class="kpi-icon"><i class="fas fa-flag"></i></div><div class="kpi-num" id="kpi-reports">—</div><div class="kpi-label">بلاغات معلقة</div></div>
+                        <div class="card kpi-card"><div class="kpi-icon"><i class="fas fa-ban"></i></div><div class="kpi-num" id="kpi-bans">—</div><div class="kpi-label">حظورات نشطة</div></div>
+                        <div class="card kpi-card"><div class="kpi-icon"><i class="fas fa-circle-dot"></i></div><div class="kpi-num" id="kpi-online">—</div><div class="kpi-label">متصل الآن</div></div>
+                    </div>
+                    <div style="display:grid;grid-template-columns:1.3fr 1fr;gap:16px;" id="overview-grid">
+                        <div class="card" style="padding:18px;">
+                            <h3 style="font-size:13px;font-weight:900;margin-bottom:14px;color:var(--text-dim);">توزيع الرتب</h3>
+                            <canvas id="rankChart" height="160"></canvas>
                         </div>
-                        <div>
-                            <label style="font-size:10px;color:#666;font-weight:700;display:block;margin-bottom:4px;">الاسم الكامل</label>
-                            <input id="patch-fullname" class="admin-input" placeholder="الاسم الكامل">
+                        <div class="card" style="padding:18px;">
+                            <h3 style="font-size:13px;font-weight:900;margin-bottom:14px;color:var(--text-dim);">آخر اللاعبين</h3>
+                            <div id="recent-players-list" style="font-size:12px;"></div>
                         </div>
                     </div>
-                    <div style="margin-bottom:12px;">
-                        <label style="font-size:10px;color:#666;font-weight:700;display:block;margin-bottom:4px;">البريد الإلكتروني</label>
-                        <input id="patch-email" class="admin-input" placeholder="email@example.com" type="email">
+                </section>
+
+                <!-- Remaining sections are inserted here -->
+                <div id="sections-insert-point"></div>
+
+                <!-- ═══ ROOMS (NEW) ═══ -->
+                <section class="admin-section" id="sec-rooms">
+                    <div class="section-head">
+                        <div><h2>الغرف النشطة</h2><p>مراقبة وإدارة كل غرفة على المنصة مباشرة</p></div>
+                        <div style="display:flex;gap:8px;">
+                            <input class="admin-input" style="width:200px;" placeholder="بحث بالكود أو المضيف..." oninput="searchRooms(this.value)">
+                            <button class="btn btn-ghost" onclick="loadRooms()"><i class="fas fa-rotate"></i> تحديث</button>
+                        </div>
                     </div>
+                    <div class="card table-wrap">
+                        <table>
+                            <thead><tr>
+                                <th>الكود</th><th>المضيف</th><th>الحالة</th><th>الفئة</th>
+                                <th>اللاعبون</th><th>النوع</th><th>أُنشئت</th><th></th>
+                            </tr></thead>
+                            <tbody id="rooms-table"><tr><td colspan="8" style="text-align:center;padding:30px;color:var(--text-faint);">جاري التحميل...</td></tr></tbody>
+                        </table>
+                    </div>
+                </section>
 
-                    <button onclick="manualPatchPlayer()" class="btn-primary" style="font-size:12px;">
-                        <i class="fas fa-save ml-2"></i>حفظ البيانات
-                    </button>
-                    <div id="patch-result" style="display:none;margin-top:10px;font-size:11px;font-weight:700;padding:8px 12px;border-radius:8px;"></div>
-                </div>
-            </div>
-        </div>
-
-        <div class="flex gap-3 mb-4">
-            <input id="player-search" class="admin-input" type="text" placeholder="ابحث عن لاعب..." style="max-width:300px;" oninput="searchPlayers(this.value)">
-        </div>
-        <div class="glass" style="padding:20px;">
-            <table><thead><tr><th>اللاعب</th><th>الرتبة</th><th>النقاط</th><th>المباريات</th><th>العملات</th><th>آخر نشاط</th><th>إجراء</th></tr></thead>
-            <tbody id="players-table"><tr><td colspan="7" style="text-align:center;padding:30px;color:#555;">جاري التحميل...</td></tr></tbody></table>
-        </div>
-    </section>
-
-    <!-- ── WORDS ──────────────────────────────── -->
-    <section id="section-words" class="section">
-        <h2 style="font-family:'Orbitron',sans-serif;font-size:20px;font-weight:900;color:#a855f7;margin-bottom:24px;">قوائم الكلمات</h2>
-
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <!-- Category selector -->
-            <div class="glass" style="padding:20px;">
-                <h3 style="font-size:14px;font-weight:900;margin-bottom:16px;">الفئات</h3>
-                <div id="category-list" style="space-y:8px;"></div>
-                <hr style="border:none;border-top:1px solid rgba(255,255,255,.07);margin:16px 0;">
-                <div>
-                    <label style="font-size:11px;color:#666;font-weight:700;display:block;margin-bottom:6px;">فئة جديدة</label>
-                    <input id="new-category" class="admin-input" type="text" placeholder="اسم الفئة">
-                    <button class="btn-primary" style="margin-top:10px;width:100%;" onclick="addCategory()">إضافة فئة</button>
-                </div>
-            </div>
-
-            <!-- Words in category -->
-            <div class="glass lg:col-span-2" style="padding:20px;">
-                <div class="flex items-center justify-between mb-4">
-                    <h3 style="font-size:14px;font-weight:900;">كلمات الفئة: <span id="active-cat-name" style="color:#a855f7;">—</span></h3>
-                    <span id="word-count" style="font-size:11px;color:#666;"></span>
-                </div>
-                <div id="words-cloud" style="min-height:100px;max-height:420px;overflow-y:auto;margin-bottom:16px;padding-right:4px;"></div>
-                <div class="flex gap-3">
-                    <input id="new-word" class="admin-input" type="text" placeholder="كلمة جديدة">
-                    <button class="btn-primary" onclick="addWord()" style="white-space:nowrap;">+ إضافة</button>
-                </div>
-            </div>
-        </div>
-    </section>
-
-    <!-- ── ANNOUNCEMENTS ──────────────────────── -->
-    <section id="section-announcements" class="section">
-        <h2 style="font-family:'Orbitron',sans-serif;font-size:20px;font-weight:900;color:#00f2ff;margin-bottom:24px;">الإعلانات</h2>
-
-        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <!-- Create announcement -->
-            <div class="glass" style="padding:20px;">
-                <h3 style="font-size:14px;font-weight:900;margin-bottom:16px;">إعلان جديد</h3>
-                <div class="mb-4">
-                    <label style="font-size:11px;color:#666;font-weight:700;display:block;margin-bottom:6px;">الأولوية</label>
-                    <div class="flex gap-3">
-                        <button class="btn-sm" id="pri-info" onclick="setPriority('info',this)" style="border-color:rgba(59,130,246,.4);color:#3b82f6;">ℹ️ معلومة</button>
-                        <button class="btn-sm" id="pri-warning" onclick="setPriority('warning',this)" style="border-color:rgba(245,158,11,.4);color:#f59e0b;">⚠️ تحذير</button>
-                        <button class="btn-sm" id="pri-critical" onclick="setPriority('critical',this)" style="border-color:rgba(239,68,68,.4);color:#ef4444;">🚨 طارئ</button>
+                <!-- Room detail modal -->
+                <div id="room-detail-modal" style="display:none;position:fixed;inset:0;z-index:9990;background:rgba(0,0,0,.75);backdrop-filter:blur(6px);align-items:center;justify-content:center;padding:16px;">
+                    <div class="card" style="max-width:480px;width:100%;max-height:85vh;overflow-y:auto;padding:24px;">
+                        <div id="room-detail-content"></div>
+                        <button class="btn btn-ghost" style="width:100%;margin-top:16px;" onclick="document.getElementById('room-detail-modal').style.display='none'">إغلاق</button>
                     </div>
                 </div>
-                <div class="mb-4">
-                    <label style="font-size:11px;color:#666;font-weight:700;display:block;margin-bottom:6px;">نص الإعلان</label>
-                    <textarea id="ann-text" class="admin-input" placeholder="اكتب إعلانك هنا..."></textarea>
-                </div>
-                <div class="mb-4">
-                    <label style="font-size:11px;color:#666;font-weight:700;display:block;margin-bottom:6px;">مدة الظهور</label>
-                    <select id="ann-duration" class="admin-input">
-                        <option value="3600000">ساعة</option>
-                        <option value="21600000">6 ساعات</option>
-                        <option value="86400000" selected>24 ساعة</option>
-                        <option value="604800000">أسبوع</option>
-                    </select>
-                </div>
-                <button class="btn-primary w-full" onclick="sendAnnouncement()">
-                    <i class="fas fa-bullhorn ml-2"></i>إرسال الإعلان
-                </button>
-            </div>
 
-            <!-- Active announcements -->
-            <div class="glass" style="padding:20px;">
-                <h3 style="font-size:14px;font-weight:900;margin-bottom:16px;">الإعلانات النشطة</h3>
-                <div id="active-announcements" style="space-y:10px;"></div>
-            </div>
-        </div>
-    </section>
-
-    <!-- ── ADMIN ACCESS MANAGEMENT ────────────── -->
-    <section id="section-admin-access" class="section">
-        <h2 style="font-family:'Orbitron',sans-serif;font-size:20px;font-weight:900;color:#00f2ff;margin-bottom:24px;">إدارة صلاحيات الإدارة</h2>
-
-        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <!-- Admin code info -->
-            <div class="glass" style="padding:20px;">
-                <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;">
-                    <div style="width:48px;height:48px;border-radius:12px;
-                        background:rgba(0,242,255,.15);border:2px solid rgba(0,242,255,.3);
-                        display:flex;align-items:center;justify-content:center;">
-                        <i class="fas fa-key" style="font-size:20px;color:#00f2ff;"></i>
+                <!-- ═══ PLAYERS ═══ -->
+                <section class="admin-section" id="sec-players">
+                    <div class="section-head">
+                        <div><h2>اللاعبون</h2><p>بحث، تعديل، وإصلاح سجلات اللاعبين</p></div>
+                        <input class="admin-input" style="width:220px;" placeholder="بحث باسم المستخدم..." oninput="searchPlayers(this.value)">
                     </div>
-                    <div>
-                        <h3 style="font-size:14px;font-weight:900;color:#00f2ff;">رمز الإدارة الحالي</h3>
-                        <p style="font-size:11px;color:#666;">استخدم هذا الرمز لمنح صلاحيات الإدارة</p>
+
+                    <div class="card table-wrap" style="margin-bottom:18px;">
+                        <table>
+                            <thead><tr>
+                                <th>اللاعب</th><th>البريد</th><th>الرتبة</th><th>نقاط</th>
+                                <th>ألعاب</th><th>حالة</th><th>مدير</th><th></th>
+                            </tr></thead>
+                            <tbody id="players-table"></tbody>
+                        </table>
+                    </div>
+
+                    <div class="card" style="padding:18px;margin-bottom:14px;">
+                        <h3 style="font-size:13px;font-weight:900;margin-bottom:12px;">🔧 إصلاح سجل يدوياً</h3>
+                        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px;">
+                            <div style="grid-column:1/-1;">
+                                <label class="field-label">اختر سجلاً فارغاً</label>
+                                <select id="patch-uid-select" class="admin-select" onchange="onPatchSelectChange(this.value)"></select>
+                            </div>
+                            <div><label class="field-label">UID</label><input id="patch-uid" class="admin-input"></div>
+                            <div><label class="field-label">اسم المستخدم</label><input id="patch-username" class="admin-input"></div>
+                            <div><label class="field-label">الاسم الكامل</label><input id="patch-fullname" class="admin-input"></div>
+                            <div><label class="field-label">البريد الإلكتروني</label><input id="patch-email" class="admin-input"></div>
+                        </div>
+                        <button class="btn btn-primary" onclick="manualPatchPlayer()">حفظ الإصلاح</button>
+                        <div id="patch-result" style="display:none;margin-top:10px;padding:10px;border-radius:10px;font-size:12px;"></div>
+                    </div>
+
+                    <div class="card" style="padding:18px;">
+                        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+                            <h3 style="font-size:13px;font-weight:900;">🩺 فحص وإصلاح جماعي لكل السجلات</h3>
+                            <button class="btn btn-ghost btn-sm" onclick="repairPlayerRecords()">تشغيل</button>
+                        </div>
+                        <pre id="repair-log" style="display:none;max-height:220px;overflow-y:auto;font-size:11px;background:rgba(0,0,0,.3);padding:12px;border-radius:10px;white-space:pre-wrap;"></pre>
+                    </div>
+                </section>
+
+                <!-- ═══ REPORTS ═══ -->
+                <section class="admin-section" id="sec-reports">
+                    <div class="section-head">
+                        <div><h2>البلاغات</h2><p>مراجعة والرد على بلاغات اللاعبين</p></div>
+                        <div style="display:flex;gap:8px;flex-wrap:wrap;">
+                            <select id="report-filter" class="admin-select" style="width:140px;" onchange="filterReports()">
+                                <option value="pending">معلقة</option>
+                                <option value="all">الكل</option>
+                                <option value="resolved">تم الحل</option>
+                                <option value="warned">تحذير</option>
+                                <option value="banned">محظور</option>
+                            </select>
+                            <input class="admin-input" style="width:180px;" placeholder="بحث..." oninput="searchReports(this.value)">
+                        </div>
+                    </div>
+                    <div class="card table-wrap">
+                        <table>
+                            <thead><tr>
+                                <th>المُبلَّغ عنه</th><th>السبب</th><th>المُبلِّغ</th><th>الغرفة</th><th>الوقت</th><th>الحالة</th><th></th>
+                            </tr></thead>
+                            <tbody id="reports-table"></tbody>
+                        </table>
+                    </div>
+                </section>
+
+                <div id="report-detail-modal" style="display:none;position:fixed;inset:0;z-index:9990;background:rgba(0,0,0,.75);backdrop-filter:blur(6px);align-items:center;justify-content:center;padding:16px;">
+                    <div class="card" style="max-width:520px;width:100%;max-height:85vh;overflow-y:auto;padding:24px;">
+                        <div id="report-detail-content"></div>
                     </div>
                 </div>
-                
-                <div style="background:rgba(0,242,255,.08);border:2px solid rgba(0,242,255,.2);
-                    border-radius:12px;padding:16px;margin-bottom:16px;text-align:center;">
-                    <p style="font-family:'Orbitron',sans-serif;font-size:24px;font-weight:900;
-                        color:#00f2ff;letter-spacing:4px;" id="current-admin-code">ADMIN26</p>
-                    <button onclick="copyAdminCode()" 
-                        style="margin-top:12px;padding:8px 16px;border-radius:8px;
-                        background:rgba(0,242,255,.15);border:2px solid rgba(0,242,255,.3);
-                        color:#00f2ff;cursor:pointer;font-size:12px;font-weight:700;
-                        font-family:'Cairo',sans-serif;">
-                        <i class="fas fa-copy ml-1"></i> نسخ الرمز
-                    </button>
-                </div>
-                
-                <div style="background:rgba(251,191,36,.08);border-left:4px solid #fbbf24;
-                    padding:12px;border-radius:8px;margin-bottom:16px;">
-                    <p style="font-size:12px;color:#fbbf24;line-height:1.6;">
-                        <i class="fas fa-exclamation-triangle ml-1"></i>
-                        <strong>تنبيه أمني:</strong><br>
-                        لا تشارك هذا الرمز إلا مع من تثق بهم. أي شخص لديه هذا الرمز سيحصل على صلاحيات كاملة.
-                    </p>
-                </div>
-                
-                <button onclick="generateNewCode()" class="btn-primary" style="width:100%;">
-                    <i class="fas fa-sync-alt ml-2"></i>
-                    إنشاء رمز جديد
-                </button>
-            </div>
 
-            <!-- Current admins list -->
-            <div class="glass" style="padding:20px;">
-                <h3 style="font-size:14px;font-weight:900;margin-bottom:16px;">المسؤولون الحاليون</h3>
-                
-                <div id="admins-list" style="max-height:400px;overflow-y:auto;">
-                    <p style="color:#555;font-size:12px;text-align:center;padding:20px;">
-                        جاري التحميل...
-                    </p>
-                </div>
-                
-                <button onclick="loadAdminsList()" class="btn-sm" style="width:100%;margin-top:12px;">
-                    <i class="fas fa-sync-alt ml-1"></i> تحديث القائمة
-                </button>
-            </div>
-        </div>
-        
-        <!-- Instructions -->
-        <div class="glass" style="padding:20px;margin-top:20px;">
-            <h3 style="font-size:14px;font-weight:900;margin-bottom:16px;color:#00f2ff;">
-                <i class="fas fa-info-circle ml-2"></i>
-                كيفية منح صلاحيات الإدارة
-            </h3>
-            <ol style="padding-right:24px;color:#ccc;font-size:13px;line-height:2;">
-                <li>انسخ الرمز الحالي من الأعلى</li>
-                <li>أرسل الرمز للشخص المطلوب عبر وسيلة آمنة</li>
-                <li>اطلب منه فتح صفحة <code style="background:rgba(0,242,255,.1);padding:2px 8px;border-radius:4px;color:#00f2ff;">admin.html</code></li>
-                <li>سيُطلب منه إدخال الرمز — بعد التحقق سيحصل على الصلاحيات</li>
-                <li>يمكنك إنشاء رمز جديد في أي وقت لإلغاء الرموز القديمة</li>
-            </ol>
-        </div>
-    </section>
-
-    <!-- ── DIAGNOSTICS TEST WINDOW ───────────── -->
-    <section id="section-diagnostics" class="section">
-        <div class="flex items-center justify-between mb-6 flex-wrap gap-3">
-            <div>
-                <h2 style="font-family:'Orbitron',sans-serif;font-size:20px;font-weight:900;color:#00f2ff;">
-                    <i class="fas fa-flask ml-2" style="color:#a855f7;"></i>تشخيص النظام
-                </h2>
-                <p style="font-size:12px;color:#555;" id="diag-last-run">لم يتم التشغيل بعد</p>
-            </div>
-            <div class="flex gap-3 flex-wrap">
-                <button class="btn-primary" id="run-tests-btn" onclick="runDiagnostics()">
-                    <i class="fas fa-play ml-2"></i>تشغيل الفحص
-                </button>
-                <button class="btn-sm" onclick="clearDiagnostics()" style="padding:10px 18px;">
-                    <i class="fas fa-trash ml-2"></i>مسح
-                </button>
-            </div>
-        </div>
-
-        <!-- Summary counters -->
-        <div class="flex gap-3 mb-6 flex-wrap" id="diag-summary" style="display:none!important;">
-            <div class="severity-counter sev-major"><span id="cnt-major">0</span> خطأ جسيم</div>
-            <div class="severity-counter sev-error"><span id="cnt-error">0</span> خطأ</div>
-            <div class="severity-counter sev-warning"><span id="cnt-warning">0</span> تحذير</div>
-            <div class="severity-counter sev-pass"><span id="cnt-pass">0</span> ناجح</div>
-        </div>
-
-        <!-- Progress bar -->
-        <div id="diag-progress-wrap" style="display:none;margin-bottom:20px;">
-            <div style="display:flex;justify-content:space-between;font-size:11px;color:#555;margin-bottom:6px;">
-                <span id="diag-progress-label">جاري الفحص...</span>
-                <span id="diag-progress-pct">0%</span>
-            </div>
-            <div style="background:rgba(255,255,255,.06);border-radius:4px;overflow:hidden;height:4px;">
-                <div class="test-progress-bar" id="diag-progress-bar" style="width:0%;"></div>
-            </div>
-        </div>
-
-        <!-- Results grid -->
-        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-
-            <!-- Left: test groups -->
-            <div>
-                <div class="glass" style="padding:20px;margin-bottom:16px;">
-                    <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px;">
-                        <div class="pulse-dot" id="dot-connection" style="background:#555;"></div>
-                        <h3 style="font-size:13px;font-weight:900;color:#00f2ff;">🔌 الاتصال والمصادقة</h3>
+                <!-- ═══ BANS ═══ -->
+                <section class="admin-section" id="sec-bans">
+                    <div class="section-head">
+                        <div><h2>الحظر</h2><p>اللاعبون المحظورون حالياً</p></div>
+                        <button class="btn btn-danger" onclick="openManualBanModal()"><i class="fas fa-ban"></i> حظر يدوي</button>
                     </div>
-                    <div id="tests-connection"></div>
-                </div>
-
-                <div class="glass" style="padding:20px;margin-bottom:16px;">
-                    <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px;">
-                        <div class="pulse-dot" id="dot-data" style="background:#555;"></div>
-                        <h3 style="font-size:13px;font-weight:900;color:#a855f7;">🗄️ قاعدة البيانات</h3>
+                    <div class="card table-wrap">
+                        <table>
+                            <thead><tr><th>اللاعب</th><th>السبب</th><th>تاريخ الحظر</th><th>ينتهي</th><th></th></tr></thead>
+                            <tbody id="bans-table"></tbody>
+                        </table>
                     </div>
-                    <div id="tests-data"></div>
-                </div>
+                </section>
 
-                <div class="glass" style="padding:20px;">
-                    <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px;">
-                        <div class="pulse-dot" id="dot-functions" style="background:#555;"></div>
-                        <h3 style="font-size:13px;font-weight:900;color:#f59e0b;">⚙️ الوظائف</h3>
+                <!-- ═══ ANNOUNCEMENTS ═══ -->
+                <section class="admin-section" id="sec-announcements">
+                    <div class="section-head">
+                        <div><h2>الإعلانات</h2><p>بث رسالة لكل اللاعبين المتصلين</p></div>
                     </div>
-                    <div id="tests-functions"></div>
-                </div>
-            </div>
-
-            <!-- Right: test groups -->
-            <div>
-                <div class="glass" style="padding:20px;margin-bottom:16px;">
-                    <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px;">
-                        <div class="pulse-dot" id="dot-stats" style="background:#555;"></div>
-                        <h3 style="font-size:13px;font-weight:900;color:#22c55e;">📊 الإحصائيات</h3>
+                    <div class="card" style="padding:20px;max-width:560px;">
+                        <label class="field-label">نص الإعلان</label>
+                        <textarea id="ann-text-input" class="admin-input" rows="3" style="margin-bottom:12px;"></textarea>
+                        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px;">
+                            <div>
+                                <label class="field-label">الأولوية</label>
+                                <select id="ann-priority" class="admin-select">
+                                    <option value="info">معلومة</option>
+                                    <option value="warning">تحذير</option>
+                                    <option value="critical">حرج</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="field-label">المدة (ثانية)</label>
+                                <input id="ann-duration" class="admin-input" type="number" value="30">
+                            </div>
+                        </div>
+                        <button class="btn btn-primary" onclick="sendAnnouncement()"><i class="fas fa-bullhorn"></i> بث الآن</button>
+                        <button class="btn btn-ghost" onclick="clearAnnouncement()">إلغاء الحالي</button>
                     </div>
-                    <div id="tests-stats"></div>
-                </div>
+                </section>
 
-                <div class="glass" style="padding:20px;margin-bottom:16px;">
-                    <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px;">
-                        <div class="pulse-dot" id="dot-integrity" style="background:#555;"></div>
-                        <h3 style="font-size:13px;font-weight:900;color:#ef4444;">🛡️ سلامة البيانات</h3>
+                <!-- ═══ WORDS / CATEGORIES ═══ -->
+                <section class="admin-section" id="sec-words">
+                    <div class="section-head">
+                        <div><h2>الكلمات والفئات</h2><p>إدارة قوائم الكلمات المستخدمة في اللعب</p></div>
                     </div>
-                    <div id="tests-integrity"></div>
-                </div>
-
-                <div class="glass" style="padding:20px;">
-                    <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px;">
-                        <div class="pulse-dot" id="dot-content" style="background:#555;"></div>
-                        <h3 style="font-size:13px;font-weight:900;color:#06b6d4;">📝 المحتوى</h3>
+                    <div style="display:grid;grid-template-columns:1fr 2fr;gap:16px;">
+                        <div class="card" style="padding:16px;">
+                            <h3 style="font-size:12px;font-weight:900;margin-bottom:10px;color:var(--text-dim);">الفئات</h3>
+                            <div id="category-list" style="margin-bottom:14px;"></div>
+                            <input id="new-category-name" class="admin-input" placeholder="اسم فئة جديدة" style="margin-bottom:8px;">
+                            <button class="btn btn-ghost btn-sm" style="width:100%;" onclick="addCategory()">+ إضافة فئة</button>
+                        </div>
+                        <div class="card" style="padding:16px;">
+                            <h3 style="font-size:12px;font-weight:900;margin-bottom:10px;color:var(--text-dim);" id="words-cloud-title">الكلمات</h3>
+                            <div id="words-cloud" style="min-height:100px;max-height:420px;overflow-y:auto;margin-bottom:14px;"></div>
+                            <div style="display:flex;gap:8px;">
+                                <input id="new-word-input" class="admin-input" placeholder="كلمة جديدة">
+                                <button class="btn btn-primary btn-sm" onclick="addWord()">+ إضافة</button>
+                            </div>
+                        </div>
                     </div>
-                    <div id="tests-content"></div>
-                </div>
+                </section>
+
+                <!-- ═══ DATABASE EXPLORER (NEW) ═══ -->
+                <section class="admin-section" id="sec-database">
+                    <div class="section-head">
+                        <div><h2>قاعدة البيانات</h2><p>تصفح وتعديل أي مسار في قاعدة البيانات مباشرة</p></div>
+                    </div>
+                    <div class="card" style="padding:16px;margin-bottom:16px;">
+                        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;">
+                            <button class="btn btn-ghost btn-sm" onclick="dbNavigate('players')">players</button>
+                            <button class="btn btn-ghost btn-sm" onclick="dbNavigate('rooms')">rooms</button>
+                            <button class="btn btn-ghost btn-sm" onclick="dbNavigate('reports')">reports</button>
+                            <button class="btn btn-ghost btn-sm" onclick="dbNavigate('bans')">bans</button>
+                            <button class="btn btn-ghost btn-sm" onclick="dbNavigate('wordLists')">wordLists</button>
+                            <button class="btn btn-ghost btn-sm" onclick="dbNavigate('invites')">invites</button>
+                            <button class="btn btn-ghost btn-sm" onclick="dbNavigate('joinRequests')">joinRequests</button>
+                            <button class="btn btn-ghost btn-sm" onclick="dbNavigate('adminConfig')">adminConfig</button>
+                        </div>
+                        <div style="display:flex;gap:8px;">
+                            <input id="db-path-input" class="admin-input" placeholder="مسار، مثال: players/abc123" style="direction:ltr;text-align:left;">
+                            <button class="btn btn-primary" onclick="dbNavigate()">تصفح</button>
+                        </div>
+                        <div id="db-breadcrumb" style="font-size:11px;color:var(--text-faint);margin-top:8px;direction:ltr;text-align:left;"></div>
+                    </div>
+
+                    <div class="card" style="padding:16px;">
+                        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+                            <h3 style="font-size:12px;font-weight:900;color:var(--text-dim);" id="db-current-path">—</h3>
+                            <div style="display:flex;gap:8px;">
+                                <button class="btn btn-ghost btn-sm" id="db-edit-toggle" onclick="dbToggleEdit()" style="display:none;"><i class="fas fa-pen"></i> تعديل</button>
+                                <button class="btn btn-success btn-sm" id="db-save-btn" onclick="dbSave()" style="display:none;"><i class="fas fa-check"></i> حفظ</button>
+                                <button class="btn btn-danger btn-sm" id="db-delete-btn" onclick="dbDeletePath()" style="display:none;"><i class="fas fa-trash"></i> حذف المسار</button>
+                            </div>
+                        </div>
+                        <div id="db-view-tree" class="db-tree-node" style="max-height:50vh;overflow:auto;"></div>
+                        <textarea id="db-view-raw" class="admin-input" style="display:none;direction:ltr;text-align:left;font-family:monospace;font-size:12px;min-height:320px;"></textarea>
+                        <p id="db-empty-msg" style="display:none;color:var(--text-faint);font-size:12px;text-align:center;padding:30px;">لا توجد بيانات في هذا المسار</p>
+                    </div>
+                </section>
+
+                <!-- ═══ DIAGNOSTICS / TEST SUITE (NEW) ═══ -->
+                <section class="admin-section" id="sec-diagnostics">
+                    <div class="section-head">
+                        <div><h2>فحص النظام</h2><p>فحص تلقائي لتناسق البيانات ووظائف اللعبة، مصنّف حسب الخطورة</p></div>
+                        <button class="btn btn-primary" id="run-diag-btn" onclick="runDiagnostics()"><i class="fas fa-play"></i> تشغيل الفحص</button>
+                    </div>
+                    <div class="kpi-grid" style="margin-bottom:18px;">
+                        <div class="card kpi-card"><div class="kpi-icon" style="background:rgba(239,68,68,.12);color:var(--danger);"><i class="fas fa-circle-exclamation"></i></div><div class="kpi-num" id="diag-critical" style="color:var(--danger);">0</div><div class="kpi-label">حرج</div></div>
+                        <div class="card kpi-card"><div class="kpi-icon" style="background:rgba(245,158,11,.12);color:var(--warn);"><i class="fas fa-triangle-exclamation"></i></div><div class="kpi-num" id="diag-warn" style="color:var(--warn);">0</div><div class="kpi-label">تحذير</div></div>
+                        <div class="card kpi-card"><div class="kpi-icon" style="background:rgba(34,197,94,.12);color:var(--ok);"><i class="fas fa-circle-check"></i></div><div class="kpi-num" id="diag-ok" style="color:var(--ok);">0</div><div class="kpi-label">سليم</div></div>
+                        <div class="card kpi-card"><div class="kpi-icon"><i class="fas fa-circle-info"></i></div><div class="kpi-num" id="diag-info">0</div><div class="kpi-label">معلومة</div></div>
+                    </div>
+                    <div id="diag-results"></div>
+                </section>
+
+                <!-- ═══ SETTINGS / SECURITY (NEW) ═══ -->
+                <section class="admin-section" id="sec-settings">
+                    <div class="section-head">
+                        <div><h2>الإعدادات والأمان</h2><p></p></div>
+                    </div>
+
+                    <div class="card" style="padding:20px;margin-bottom:16px;border-color:rgba(239,68,68,.35);">
+                        <h3 style="font-size:13px;font-weight:900;color:var(--danger);margin-bottom:8px;"><i class="fas fa-triangle-exclamation"></i> تنبيه أمني مهم</h3>
+                        <p style="font-size:12.5px;color:var(--text-dim);line-height:1.9;">
+                            صلاحية المدير (<code style="background:rgba(255,255,255,.06);padding:1px 6px;border-radius:4px;">isAdmin</code>) يتم منحها حالياً عبر رمز يُتحقق منه من المتصفح، ثم يقوم المتصفح نفسه بكتابة <code style="background:rgba(255,255,255,.06);padding:1px 6px;border-radius:4px;">isAdmin: true</code> — وهذا لا يمكن أن يكون آمناً بمفرده: أي شخص يعرف الرمز (أو حتى بدون معرفته، لو قواعد الأمان تسمح بالكتابة) يمكنه منح نفسه صلاحية المدير مباشرة من console المتصفح. الإصلاح الحقيقي الوحيد هو قواعد Realtime Database — أضف هذا في Firebase Console → Realtime Database → Rules:
+                        </p>
+                        <pre style="background:rgba(0,0,0,.4);padding:12px;border-radius:10px;font-size:11px;margin-top:10px;overflow-x:auto;direction:ltr;text-align:left;">"players": {
+  "$uid": {
+    "isAdmin": {
+      ".write": "auth != null && auth.uid === $uid && (root.child('players').child($uid).child('isAdmin').val() === true || newData.val() === false)"
+    }
+  }
+}</pre>
+                        <p style="font-size:11px;color:var(--text-faint);margin-top:8px;">هذا يمنع أي مستخدم من منح نفسه <code>isAdmin: true</code> — فقط من كان مديراً بالفعل يمكنه تعديل هذا الحقل (أو إزالته عن نفسه). منح صلاحية مدير جديدة يجب أن يتم يدوياً من Firebase Console.</p>
+                        <button class="btn btn-ghost btn-sm" style="margin-top:12px;" onclick="showSection('diagnostics');runDiagnostics();">عرض كل الحسابات التي لديها isAdmin حالياً</button>
+                    </div>
+
+                    <div class="card" style="padding:20px;">
+                        <h3 style="font-size:13px;font-weight:900;margin-bottom:10px;">معلومات الحساب الحالي</h3>
+                        <div id="settings-account-info" style="font-size:12.5px;color:var(--text-dim);line-height:2;"></div>
+                        <button class="btn btn-ghost btn-sm" style="margin-top:10px;" onclick="signOut(auth)">تسجيل الخروج</button>
+                    </div>
+                </section>
+
+
             </div>
         </div>
+    </div>
 
-        <!-- Raw log -->
-        <div class="glass" style="padding:20px;margin-top:16px;">
-            <div class="flex items-center justify-between mb-3">
-                <h3 style="font-size:13px;font-weight:900;">📋 سجل التشخيص</h3>
-                <button class="btn-sm" onclick="copyDiagLog()" style="font-size:10px;padding:5px 10px;">
-                    <i class="fas fa-copy ml-1"></i>نسخ السجل
-                </button>
+    <!-- AI Assistant slide-over -->
+    <div id="ai-backdrop" onclick="toggleAiPanel(false)"></div>
+    <aside id="ai-panel">
+        <div id="ai-head">
+            <div style="width:34px;height:34px;border-radius:9px;background:rgba(0,229,255,.12);display:flex;align-items:center;justify-content:center;color:var(--accent);">
+                <i class="fas fa-robot"></i>
             </div>
-            <div id="diag-log" style="
-                background:rgba(0,0,0,.4);border:1px solid rgba(255,255,255,.07);
-                border-radius:10px;padding:14px;
-                font-family:'Courier New',monospace;font-size:11px;
-                color:#888;line-height:1.7;max-height:220px;overflow-y:auto;
-                white-space:pre-wrap;direction:ltr;text-align:left;">
-جاهز للتشخيص — اضغط "تشغيل الفحص" للبدء</div>
+            <div style="flex:1;">
+                <div style="font-size:13px;font-weight:900;">المساعد الذكي</div>
+                <div style="font-size:10px;color:var(--text-faint);">اسأله عن أي شيء أو اطلب منه تعديل البيانات</div>
+            </div>
+            <button class="topbar-btn" onclick="toggleAiPanel(false)"><i class="fas fa-xmark"></i></button>
         </div>
-    </section>
-
-    <!-- ── FIREBASE DATABASE VIEWER ───────────── -->
-    <section id="section-firebase-viewer" class="section">
-        <div class="flex items-center justify-between mb-6 flex-wrap gap-3">
-            <div>
-                <h2 style="font-family:'Orbitron',sans-serif;font-size:20px;font-weight:900;color:#00f2ff;">
-                    <i class="fas fa-database ml-2" style="color:#a855f7;"></i>عرض قاعدة البيانات
-                </h2>
-                <p style="font-size:12px;color:#555;">استعرض وأدر بيانات Firebase في الوقت الفعلي</p>
-            </div>
-            <div class="flex gap-3 flex-wrap">
-                <button class="btn-primary" onclick="refreshFirebaseViewer()">
-                    <i class="fas fa-sync-alt ml-2"></i>تحديث
-                </button>
-                <button class="btn-sm" onclick="expandAllNodes()" style="padding:10px 18px;">
-                    <i class="fas fa-expand ml-2"></i>توسيع الكل
-                </button>
-                <button class="btn-sm" onclick="collapseAllNodes()" style="padding:10px 18px;">
-                    <i class="fas fa-compress ml-2"></i>طي الكل
-                </button>
-            </div>
+        <div id="ai-messages"></div>
+        <div id="ai-input-row">
+            <textarea id="ai-input" class="admin-input" placeholder="اكتب سؤالك أو طلبك..."></textarea>
+            <button class="btn btn-primary" style="align-self:flex-end;" onclick="sendAiMessage()"><i class="fas fa-paper-plane"></i></button>
         </div>
+    </aside>
 
-        <!-- Breadcrumb Navigation -->
-        <div id="firebase-breadcrumb" class="firebase-breadcrumb"></div>
-
-        <!-- Search and Filter -->
-        <div class="firebase-search">
-            <div class="flex gap-3 flex-wrap">
-                <input id="firebase-search-input" class="admin-input" type="text" 
-                    placeholder="🔍 ابحث في المحاور أو القيم..." 
-                    style="flex:1;min-width:300px;"
-                    oninput="filterFirebaseNodes(this.value)">
-                <select id="firebase-root-select" class="admin-input" onchange="loadFirebaseRoot(this.value)" style="max-width:200px;">
-                    <option value="">/ (الجذر)</option>
-                    <option value="players">players</option>
-                    <option value="rooms">rooms</option>
-                    <option value="reports">reports</option>
-                    <option value="bans">bans</option>
-                    <option value="wordLists">wordLists</option>
-                    <option value="announcements">announcements</option>
-                    <option value="adminConfig">adminConfig</option>
-                </select>
-            </div>
-        </div>
-
-        <!-- Database Tree View -->
-        <div class="glass" style="padding:20px;">
-            <div id="firebase-tree-container" class="firebase-tree">
-                <div class="firebase-loading">
-                    <i class="fas fa-spinner fa-spin ml-2"></i>
-                    جاري تحميل البيانات...
-                </div>
-            </div>
-        </div>
-
-        <!-- Node Details Panel -->
-        <div id="firebase-details" style="display:none;">
-            <div class="glass firebase-details-panel" style="margin-top:20px;">
-                <div class="flex items-center justify-between mb-4">
-                    <h3 style="font-size:14px;font-weight:900;color:#00f2ff;">
-                        <i class="fas fa-info-circle ml-2"></i>تفاصيل العقدة
-                    </h3>
-                    <button onclick="closeFirebaseDetails()" style="background:none;border:none;color:#555;cursor:pointer;font-size:16px;">✕</button>
-                </div>
-                
-                <div class="mb-4">
-                    <p style="font-size:11px;color:#666;margin-bottom:6px;font-weight:700;">المحور</p>
-                    <div id="firebase-details-path" class="firebase-path"></div>
-                </div>
-
-                <div class="mb-4">
-                    <p style="font-size:11px;color:#666;margin-bottom:6px;font-weight:700;">النوع</p>
-                    <span id="firebase-details-type" style="font-size:12px;color:#00f2ff;"></span>
-                </div>
-
-                <div class="mb-4">
-                    <p style="font-size:11px;color:#666;margin-bottom:6px;font-weight:700;">القيمة (JSON)</p>
-                    <div id="firebase-details-json" class="firebase-json"></div>
-                </div>
-
-                <div class="flex gap-3">
-                    <button class="btn-primary" onclick="copyFirebaseNodeData()">
-                        <i class="fas fa-copy ml-2"></i>نسخ JSON
-                    </button>
-                    <button class="btn-sm" onclick="exportFirebaseNode()">
-                        <i class="fas fa-download ml-2"></i>تصدير
-                    </button>
-                    <button class="btn-danger" onclick="deleteFirebaseNode()">
-                        <i class="fas fa-trash ml-2"></i>حذف
-                    </button>
-                </div>
-            </div>
-        </div>
-    </section>
-
-</main>
-
-<!-- Load dialogs.js FIRST, then Firebase -->
-<script src="dialogs.js"></script>
-<script>
-// Override native dialogs AFTER dialogs.js loads
-window.alert   = (msg)             => UIAlert(msg);
-window.confirm = (msg)             => UIConfirm(msg);
-window.prompt  = (msg, defaultVal) => UIPrompt(msg, { defaultValue: defaultVal });
-</script>
-
-<!-- Firebase -->
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.7.0/firebase-app.js";
-import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.7.0/firebase-auth.js";
-import { getDatabase, ref, get, set, update, remove, push, onValue, query, orderByChild } from "https://www.gstatic.com/firebasejs/12.7.0/firebase-database.js";
+import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/12.7.0/firebase-auth.js";
+import {
+    getDatabase, ref, get, set, update, remove, push, onValue, serverTimestamp, child
+} from "https://www.gstatic.com/firebasejs/12.7.0/firebase-database.js";
 
 const firebaseConfig = {
-  apiKey: "AIzaSyDnd-pmKEatI3DaFz6xHWB5ucurtHXt9tk",
-  authDomain: "el-jasus.firebaseapp.com",
-  databaseURL: "https://el-jasus-default-rtdb.asia-southeast1.firebasedatabase.app",
-  projectId: "el-jasus",
-  storageBucket: "el-jasus.firebasestorage.app",
-  messagingSenderId: "415659587906",
-  appId: "1:415659587906:web:782f7940176ea4097eb0db",
-  measurementId: "G-N4K79FP56N"
+    apiKey: "AIzaSyDnd-pmKEatI3DaFz6xHWB5ucurtHXt9tk",
+    authDomain: "el-jasus.firebaseapp.com",
+    databaseURL: "https://el-jasus-default-rtdb.asia-southeast1.firebasedatabase.app",
+    projectId: "el-jasus",
+    storageBucket: "el-jasus.firebasestorage.app",
+    messagingSenderId: "415659587906",
+    appId: "1:415659587906:web:782f7940176ea4097eb0db"
 };
-
 const app  = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db   = getDatabase(app);
+window.auth = auth; window.db = db; window.dbRef = ref; window.dbGet = get;
+window.dbSet = set; window.dbUpdate = update; window.dbRemove = remove; window.dbPush = push;
+window.signOut = signOut;
 
-// Expose to window for global access
-window.db = db;
-window.auth = auth;
-window.ref = ref;
-window.get = get;
-window.set = set;
-window.update = update;
-window.remove = remove;
-window.push = push;
+let currentAdmin = null;
 
-// ADMIN ACCESS VIA CODE REDEMPTION
-const ADMIN_CODE = 'ADMIN26';
-
-let allPlayers = {};
-let isAdmin = false;
-let allReports = {};
-let allBans    = {};
-let activePriority = 'info';
-let activeCategory = null;
-let wordListData   = {};
-let rankChart = null;
-let catChart  = null;
-
-// Report filtering
-let currentReportFilter = 'all';
-let allReportsArray = [];
-
-// ── AUTH GUARD ────────────────────────────
-onAuthStateChanged(auth, async user => {
-    if (!user) { window.location.href = 'login.html'; return; }
-    
-    // Check if user has admin access via redeemed code
-    try {
-        const adminSnap = await get(ref(db, `players/${user.uid}/isAdmin`));
-        isAdmin = adminSnap.val() === true;
-    } catch(e) {
-        console.error('Admin check failed:', e);
-        isAdmin = false;
-    }
-    
-    if (!isAdmin) {
-        // Show code redemption modal
-        showAdminCodeModal();
+onAuthStateChanged(auth, async (user) => {
+    if (!user) {
+        window.location.href = 'login.html';
         return;
     }
-    
-    // Admin verified - load dashboard
-    document.getElementById('overview-date').textContent =
-        new Date().toLocaleDateString('ar-SA', {weekday:'long',year:'numeric',month:'long',day:'numeric'});
-    await refreshAll();
+    try {
+        const snap = await get(ref(db, `players/${user.uid}`));
+        const data = snap.val();
+        if (!data || data.isAdmin !== true) {
+            // FIX: this used to show a code-entry modal that, on a match,
+            // had the CLIENT itself write isAdmin:true to its own record —
+            // meaning the "code" was the only thing standing between any
+            // logged-in player and full admin access, and that code was
+            // sitting in this file's plaintext source. There is no safe way
+            // to self-grant admin from client code, full stop — so instead
+            // of pretending otherwise, this is now a clear, honest dead end:
+            // an existing admin has to grant access (from the Players tab),
+            // and the very first admin has to be set directly in the
+            // Firebase console. See the Security card in Settings for the
+            // rule that actually enforces this.
+            document.body.innerHTML = `
+                <div style="min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px;background:#0b0e14;">
+                    <div style="max-width:420px;text-align:center;font-family:'Cairo',sans-serif;color:#e8eaf0;">
+                        <i class="fas fa-lock" style="font-size:36px;color:#ef4444;margin-bottom:16px;"></i>
+                        <h2 style="font-size:16px;font-weight:900;margin-bottom:10px;">ليس لديك صلاحية الوصول</h2>
+                        <p style="font-size:13px;color:#8891a3;line-height:1.8;margin-bottom:20px;">
+                            هذه الصفحة مخصصة للمديرين فقط. اطلب من مدير حالي منحك الصلاحية من تبويب "اللاعبون"،
+                            أو — إذا كنت أول مدير — عيّن <code style="background:rgba(255,255,255,.08);padding:1px 6px;border-radius:4px;">isAdmin: true</code>
+                            لحسابك مباشرة من Firebase Console.
+                        </p>
+                        <a href="home.html" style="display:inline-block;padding:10px 22px;border-radius:10px;background:#00e5ff;color:#05161a;font-weight:900;font-size:13px;text-decoration:none;">العودة للرئيسية</a>
+                    </div>
+                </div>`;
+            return;
+        }
+        currentAdmin = { uid: user.uid, username: data.username || user.email, email: user.email };
+        document.getElementById('admin-identity').textContent = currentAdmin.username;
+        const infoEl = document.getElementById('settings-account-info');
+        if (infoEl) infoEl.innerHTML = `<div>الاسم: ${currentAdmin.username}</div><div style="direction:ltr;text-align:left;">UID: ${currentAdmin.uid}</div><div style="direction:ltr;text-align:left;">${currentAdmin.email || ''}</div>`;
+        boot();
+    } catch (e) {
+        console.error('Admin auth check failed:', e);
+        alert('خطأ في التحقق من الصلاحية: ' + e.message);
+    }
 });
 
-// ── ADMIN CODE REDEMPTION ────────────────
-function showAdminCodeModal() {
-    const modal = document.createElement('div');
-    modal.id = 'admin-code-modal';
-    modal.style.cssText = 'position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.95);' +
-        'display:flex;align-items:center;justify-content:center;padding:20px;' +
-        'backdrop-filter:blur(12px);';
-    modal.innerHTML = `
-        <div style="background:linear-gradient(135deg,rgba(15,20,35,.98),rgba(25,30,50,.98));
-            border:2px solid rgba(0,242,255,.3);border-radius:24px;padding:40px;
-            max-width:420px;width:100%;text-align:center;
-            box-shadow:0 8px 32px rgba(0,0,0,.5);">
-            
-            <div style="width:80px;height:80px;margin:0 auto 24px;border-radius:50%;
-                background:linear-gradient(135deg,rgba(0,242,255,.15),rgba(124,48,255,.15));
-                border:3px solid rgba(0,242,255,.4);display:flex;align-items:center;justify-content:center;">
-                <i class="fas fa-lock" style="font-size:36px;color:#00f2ff;"></i>
-            </div>
-            
-            <h2 style="font-family:'Orbitron',sans-serif;font-size:24px;font-weight:900;
-                color:#00f2ff;margin-bottom:12px;letter-spacing:2px;">
-                وصول الإدارة
-            </h2>
-            
-            <p style="font-size:14px;color:#888;margin-bottom:32px;line-height:1.6;">
-                يتطلب الوصول إلى لوحة الإدارة رمز خاص.<br>
-                أدخل رمز الإدارة أدناه للمتابعة.
-            </p>
-            
-            <div style="margin-bottom:24px;">
-                <input type="text" id="admin-code-input" 
-                    placeholder="أدخل رمز الإدارة"
-                    style="width:100%;padding:16px;background:rgba(255,255,255,.05);
-                    border:2px solid rgba(0,242,255,.2);border-radius:12px;
-                    color:white;font-family:'Orbitron',sans-serif;font-size:16px;
-                    text-align:center;letter-spacing:3px;font-weight:700;
-                    outline:none;transition:border .3s;"
-                    onfocus="this.style.borderColor='rgba(0,242,255,.5)'"
-                    onblur="this.style.borderColor='rgba(0,242,255,.2)'">
-            </div>
-            
-            <div id="code-error" style="display:none;color:#ef4444;font-size:13px;
-                font-weight:700;margin-bottom:16px;padding:12px;
-                background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.3);
-                border-radius:10px;">
-                رمز غير صحيح. حاول مرة أخرى.
-            </div>
-            
-            <div style="display:flex;gap:12px;">
-                <button id="verify-code-btn" onclick="window.verifyAdminCode()"
-                    style="flex:1;padding:14px;border-radius:12px;
-                    background:linear-gradient(135deg,#00f2ff,#7c30ff);
-                    border:none;color:white;font-weight:900;cursor:pointer;
-                    font-family:'Cairo',sans-serif;font-size:14px;
-                    transition:all .3s;">
-                    <i class="fas fa-check ml-2"></i>
-                    تحقق
-                </button>
-                <button onclick="window.location.href='home.html'"
-                    style="padding:14px 24px;border-radius:12px;
-                    background:rgba(255,255,255,.08);
-                    border:2px solid rgba(255,255,255,.1);
-                    color:#888;cursor:pointer;font-family:'Cairo',sans-serif;
-                    font-weight:900;font-size:14px;">
-                    إلغاء
-                </button>
-            </div>
-            
-            <p style="margin-top:24px;font-size:11px;color:#444;line-height:1.5;">
-                💡 <strong>للحصول على رمز الإدارة:</strong><br>
-                تواصل مع مطور اللعبة أو استخدم الرمز المخصص لك
-            </p>
-        </div>
-    `;
-    document.body.appendChild(modal);
-    
-    // Focus input
-    setTimeout(() => document.getElementById('admin-code-input').focus(), 100);
-    
-    // Allow Enter key to verify
-    document.getElementById('admin-code-input').addEventListener('keypress', (e) => {
-        if (e.key === 'Enter') window.verifyAdminCode();
-    });
+function boot() {
+    document.getElementById('overview-date').textContent = new Date().toLocaleDateString('ar-EG', { weekday:'long', year:'numeric', month:'long', day:'numeric' });
+    loadOverview();
+    loadRooms();
+    loadPlayers();
+    loadReports();
+    loadBans();
+    loadWords();
+    loadCurrentAnnouncement();
 }
 
-window.verifyAdminCode = async function() {
-    const input = document.getElementById('admin-code-input');
-    const code  = input.value.trim().toUpperCase();
-    const error = document.getElementById('code-error');
-    const btn   = document.getElementById('verify-code-btn');
-    
-    if (!code) {
-        error.textContent = 'الرجاء إدخال الرمز';
-        error.style.display = 'block';
-        return;
-    }
-    
-    // Disable button during verification
-    btn.disabled = true;
-    btn.innerHTML = '<i class="fas fa-spinner fa-spin ml-2"></i> جاري التحقق...';
-    
-    // Verify code against Firebase
-    let validCode = ADMIN_CODE; // Default
-    try {
-        const codeSnap = await get(ref(db, 'adminConfig/accessCode'));
-        if (codeSnap.exists()) validCode = codeSnap.val();
-    } catch(e) {
-        console.warn('Could not read admin code from Firebase, using default');
-    }
-    
-    if (code === validCode) {
-        // Valid code - grant admin access
-        try {
-            const user = auth.currentUser;
-            await set(ref(db, `players/${user.uid}/isAdmin`), true);
-            await set(ref(db, `players/${user.uid}/adminSince`), Date.now());
-            
-            // Success animation
-            error.style.display = 'none';
-            btn.innerHTML = '<i class="fas fa-check ml-2"></i> تم التحقق!';
-            btn.style.background = 'linear-gradient(135deg,#22c55e,#16a34a)';
-            
-            setTimeout(() => {
-                const modal = document.getElementById('admin-code-modal');
-                if (modal) modal.remove();
-                isAdmin = true;
-                document.getElementById('overview-date').textContent =
-                    new Date().toLocaleDateString('ar-SA', {weekday:'long',year:'numeric',month:'long',day:'numeric'});
-                refreshAll();
-            }, 1500);
-            
-        } catch (e) {
-            error.textContent = 'خطأ في التحقق. حاول مرة أخرى.';
-            error.style.display = 'block';
-            btn.disabled = false;
-            btn.innerHTML = '<i class="fas fa-check ml-2"></i> تحقق';
-        }
-    } else {
-        // Invalid code
-        error.textContent = '❌ رمز غير صحيح. حاول مرة أخرى.';
-        error.style.display = 'block';
-        input.value = '';
-        input.style.borderColor = '#ef4444';
-        setTimeout(() => input.style.borderColor = 'rgba(0,242,255,.2)', 2000);
-        
-        btn.disabled = false;
-        btn.innerHTML = '<i class="fas fa-check ml-2"></i> تحقق';
-        
-        // Shake animation
-        input.style.animation = 'shake 0.5s';
-        setTimeout(() => input.style.animation = '', 500);
-    }
+window.refreshAll = function() { boot(); };
+
+// ── Navigation ──────────────────────────────────────────────
+window.showSection = function(id) {
+    document.querySelectorAll('.admin-section').forEach(s => s.classList.remove('active'));
+    document.getElementById('sec-' + id)?.classList.add('active');
+    document.querySelectorAll('.nav-item').forEach(n => n.classList.toggle('active', n.dataset.sec === id));
+    const titles = {
+        overview: ['نظرة عامة',''], rooms: ['الغرف النشطة','مراقبة الغرف مباشرة'],
+        players: ['اللاعبون','بحث وتعديل وإصلاح'], reports: ['البلاغات','مراجعة بلاغات اللاعبين'],
+        bans: ['الحظر','إدارة الحظر'], announcements: ['الإعلانات','بث رسائل للاعبين'],
+        words: ['الكلمات والفئات','إدارة محتوى اللعبة'], database: ['قاعدة البيانات','تصفح وتعديل مباشر'],
+        diagnostics: ['فحص النظام','فحص تلقائي للأخطاء'], settings: ['الإعدادات والأمان','']
+    };
+    document.getElementById('page-title').textContent = titles[id]?.[0] || id;
+    document.getElementById('page-sub').textContent = titles[id]?.[1] || '';
+    closeSidebar();
 };
+window.openSidebar  = () => { document.getElementById('admin-sidebar').classList.add('open'); document.getElementById('sidebar-backdrop').classList.add('show'); };
+window.closeSidebar = () => { document.getElementById('admin-sidebar').classList.remove('open'); document.getElementById('sidebar-backdrop').classList.remove('show'); };
 
-// Add shake animation
-const style = document.createElement('style');
-style.textContent = `
-    @keyframes shake {
-        0%, 100% { transform: translateX(0); }
-        25% { transform: translateX(-10px); }
-        75% { transform: translateX(10px); }
-    }
-    #verify-code-btn:hover { opacity: 0.9; transform: scale(1.02); }
-    #verify-code-btn:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
-`;
-document.head.appendChild(style);
+function esc(s) { return String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+function timeAgo(ts) {
+    if (!ts) return '—';
+    const s = Math.max(0, Math.floor((Date.now() - ts) / 1000));
+    if (s < 60) return 'الآن';
+    if (s < 3600) return `منذ ${Math.floor(s/60)} د`;
+    if (s < 86400) return `منذ ${Math.floor(s/3600)} س`;
+    return `منذ ${Math.floor(s/86400)} يوم`;
+}
+window.esc = esc; window.timeAgo = timeAgo;
 
-// ── NAVIGATION ────────────────────────────
-window.showSection = (name) => {
-    document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
-    document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
-    document.getElementById('section-' + name)?.classList.add('active');
-    event?.currentTarget?.classList.add('active');
-
-    // Lazy load section data
-    if (name === 'reports')   loadReports();
-    if (name === 'bans')      loadBans();
-    if (name === 'players')   loadPlayers();
-    if (name === 'words')     loadWords();
-    if (name === 'announcements') loadAnnouncements();
-    if (name === 'analytics') loadAnalytics();
-    if (name === 'admin-access') {
-        loadAdminsList();
-        get(ref(db, 'adminConfig/accessCode')).then(snap => {
-            if (snap.exists()) {
-                document.getElementById('current-admin-code').textContent = snap.val();
-            }
-        }).catch(()=>{});
-    }
-    if (name === 'firebase-viewer' && !window.firebaseViewerData) {
-        refreshFirebaseViewer();
-    }
-};
-
-window.refreshAll = async () => {
-    const btn = document.getElementById('refresh-btn');
-    if (btn) {
-        btn.disabled = true;
-        btn.innerHTML = '<i class="fas fa-spinner fa-spin ml-2"></i>جاري التحديث...';
-    }
-
+// ── OVERVIEW ─────────────────────────────────────────────────
+let rankChartInstance = null;
+async function loadOverview() {
     try {
-        // Initialize admin code in Firebase if not exists
-        try {
-            const codeSnap = await get(ref(db, 'adminConfig/accessCode'));
-            if (!codeSnap.exists()) {
-                await set(ref(db, 'adminConfig/accessCode'), ADMIN_CODE);
-                await set(ref(db, 'adminConfig/codeCreatedAt'), Date.now());
-            }
-        } catch(e) {
-            console.warn('Could not initialize admin code:', e);
-        }
-
-        // Players: Firebase rules may restrict reading entire tree — handle gracefully
-        let playerSnap = null;
-        try {
-            playerSnap = await get(ref(db, 'players'));
-            allPlayers = playerSnap.exists() ? playerSnap.val() : {};
-        } catch(e) {
-            console.warn('[Admin] players read failed (check Firebase rules):', e.message);
-            allPlayers = {};
-        }
-
-        const [roomSnap, reportSnap, banSnap] = await Promise.all([
-            get(ref(db, 'rooms')).catch(() => ({ exists: () => false })),
-            get(ref(db, 'reports')).catch(() => ({ exists: () => false })),
-            get(ref(db, 'bans')).catch(() => ({ exists: () => false }))
+        const [playersSnap, roomsSnap, reportsSnap, bansSnap] = await Promise.all([
+            get(ref(db, 'players')), get(ref(db, 'rooms')), get(ref(db, 'reports')), get(ref(db, 'bans'))
         ]);
+        const players = playersSnap.val() || {};
+        const rooms = roomsSnap.val() || {};
+        const reports = reportsSnap.val() || {};
+        const bans = bansSnap.val() || {};
 
-        allReports = reportSnap.exists() ? reportSnap.val() : {};
-        allBans    = banSnap.exists() ? banSnap.val() : {};
+        const playerList = Object.entries(players);
+        document.getElementById('kpi-players').textContent = playerList.length;
+        document.getElementById('kpi-rooms').textContent = Object.keys(rooms).length;
+        document.getElementById('kpi-reports').textContent = Object.values(reports).filter(r => r.status === 'pending').length;
+        document.getElementById('kpi-bans').textContent = Object.keys(bans).length;
+        document.getElementById('kpi-online').textContent = playerList.filter(([,p]) => p?.presence?.online).length;
 
-        const playerCount = Object.keys(allPlayers).length;
-        const roomCount   = roomSnap.exists() ? Object.values(roomSnap.val()).filter(r => r.status === 'waiting' || r.status === 'playing').length : 0;
-        const pendingReps = Object.values(allReports).filter(r => r.status === 'pending').length;
-        const activeBans  = Object.keys(allBans).length;
-
-        document.getElementById('kpi-players').textContent = playerCount;
-        document.getElementById('kpi-rooms').textContent   = roomCount;
-        document.getElementById('kpi-reports').textContent = pendingReps;
-        document.getElementById('kpi-bans').textContent    = activeBans;
-
-        // Report badge
-        const badge = document.getElementById('report-badge');
-        badge.textContent = pendingReps;
-        badge.style.display = pendingReps > 0 ? 'inline-block' : 'none';
-
-        renderRankDist();
-        renderRecentPlayers();
-    } catch(e) {
-        console.error('Refresh failed:', e);
-        await UIAlert('حدث خطأ أثناء التحديث: ' + e.message, { title: 'خطأ', type: 'error', icon: '❌' });
-    } finally {
-        if (btn) {
-            btn.disabled = false;
-            btn.innerHTML = '<i class="fas fa-sync-alt ml-2"></i>تحديث';
-        }
-    }
-};
-
-// ── RANK DISTRIBUTION ─────────────────────
-function renderRankDist() {
-    const counts = {Bronze:0, Silver:0, Gold:0, Platinum:0, Diamond:0};
-    Object.values(allPlayers).forEach(p => { 
-        if (counts[p.rank] !== undefined) counts[p.rank]++; 
-        else counts.Bronze++; 
-    });
-    if (rankChart) rankChart.destroy();
-    const ctx = document.getElementById('rank-dist-chart');
-    if (!ctx) return;
-    rankChart = new Chart(ctx, {
-        type: 'doughnut',
-        data: { labels: Object.keys(counts), datasets:[{
-            data: Object.values(counts),
-            backgroundColor: ['#cd7f32','#c0c0c0','#ffd700','#e5e4e2','#00f2ff'],
-            borderColor: 'transparent', hoverOffset: 6
-        }]},
-        options: { plugins:{ legend:{ position:'right', labels:{ color:'#aaa', font:{family:'Cairo'} } } }, cutout:'65%', responsive:true }
-    });
-}
-
-// ── RECENT PLAYERS ────────────────────────
-function renderRecentPlayers() {
-    const sorted = Object.values(allPlayers)
-        .filter(p => p.username && p.stats?.lastPlayed)
-        .sort((a,b) => (b.stats.lastPlayed||0) - (a.stats.lastPlayed||0))
-        .slice(0, 8);
-
-    document.getElementById('recent-players-list').innerHTML = sorted.length ? sorted.map(p => `
-        <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid rgba(255,255,255,.05);">
-            <div style="display:flex;align-items:center;gap:10px;">
-                <div style="width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,#00f2ff,#7c30ff);display:flex;align-items:center;justify-content:center;font-size:12px;">
-                    <i class="fas fa-user" style="color:white;"></i>
-                </div>
-                <div>
-                    <p style="font-size:12px;font-weight:700;">${p.username}</p>
-                    <p style="font-size:10px;color:#555;">${new Date(p.stats.lastPlayed).toLocaleDateString('ar-SA')}</p>
-                </div>
-            </div>
-            <span style="font-size:11px;font-weight:900;color:#00f2ff;">${p.rank || 'Bronze'}</span>
-        </div>`).join('') : '<p style="color:#555;font-size:12px;text-align:center;padding:20px;">لا يوجد لاعبون</p>';
-}
-
-// ── ANALYTICS ────────────────────────────
-function loadAnalytics() {
-    // Category distribution
-    const catCounts = {};
-    Object.values(allPlayers).forEach(p => {
-        if (p.categoryStats) {
-            Object.entries(p.categoryStats).forEach(([cat,cnt]) => {
-                catCounts[cat] = (catCounts[cat]||0) + cnt;
+        const rankCounts = {};
+        playerList.forEach(([,p]) => { const r = p.rank || 'Bronze'; rankCounts[r] = (rankCounts[r]||0)+1; });
+        const ctx = document.getElementById('rankChart');
+        if (ctx && window.Chart) {
+            if (rankChartInstance) rankChartInstance.destroy();
+            rankChartInstance = new Chart(ctx, {
+                type: 'doughnut',
+                data: { labels: Object.keys(rankCounts), datasets: [{ data: Object.values(rankCounts), backgroundColor: ['#00e5ff','#a3e635','#f59e0b','#ef4444','#8b5cf6','#94a3b8'] }] },
+                options: { plugins: { legend: { position: 'bottom', labels: { color: '#8891a3', font: { size: 10 } } } } }
             });
         }
-    });
-    const cats = Object.entries(catCounts).sort((a,b)=>b[1]-a[1]).slice(0,8);
-    if (catChart) catChart.destroy();
-    const ctx = document.getElementById('category-chart');
-    if (!ctx) return;
-    catChart = new Chart(ctx, {
-        type:'bar',
-        data:{ labels: cats.map(c=>c[0]), datasets:[{ label:'مباريات', data: cats.map(c=>c[1]),
-            backgroundColor:'rgba(0,242,255,.3)', borderColor:'#00f2ff', borderWidth:2, borderRadius:6 }]},
-        options:{ plugins:{legend:{display:false}},
-            scales:{ x:{ticks:{color:'#aaa',font:{family:'Cairo'}}}, y:{ticks:{color:'#aaa'}} },
-            responsive:true }
-    });
 
-    // Top words
-    get(ref(db,'wordLists')).then(wSnap => {
-        const container = document.getElementById('top-words-list');
-        if (!container) return;
-        if (!wSnap.exists()) { container.innerHTML = '<p style="color:#555;font-size:12px;text-align:center;padding:20px;">لا توجد كلمات</p>'; return; }
-        const wData = wSnap.val();
-        const wordFreq = {};
-        Object.entries(wData).forEach(([cat, words]) => {
-            const arr = Array.isArray(words) ? words : Object.keys(words);
-            arr.forEach(w => { wordFreq[w] = (wordFreq[w]||0) + 1; });
-        });
-        const topWords = Object.entries(wordFreq).sort((a,b)=>b[1]-a[1]).slice(0,15);
-        container.innerHTML = topWords.length
-            ? topWords.map(([w,c],i) => `
-                <div style="display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid rgba(255,255,255,.04);">
-                    <span style="font-size:10px;color:#555;width:20px;text-align:center;">${i+1}</span>
-                    <span style="flex:1;font-size:13px;font-weight:700;">${w}</span>
-                    <span style="font-size:11px;color:#00f2ff;font-weight:900;">${c} فئ${c>1?'ات':'ة'}</span>
-                </div>`).join('')
-            : '<p style="color:#555;font-size:12px;text-align:center;padding:20px;">لا توجد بيانات</p>';
-    }).catch(()=>{});
-
-    const topPlayers = Object.values(allPlayers)
-        .sort((a,b)=>(b.rankPoints||0)-(a.rankPoints||0))
-        .slice(0,20);
-
-    const tbody = document.getElementById('top-players-table');
-    if (tbody) {
-        tbody.innerHTML = topPlayers.map((p,i)=>{
-            const total = p.stats?.totalGames||0;
-            const wins  = (p.stats?.spyWins||0) + (p.stats?.innocentWins||0);
-            const wr    = total ? Math.round(wins/total*100) : 0;
-            return `<tr><td style="color:#555;">${i+1}</td>
-                <td style="font-weight:700;">${p.username}</td>
-                <td><span class="badge badge-active">${p.rank||'Bronze'}</span></td>
-                <td style="font-family:'Orbitron',sans-serif;color:#00f2ff;font-size:12px;">${p.rankPoints||0}</td>
-                <td>${total}</td>
-                <td style="color:${wr>=50?'#22c55e':'#ef4444'};">${wr}%</td></tr>`;
-        }).join('');
-    }
+        const recent = playerList.sort((a,b) => (b[1].createdAt||0) - (a[1].createdAt||0)).slice(0, 8);
+        document.getElementById('recent-players-list').innerHTML = recent.map(([uid,p]) => `
+            <div style="display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid var(--border);">
+                <span style="font-weight:700;">${esc(p.username||'—')}</span>
+                <span style="color:var(--text-faint);">${timeAgo(p.createdAt)}</span>
+            </div>`).join('') || '<p style="color:var(--text-faint);font-size:12px;">لا يوجد</p>';
+    } catch (e) { console.error('loadOverview', e); }
 }
 
-// ── REPORTS ──────────────────────────────
-function loadReports() {
-    get(ref(db,'reports')).then(snap => {
-        allReports = snap.exists() ? snap.val() : {};
-        renderReports();
-    }).catch(e => {
-        console.error('Failed to load reports:', e);
-        const tbody = document.getElementById('reports-table');
-        if (tbody) tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;padding:30px;color:#ef4444;">فشل التحميل</td></tr>';
-    });
+// ── ROOMS (NEW) ──────────────────────────────────────────────
+let roomsCache = {};
+async function loadRooms() {
+    try {
+        const snap = await get(ref(db, 'rooms'));
+        roomsCache = snap.val() || {};
+        document.getElementById('nc-rooms').textContent = Object.keys(roomsCache).length;
+        renderRoomsTable(roomsCache);
+    } catch (e) {
+        document.getElementById('rooms-table').innerHTML = `<tr><td colspan="8" style="color:var(--danger);text-align:center;padding:20px;">خطأ: ${esc(e.message)}</td></tr>`;
+    }
 }
-window.loadReports = loadReports;
+window.loadRooms = loadRooms;
 
-function renderReports() {
-    const tbody = document.getElementById('reports-table');
-    if (!tbody) return;
-    
-    allReportsArray = Object.entries(allReports);
-    let reports = allReportsArray;
-    
-    // Apply filter
-    if (currentReportFilter !== 'all') {
-        reports = reports.filter(([,r]) => r.status === currentReportFilter);
-    }
-    
-    reports.sort((a,b) => (b[1].timestamp||0) - (a[1].timestamp||0));
-
-    if (!reports.length) { 
-        tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;padding:30px;color:#555;">لا توجد بلاغات</td></tr>'; 
-        return; 
-    }
-
-    tbody.innerHTML = reports.map(([id,r]) => {
-        const statusClass = r.status === 'pending' ? 'badge-pending' : 
-                          r.status === 'warned' ? 'badge-warned' :
-                          r.status === 'banned' ? 'badge-banned' : 'badge-resolved';
-        const statusText = r.status === 'pending' ? 'معلق' : 
-                         r.status === 'warned' ? 'محذّر' :
-                         r.status === 'banned' ? 'محظور' : 'محلول';
-        
+function renderRoomsTable(rooms) {
+    const entries = Object.entries(rooms);
+    const tbody = document.getElementById('rooms-table');
+    if (!entries.length) { tbody.innerHTML = `<tr><td colspan="8" style="text-align:center;padding:30px;color:var(--text-faint);">لا توجد غرف نشطة</td></tr>`; return; }
+    const statusLabel = { waiting:'انتظار', playing:'جارية', discussion:'نقاش', voting:'تصويت', reveal:'كشف' };
+    tbody.innerHTML = entries.sort((a,b) => (b[1].createdAt||0)-(a[1].createdAt||0)).map(([code, r]) => {
+        const playerCount = Object.keys(r.players || {}).length;
+        const hostEntry = Object.values(r.players || {}).find(p => p.isHost);
         return `
         <tr>
-            <td style="font-weight:700;">${r.reportedUsername || 'مجهول'}</td>
-            <td>${reasonAr(r.reason)}</td>
-            <td style="font-size:11px;color:#888;">${r.ruleViolation || '—'}</td>
-            <td style="color:#888;font-size:11px;">${r.reportedByUsername || 'مجهول'}</td>
-            <td style="font-family:'Orbitron',sans-serif;font-size:11px;color:#555;">${r.roomCode || '—'}</td>
-            <td style="font-size:11px;color:#555;">${r.timestamp ? new Date(r.timestamp).toLocaleDateString('ar-SA') : '—'}</td>
-            <td><span class="badge ${statusClass}">${statusText}</span></td>
-            <td>
-                <div style="display:flex;gap:6px;">
-                    ${r.status === 'pending' ? `
-                        <button class="btn-sm" onclick="viewReportDetail('${id}')">عرض</button>
-                        <button class="btn-success" onclick="resolveReport('${id}')">حل</button>
-                        <button class="btn-danger" onclick="banFromReport('${r.reportedUsername}')">حظر</button>
-                    ` : `<button class="btn-sm" onclick="viewReportDetail('${id}')">عرض</button>`}
-                </div>
+            <td style="font-family:'Orbitron',monospace;font-weight:900;color:var(--accent);">${esc(code)}</td>
+            <td>${esc(hostEntry?.username || '—')}</td>
+            <td><span class="badge badge-active">${statusLabel[r.status] || esc(r.status||'—')}</span></td>
+            <td>${esc(r.category||'—')}</td>
+            <td>${playerCount}</td>
+            <td>${r.visibility === 'private' ? '🔒 خاصة' : '🌐 عامة'}</td>
+            <td style="color:var(--text-faint);">${timeAgo(r.createdAt)}</td>
+            <td style="display:flex;gap:6px;">
+                <button class="btn btn-ghost btn-sm" onclick="viewRoomDetail('${code}')"><i class="fas fa-eye"></i></button>
+                <button class="btn btn-danger btn-sm" onclick="closeRoom('${code}')"><i class="fas fa-trash"></i></button>
             </td>
         </tr>`;
     }).join('');
 }
 
-window.filterReports = (f, btn) => {
-    currentReportFilter = f;
-    document.querySelectorAll('.active-filter').forEach(b => b.classList.remove('active-filter'));
-    btn.classList.add('active-filter');
-    renderReports();
+window.searchRooms = function(q) {
+    q = q.trim().toLowerCase();
+    if (!q) return renderRoomsTable(roomsCache);
+    const filtered = Object.fromEntries(Object.entries(roomsCache).filter(([code, r]) => {
+        const host = Object.values(r.players||{}).find(p=>p.isHost)?.username || '';
+        return code.toLowerCase().includes(q) || host.toLowerCase().includes(q);
+    }));
+    renderRoomsTable(filtered);
 };
 
-window.searchReports = (query) => {
-    if (!query.trim()) {
-        renderReports();
-        return;
-    }
-    
-    const tbody = document.getElementById('reports-table');
-    if (!tbody) return;
-    
-    const q = query.toLowerCase();
-    const filtered = allReportsArray.filter(([id, r]) => {
-        return (r.reportedUsername && r.reportedUsername.toLowerCase().includes(q)) ||
-               (r.reportedByUsername && r.reportedByUsername.toLowerCase().includes(q)) ||
-               (r.roomCode && r.roomCode.toLowerCase().includes(q)) ||
-               (r.reason && r.reason.toLowerCase().includes(q));
-    });
-    
-    if (!filtered.length) {
-        tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;padding:30px;color:#555;">لا توجد نتائج</td></tr>';
-        return;
-    }
-    
-    tbody.innerHTML = filtered.map(([id,r]) => {
-        const statusClass = r.status === 'pending' ? 'badge-pending' : 
-                          r.status === 'warned' ? 'badge-warned' :
-                          r.status === 'banned' ? 'badge-banned' : 'badge-resolved';
-        const statusText = r.status === 'pending' ? 'معلق' : 
-                         r.status === 'warned' ? 'محذّر' :
-                         r.status === 'banned' ? 'محظور' : 'محلول';
-        
-        return `
-        <tr>
-            <td style="font-weight:700;">${r.reportedUsername || 'مجهول'}</td>
-            <td>${reasonAr(r.reason)}</td>
-            <td style="font-size:11px;color:#888;">${r.ruleViolation || '—'}</td>
-            <td style="color:#888;font-size:11px;">${r.reportedByUsername || 'مجهول'}</td>
-            <td style="font-family:'Orbitron',sans-serif;font-size:11px;color:#555;">${r.roomCode || '—'}</td>
-            <td style="font-size:11px;color:#555;">${r.timestamp ? new Date(r.timestamp).toLocaleDateString('ar-SA') : '—'}</td>
-            <td><span class="badge ${statusClass}">${statusText}</span></td>
-            <td>
-                <div style="display:flex;gap:6px;">
-                    ${r.status === 'pending' ? `
-                        <button class="btn-sm" onclick="viewReportDetail('${id}')">عرض</button>
-                        <button class="btn-success" onclick="resolveReport('${id}')">حل</button>
-                        <button class="btn-danger" onclick="banFromReport('${r.reportedUsername}')">حظر</button>
-                    ` : `<button class="btn-sm" onclick="viewReportDetail('${id}')">عرض</button>`}
-                </div>
-            </td>
-        </tr>`;
-    }).join('');
+window.viewRoomDetail = function(code) {
+    const r = roomsCache[code];
+    if (!r) return;
+    const players = Object.entries(r.players || {});
+    document.getElementById('room-detail-content').innerHTML = `
+        <h3 style="font-family:'Orbitron',monospace;font-size:20px;font-weight:900;color:var(--accent);margin-bottom:6px;">${esc(code)}</h3>
+        <p style="font-size:12px;color:var(--text-dim);margin-bottom:14px;">الحالة: ${esc(r.status)} · الفئة: ${esc(r.category||'—')} · ${r.visibility==='private'?'خاصة':'عامة'}</p>
+        <h4 style="font-size:12px;font-weight:900;color:var(--text-dim);margin-bottom:8px;">اللاعبون (${players.length})</h4>
+        <div style="max-height:240px;overflow-y:auto;">
+            ${players.map(([uid,p]) => `
+                <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border);font-size:12.5px;">
+                    <span>${p.isHost ? '👑 ' : ''}${esc(p.username||uid)}</span>
+                    <span style="color:${p.connected?'var(--ok)':'var(--text-faint)'};font-size:11px;">${p.connected?'متصل':'غير متصل'}</span>
+                </div>`).join('') || '<p style="color:var(--text-faint);font-size:12px;">لا يوجد لاعبون</p>'}
+        </div>`;
+    document.getElementById('room-detail-modal').style.display = 'flex';
 };
 
-window.viewReportDetail = function(reportId) {
-    const report = allReports[reportId];
-    if (!report) return;
-    
-    const modal = document.getElementById('report-detail-modal');
-    const content = document.getElementById('report-detail-content');
-    
-    if (!modal || !content) return;
-    
-    content.innerHTML = `
-        <h3 style="font-size:18px;font-weight:900;color:#ef4444;margin-bottom:20px;">
-            <i class="fas fa-flag ml-2"></i>تفاصيل البلاغ
-        </h3>
-        
-        <div style="margin-bottom:16px;">
-            <p style="font-size:11px;color:#666;margin-bottom:6px;font-weight:700;">المُبلَّغ عنه</p>
-            <p style="font-size:14px;color:#fff;font-weight:700;">${report.reportedUsername || 'مجهول'}</p>
-        </div>
-        
-        <div style="margin-bottom:16px;">
-            <p style="font-size:11px;color:#666;margin-bottom:6px;font-weight:700;">السبب</p>
-            <p style="font-size:13px;color:#ccc;">${reasonAr(report.reason)}</p>
-        </div>
-        
-        ${report.ruleViolation ? `
-        <div style="margin-bottom:16px;">
-            <p style="font-size:11px;color:#666;margin-bottom:6px;font-weight:700;">مخالفة القواعد</p>
-            <p style="font-size:13px;color:#ccc;">${report.ruleViolation}</p>
-        </div>
-        ` : ''}
-        
-        ${report.description ? `
-        <div style="margin-bottom:16px;">
-            <p style="font-size:11px;color:#666;margin-bottom:6px;font-weight:700;">الوصف</p>
-            <p style="font-size:13px;color:#ccc;line-height:1.6;">${report.description}</p>
-        </div>
-        ` : ''}
-        
-        <div style="margin-bottom:16px;">
-            <p style="font-size:11px;color:#666;margin-bottom:6px;font-weight:700;">المُبلِّغ</p>
-            <p style="font-size:13px;color:#ccc;">${report.reportedByUsername || 'مجهول'}</p>
-        </div>
-        
-        <div style="margin-bottom:16px;">
-            <p style="font-size:11px;color:#666;margin-bottom:6px;font-weight:700;">رمز الغرفة</p>
-            <p style="font-size:13px;color:#ccc;font-family:'Orbitron',sans-serif;">${report.roomCode || '—'}</p>
-        </div>
-        
-        <div style="margin-bottom:16px;">
-            <p style="font-size:11px;color:#666;margin-bottom:6px;font-weight:700;">التاريخ</p>
-            <p style="font-size:13px;color:#ccc;">${report.timestamp ? new Date(report.timestamp).toLocaleString('ar-SA') : '—'}</p>
-        </div>
-        
-        <div style="margin-bottom:24px;">
-            <p style="font-size:11px;color:#666;margin-bottom:6px;font-weight:700;">الحالة</p>
-            <span class="badge ${report.status === 'pending' ? 'badge-pending' : 
-                               report.status === 'warned' ? 'badge-warned' :
-                               report.status === 'banned' ? 'badge-banned' : 'badge-resolved'}">
-                ${report.status === 'pending' ? 'معلق' : 
-                  report.status === 'warned' ? 'محذّر' :
-                  report.status === 'banned' ? 'محظور' : 'محلول'}
-            </span>
-        </div>
-        
-        ${report.status === 'pending' ? `
-        <div class="flex gap-3">
-            <button class="btn-success" onclick="resolveReport('${reportId}'); closeReportDetail();">
-                <i class="fas fa-check ml-2"></i>حل البلاغ
-            </button>
-            <button class="btn-danger" onclick="banFromReport('${report.reportedUsername}'); closeReportDetail();">
-                <i class="fas fa-ban ml-2"></i>حظر اللاعب
-            </button>
-        </div>
-        ` : ''}
-    `;
-    
-    modal.style.display = 'flex';
-};
-
-window.closeReportDetail = function() {
-    const modal = document.getElementById('report-detail-modal');
-    if (modal) modal.style.display = 'none';
-};
-
-window.resolveReport = async (id) => {
+window.closeRoom = async function(code) {
+    if (!await UIConfirm(`إنهاء وحذف الغرفة ${code} نهائياً؟ سيتم إخراج كل اللاعبين.`)) return;
     try {
-        await update(ref(db, `reports/${id}`), { status:'resolved', resolvedAt: Date.now() });
-        loadReports();
-        closeReportDetail();
-    } catch(e) {
-        await UIAlert('فشل حل البلاغ: ' + e.message, { title: 'خطأ', type: 'error', icon: '❌' });
-    }
+        await remove(ref(db, `rooms/${code}`));
+        UIAlert('تم حذف الغرفة');
+        loadRooms();
+    } catch (e) { UIAlert('خطأ: ' + e.message); }
 };
 
-window.banFromReport = (username) => {
-    document.getElementById('ban-username').value = username || '';
-    showSection('bans');
-    closeReportDetail();
-};
 
-function reasonAr(r) {
-    const m = {cheating:'غش',spam:'سبام',harassment:'تحرش',offensive:'محتوى مسيء',other:'أخرى',inappropriate:'غير لائق'};
-    return m[r] || r || '—';
-}
-
-// ── BAN MANAGEMENT ────────────────────────
-function loadBans() {
-    get(ref(db,'bans')).then(snap => {
-        allBans = snap.exists() ? snap.val() : {};
-        renderBans();
-    }).catch(e => {
-        console.error('Failed to load bans:', e);
-        const tbody = document.getElementById('bans-table');
-        if (tbody) tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:30px;color:#ef4444;">فشل التحميل</td></tr>';
-    });
-}
-window.loadBans = loadBans;
-
-function renderBans() {
-    const tbody = document.getElementById('bans-table');
-    if (!tbody) return;
-    const bans  = Object.entries(allBans);
-    if (!bans.length) { tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:30px;color:#555;">لا توجد حظورات</td></tr>'; return; }
-
-    tbody.innerHTML = bans.map(([uid,ban]) => `
-        <tr>
-            <td style="font-weight:700;">${ban.username || uid.slice(0,12)}</td>
-            <td>${ban.reason || '—'}</td>
-            <td style="font-size:11px;color:${ban.permanent?'#ef4444':'#aaa'};">${ban.permanent ? '🔴 دائم' : new Date(ban.expiresAt).toLocaleDateString('ar-SA')}</td>
-            <td style="font-size:11px;color:#555;">${ban.bannedByName || 'Admin'}</td>
-            <td><button class="btn-success" onclick="unban('${uid}')">رفع الحظر</button></td>
-        </tr>`).join('');
-}
-
-window.banPlayer = async () => {
-    const username = document.getElementById('ban-username').value.trim();
-    const reason   = document.getElementById('ban-reason').value.trim();
-    const duration = parseInt(document.getElementById('ban-duration').value);
-    if (!username) { await UIAlert('الرجاء إدخال اسم المستخدم', { title: 'حقل مطلوب', type: 'warning', icon: '✏️' }); return; }
-
-    // Find player UID
-    let targetUid = null;
+// ── PLAYERS ──────────────────────────────────────────────────
+let playersCache = {};
+async function loadPlayers() {
     try {
-        const snap = await get(ref(db,'players'));
-        if (snap.exists()) {
-            const players = snap.val();
-            for (const uid in players) {
-                if (players[uid].username === username) { targetUid = uid; break; }
-            }
-        }
-    } catch(e) {
-        await UIAlert('خطأ في البحث عن اللاعب: ' + e.message, { title: 'خطأ', type: 'error', icon: '❌' });
-        return;
+        const snap = await get(ref(db, 'players'));
+        playersCache = snap.val() || {};
+        renderPlayersTable(playersCache);
+        populatePatchDropdown(playersCache);
+    } catch (e) {
+        document.getElementById('players-table').innerHTML = `<tr><td colspan="8" style="color:var(--danger);text-align:center;padding:20px;">خطأ: ${esc(e.message)}</td></tr>`;
     }
-
-    if (!targetUid) { 
-        await UIAlert('لا يوجد لاعب بهذا الاسم في قاعدة البيانات', { title: 'المستخدم غير موجود', type: 'error', icon: '🔍' }); 
-        return; 
-    }
-
-    try {
-        await set(ref(db, `bans/${targetUid}`), {
-            username,
-            reason: reason || 'مخالفة اللوائح',
-            bannedAt:  Date.now(),
-            expiresAt: duration === -1 ? null : Date.now() + duration,
-            permanent: duration === -1,
-            bannedByName: 'Admin'
-        });
-
-        await UIAlert(`تم حظر ${username} بنجاح`, { title: '🚫 تم الحظر', type: 'success', icon: '✅' });
-        document.getElementById('ban-username').value = '';
-        document.getElementById('ban-reason').value = '';
-        loadBans();
-    } catch(e) {
-        await UIAlert('فشل الحظر: ' + e.message, { title: 'خطأ', type: 'error', icon: '❌' });
-    }
-};
-
-window.unban = async (uid) => {
-    const ok = await UIConfirm('هل أنت متأكد من رفع الحظر عن هذا اللاعب؟', { title: 'رفع الحظر', type: 'warning', confirmText: 'رفع الحظر', icon: '✅' });
-    if (!ok) return;
-    try {
-        await remove(ref(db, `bans/${uid}`));
-        loadBans();
-    } catch(e) {
-        await UIAlert('فشل رفع الحظر: ' + e.message, { title: 'خطأ', type: 'error', icon: '❌' });
-    }
-};
-
-// ── PLAYERS ──────────────────────────────
-let filteredPlayers = [];
-function loadPlayers() {
-    filteredPlayers = Object.values(allPlayers);
-    renderPlayersTable(filteredPlayers);
-    populatePatchDropdown();
 }
 window.loadPlayers = loadPlayers;
 
-function populatePatchDropdown() {
-    const select = document.getElementById('patch-uid-select');
-    if (!select) return;
-    const broken = Object.entries(allPlayers).filter(([uid, p]) =>
-        !p.username || p.username === 'undefined' || !p.email || p.email === 'undefined'
-    );
-    if (broken.length === 0) {
-        select.innerHTML = '<option value="">✅ لا يوجد سجلات فارغة</option>';
-        return;
-    }
-    select.innerHTML = '<option value="">— اختر لاعباً فارغاً —</option>' +
-        broken.map(([uid, p]) =>
-            `<option value="${uid}">${uid.slice(0,14)}... | username="${p.username || '?'}" | email="${p.email || '?'}"</option>`
-        ).join('');
+function renderPlayersTable(players) {
+    const entries = Object.entries(players);
+    const tbody = document.getElementById('players-table');
+    if (!entries.length) { tbody.innerHTML = `<tr><td colspan="8" style="text-align:center;padding:30px;color:var(--text-faint);">لا يوجد لاعبون</td></tr>`; return; }
+    tbody.innerHTML = entries.slice(0, 200).map(([uid, p]) => `
+        <tr>
+            <td style="font-weight:700;">${esc(p.username || '(بدون اسم)')}</td>
+            <td style="color:var(--text-faint);font-size:11px;">${esc(p.email || '—')}</td>
+            <td>${esc(p.rank || '—')}</td>
+            <td>${p.rankPoints ?? 0}</td>
+            <td>${p.stats?.totalGames ?? 0}</td>
+            <td>${p.presence?.online ? '<span class="badge badge-ok">متصل</span>' : '<span class="badge badge-info">غير متصل</span>'}</td>
+            <td>
+                <label style="display:inline-flex;align-items:center;gap:5px;cursor:pointer;font-size:11px;">
+                    <input type="checkbox" ${p.isAdmin ? 'checked' : ''} onchange="toggleAdmin('${uid}', this.checked)">
+                    ${p.isAdmin ? '👑' : ''}
+                </label>
+            </td>
+            <td><button class="btn btn-ghost btn-sm" onclick="showSection('database');dbNavigate('players/${uid}')"><i class="fas fa-database"></i></button></td>
+        </tr>`).join('');
 }
 
-window.onPatchSelectChange = function(uid) {
-    if (!uid) return;
-    document.getElementById('patch-uid').value = uid;
-    const p = allPlayers[uid];
-    if (p) {
-        if (p.username && p.username !== 'undefined')
-            document.getElementById('patch-username').value = p.username;
-        if (p.fullName)
-            document.getElementById('patch-fullname').value = p.fullName;
-        if (p.email && p.email !== 'undefined')
-            document.getElementById('patch-email').value = p.email;
+window.searchPlayers = function(q) {
+    q = q.trim().toLowerCase();
+    if (!q) return renderPlayersTable(playersCache);
+    renderPlayersTable(Object.fromEntries(Object.entries(playersCache).filter(([,p]) =>
+        (p.username||'').toLowerCase().includes(q) || (p.email||'').toLowerCase().includes(q))));
+};
+
+window.toggleAdmin = async function(uid, makeAdmin) {
+    const label = makeAdmin ? 'منح' : 'سحب';
+    if (!await UIConfirm(`${label} صلاحية المدير ${makeAdmin?'لـ':'من'} ${playersCache[uid]?.username || uid}؟`)) { loadPlayers(); return; }
+    try {
+        await update(ref(db, `players/${uid}`), { isAdmin: makeAdmin, adminSince: makeAdmin ? Date.now() : null });
+        UIAlert('تم التحديث');
+        loadPlayers();
+    } catch (e) {
+        UIAlert('فشل التحديث — تأكد أن قواعد الأمان تسمح بذلك (راجع تبويب الإعدادات): ' + e.message);
+        loadPlayers();
     }
 };
 
+function populatePatchDropdown(players) {
+    const sel = document.getElementById('patch-uid-select');
+    if (!sel) return;
+    const broken = Object.entries(players).filter(([,p]) => !p.username || !p.email);
+    sel.innerHTML = '<option value="">— اختر —</option>' + broken.map(([uid]) => `<option value="${uid}">${uid}</option>`).join('');
+}
+window.onPatchSelectChange = function(uid) {
+    if (!uid) return;
+    document.getElementById('patch-uid').value = uid;
+    const p = playersCache[uid] || {};
+    document.getElementById('patch-username').value = p.username || '';
+    document.getElementById('patch-fullname').value = p.fullName || '';
+    document.getElementById('patch-email').value = p.email || '';
+};
 window.manualPatchPlayer = async function() {
-    const uid      = document.getElementById('patch-uid').value.trim();
-    const username = document.getElementById('patch-username').value.trim();
-    const fullName = document.getElementById('patch-fullname').value.trim();
-    const email    = document.getElementById('patch-email').value.trim();
-    const resultEl = document.getElementById('patch-result');
-
-    const showResult = (msg, ok) => {
-        resultEl.textContent = msg;
-        resultEl.style.display = 'block';
-        resultEl.style.background  = ok ? 'rgba(34,197,94,.15)' : 'rgba(239,68,68,.15)';
-        resultEl.style.border      = ok ? '1px solid rgba(34,197,94,.4)' : '1px solid rgba(239,68,68,.4)';
-        resultEl.style.color       = ok ? '#22c55e' : '#ef4444';
+    const uid = document.getElementById('patch-uid').value.trim();
+    if (!uid) return UIAlert('أدخل UID');
+    const patch = {
+        username: document.getElementById('patch-username').value.trim(),
+        fullName: document.getElementById('patch-fullname').value.trim(),
+        email: document.getElementById('patch-email').value.trim()
     };
-
-    if (!uid)      { showResult('❌ الرجاء إدخال الـ UID', false); return; }
-    if (!username) { showResult('❌ الرجاء إدخال اسم المستخدم', false); return; }
-    if (!email)    { showResult('❌ الرجاء إدخال البريد الإلكتروني', false); return; }
-
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-        showResult('❌ البريد الإلكتروني غير صحيح', false); return;
-    }
-
     try {
-        const snap = await get(ref(db, `players/${uid}`));
-        if (!snap.exists()) {
-            showResult('❌ لا يوجد سجل بهذا الـ UID في قاعدة البيانات', false);
-            return;
-        }
-    } catch(e) {
-        showResult('❌ خطأ في القراءة: ' + e.message, false);
-        return;
-    }
-
-    const emailLower = email.toLowerCase();
-    for (const [existingUid, p] of Object.entries(allPlayers)) {
-        if (existingUid !== uid && p.email?.toLowerCase() === emailLower) {
-            showResult(`❌ البريد الإلكتروني مستخدم بالفعل للاعب: ${p.username || existingUid}`, false);
-            return;
-        }
-    }
-
-    try {
-        const patch = { uid, username, email };
-        if (fullName) patch.fullName = fullName;
-
         await update(ref(db, `players/${uid}`), patch);
-
-        if (allPlayers[uid]) {
-            allPlayers[uid] = { ...allPlayers[uid], ...patch };
-        }
-
-        showResult(`✅ تم تحديث بيانات اللاعب بنجاح — ${username} (${email})`, true);
-
-        document.getElementById('patch-uid').value       = '';
-        document.getElementById('patch-username').value  = '';
-        document.getElementById('patch-fullname').value  = '';
-        document.getElementById('patch-email').value     = '';
-        document.getElementById('patch-uid-select').value = '';
-
+        const box = document.getElementById('patch-result');
+        box.style.display = 'block'; box.style.background = 'rgba(34,197,94,.1)'; box.style.color = 'var(--ok)';
+        box.textContent = '✅ تم الإصلاح';
         loadPlayers();
-        populatePatchDropdown();
-
-    } catch(e) {
-        showResult('❌ فشل الحفظ: ' + e.message, false);
+    } catch (e) {
+        const box = document.getElementById('patch-result');
+        box.style.display = 'block'; box.style.background = 'rgba(239,68,68,.1)'; box.style.color = 'var(--danger)';
+        box.textContent = '❌ ' + e.message;
     }
 };
 
 window.repairPlayerRecords = async function() {
-    const logEl  = document.getElementById('repair-log');
-    logEl.innerHTML = '';
-    logEl.style.display = 'block';
-
-    const log = (msg, color = '#aaa') => {
-        logEl.innerHTML += `<span style="color:${color}">${msg}</span>\n`;
-        logEl.scrollTop = logEl.scrollHeight;
-    };
-
-    log('جاري قراءة جميع السجلات...', '#fbbf24');
-
-    let snap;
-    try {
-        snap = await get(ref(db, 'players'));
-    } catch(e) {
-        log('❌ فشل القراءة: ' + e.message, '#ef4444');
-        return;
-    }
-
-    if (!snap.exists()) { log('لا يوجد لاعبون في قاعدة البيانات.', '#888'); return; }
-
-    const players = snap.val();
-    let fixed = 0, skipped = 0, already = 0;
-
-    for (const [uid, p] of Object.entries(players)) {
+    const log = document.getElementById('repair-log');
+    log.style.display = 'block'; log.textContent = 'جاري الفحص...\n';
+    const defaults = { coins: 100, hints: 3, rankPoints: 0, rank: 'Bronze', activeTheme: 'cyan', activeTitle: 'rookie', moderationWarnings: 0, totalBans: 0 };
+    let fixed = 0, ok = 0;
+    for (const [uid, p] of Object.entries(playersCache)) {
         const patch = {};
-        let needsFix = false;
-
-        if (!p.uid) {
-            patch.uid = uid;
-            needsFix = true;
-        }
-
-        if (!p.username || p.username === 'undefined') {
-            patch.username = p.fullName || `مجهول_${uid.slice(0, 6)}`;
-            needsFix = true;
-        }
-
-        if (!p.email || p.email === 'undefined') {
-            patch.email = '';
-            needsFix = true;
-        }
-
-        if (p.coins       == null) { patch.coins       = 100;     needsFix = true; }
-        if (p.hints       == null) { patch.hints       = 3;       needsFix = true; }
-        if (p.rankPoints  == null) { patch.rankPoints  = 0;       needsFix = true; }
-        if (!p.rank)               { patch.rank        = 'Bronze'; needsFix = true; }
-        if (!p.activeTheme)        { patch.activeTheme = 'cyan';  needsFix = true; }
-        if (!p.activeTitle)        { patch.activeTitle = 'rookie'; needsFix = true; }
-        if (!p.stats)              {
-            patch.stats = { totalGames:0, spyWins:0, innocentWins:0, currentStreak:0, longestWinStreak:0 };
-            needsFix = true;
-        }
-        if (p.moderationWarnings == null) { patch.moderationWarnings = 0; needsFix = true; }
-        if (p.totalBans          == null) { patch.totalBans          = 0; needsFix = true; }
-
-        if (needsFix) {
-            try {
-                await update(ref(db, `players/${uid}`), patch);
-                log(`✅ أصلح: ${uid.slice(0,12)}... → username="${patch.username || p.username}"`, '#22c55e');
-                fixed++;
-            } catch(e) {
-                log(`❌ فشل إصلاح ${uid.slice(0,12)}: ${e.message}`, '#ef4444');
-                skipped++;
-            }
-        } else {
-            already++;
-        }
+        Object.entries(defaults).forEach(([k, v]) => { if (p[k] === undefined || p[k] === null) patch[k] = v; });
+        if (!p.stats) patch.stats = { totalGames: 0, spyWins: 0, innocentWins: 0, currentStreak: 0, longestWinStreak: 0 };
+        if (Object.keys(patch).length) {
+            try { await update(ref(db, `players/${uid}`), patch); log.textContent += `✅ أُصلح: ${p.username || uid} (${Object.keys(patch).join(', ')})\n`; fixed++; }
+            catch (e) { log.textContent += `❌ فشل: ${uid} — ${e.message}\n`; }
+        } else ok++;
+        log.scrollTop = log.scrollHeight;
     }
-
-    log(`\nاكتمل: ${fixed} تم إصلاحه | ${already} سليم | ${skipped} فشل`, '#00f2ff');
-
-    if (fixed > 0) {
-        log('⚠️ ملاحظة: البريد الإلكتروني لا يمكن استرداده إلا عندما يُسجّل المستخدم الدخول مجدداً.', '#fbbf24');
-        try {
-            const freshSnap = await get(ref(db, 'players'));
-            if (freshSnap.exists()) {
-                allPlayers = freshSnap.val();
-                loadPlayers();
-            }
-        } catch(e) {}
-    }
+    log.textContent += `\n— انتهى — أُصلح: ${fixed}، سليم بالفعل: ${ok}`;
+    loadPlayers();
 };
 
-window.searchPlayers = (q) => {
-    const results = filteredPlayers.filter(p => p.username?.toLowerCase().includes(q.toLowerCase()));
-    renderPlayersTable(results);
+// ── REPORTS ──────────────────────────────────────────────────
+let reportsCache = {};
+let reportFilterState = 'pending';
+async function loadReports() {
+    try {
+        const snap = await get(ref(db, 'reports'));
+        reportsCache = snap.val() || {};
+        document.getElementById('nc-reports').textContent = Object.values(reportsCache).filter(r => r.status === 'pending').length;
+        filterReports();
+    } catch (e) {
+        document.getElementById('reports-table').innerHTML = `<tr><td colspan="7" style="color:var(--danger);text-align:center;padding:20px;">خطأ: ${esc(e.message)}</td></tr>`;
+    }
+}
+window.loadReports = loadReports;
+
+window.filterReports = function() {
+    reportFilterState = document.getElementById('report-filter')?.value || 'pending';
+    renderReports();
 };
+window.searchReports = function(q) { renderReports(q); };
 
-function renderPlayersTable(players) {
-    const tbody = document.getElementById('players-table');
-    if (!tbody) return;
-    if (!players.length) { tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:30px;color:#555;">لا يوجد لاعبون</td></tr>'; return; }
-    const RANK_COLORS = {Diamond:'#00f2ff',Platinum:'#e5e4e2',Gold:'#ffd700',Silver:'#c0c0c0',Bronze:'#cd7f32'};
-
-    tbody.innerHTML = players.sort((a,b)=>(b.rankPoints||0)-(a.rankPoints||0)).map((p,i) => {
-        const total   = p.stats?.totalGames||0;
-        const wins    = (p.stats?.spyWins||0)+(p.stats?.innocentWins||0);
-        const wr      = total ? Math.round(wins/total*100) : 0;
-        const color   = RANK_COLORS[p.rank] || '#888';
-        const last    = p.stats?.lastPlayed ? new Date(p.stats.lastPlayed).toLocaleDateString('ar-SA') : '—';
-
-        const isBroken = !p.username || p.username === 'undefined' || !p.email || p.email === 'undefined';
-        const rowStyle = isBroken ? 'background:rgba(251,191,36,.04);border-right:3px solid #fbbf24;' : '';
-        const nameDisplay = p.username && p.username !== 'undefined'
-            ? p.username
-            : `<span style="color:#fbbf24;font-style:italic;">⚠️ غير معروف (${p.uid?.slice(0,8) || '?'}...)</span>`;
-
-        return `<tr style="${rowStyle}">
-            <td style="font-weight:700;">${nameDisplay}</td>
-            <td style="color:${color};font-weight:900;font-size:12px;">${p.rank||'Bronze'}</td>
-            <td style="font-family:'Orbitron',sans-serif;font-size:11px;color:${color};">${p.rankPoints||0}</td>
-            <td>${total}</td>
-            <td style="color:#ffd700;font-weight:700;">🪙 ${p.coins||0}</td>
-            <td style="font-size:11px;color:#555;">${last}</td>
-            <td>
-                <div style="display:flex;gap:6px;">
-                    ${isBroken
-                        ? `<span style="font-size:10px;color:#fbbf24;font-weight:700;">يحتاج إصلاح</span>`
-                        : `<button class="btn-sm" onclick="viewPlayer('${p.username}')">عرض</button>
-                           <button class="btn-danger" onclick="document.getElementById('ban-username').value='${p.username}';showSection('bans')">حظر</button>`
-                    }
-                </div>
-            </td>
-        </tr>`;
-    }).join('');
+function renderReports(searchQ) {
+    let entries = Object.entries(reportsCache);
+    if (reportFilterState !== 'all') entries = entries.filter(([,r]) => r.status === reportFilterState);
+    if (searchQ) {
+        const q = searchQ.trim().toLowerCase();
+        entries = entries.filter(([,r]) => (r.reportedUsername||'').toLowerCase().includes(q) || (r.reportedByUsername||'').toLowerCase().includes(q));
+    }
+    const tbody = document.getElementById('reports-table');
+    if (!entries.length) { tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;padding:30px;color:var(--text-faint);">لا توجد بلاغات</td></tr>`; return; }
+    const statusBadge = { pending:'badge-pending', resolved:'badge-resolved', warned:'badge-warned', banned:'badge-banned' };
+    tbody.innerHTML = entries.sort((a,b)=>(b[1].timestamp||0)-(a[1].timestamp||0)).map(([id, r]) => `
+        <tr>
+            <td style="font-weight:700;">${esc(r.reportedUsername||'—')}</td>
+            <td>${esc(r.reason||'—')}</td>
+            <td style="color:var(--text-faint);">${esc(r.reportedByUsername||'—')}</td>
+            <td style="font-family:'Orbitron',monospace;font-size:11px;">${esc(r.roomCode||'—')}</td>
+            <td style="color:var(--text-faint);">${timeAgo(r.timestamp)}</td>
+            <td><span class="badge ${statusBadge[r.status]||'badge-info'}">${esc(r.status||'—')}</span></td>
+            <td><button class="btn btn-ghost btn-sm" onclick="viewReportDetail('${id}')"><i class="fas fa-eye"></i></button></td>
+        </tr>`).join('');
 }
 
-window.viewPlayer = (username) => {
-    const p = Object.values(allPlayers).find(pl => pl.username === username);
-    if (!p) return;
-    const total = p.stats?.totalGames || 0;
-    const wins  = (p.stats?.spyWins||0) + (p.stats?.innocentWins||0);
-    const wr    = total ? Math.round(wins/total*100) : 0;
-    UIAlert(
-        `<div style="text-align:right;direction:rtl;line-height:2;font-size:13px;">
-            <b>الرتبة:</b> ${p.rank || 'Bronze'}<br>
-            <b>النقاط:</b> ${p.rankPoints || 0}<br>
-            <b>المباريات:</b> ${total}<br>
-            <b>انتصارات جاسوس:</b> ${p.stats?.spyWins || 0}<br>
-            <b>انتصارات بريء:</b> ${p.stats?.innocentWins || 0}<br>
-            <b>نسبة الفوز:</b> ${wr}%<br>
-            <b>العملات:</b> 🪙 ${p.coins || 0}
-        </div>`,
-        { title: `👤 ${username}`, type: 'info', icon: '' }
-    );
+window.viewReportDetail = function(id) {
+    const r = reportsCache[id];
+    if (!r) return;
+    document.getElementById('report-detail-content').innerHTML = `
+        <h3 style="font-size:15px;font-weight:900;margin-bottom:4px;">بلاغ ضد ${esc(r.reportedUsername)}</h3>
+        <p style="font-size:11px;color:var(--text-faint);margin-bottom:16px;">${timeAgo(r.timestamp)} · غرفة ${esc(r.roomCode||'—')}</p>
+        <div style="font-size:12.5px;line-height:2;color:var(--text-dim);margin-bottom:16px;">
+            <div><b style="color:var(--text);">السبب:</b> ${esc(r.reason)}</div>
+            <div><b style="color:var(--text);">المُبلِّغ:</b> ${esc(r.reportedByUsername)}</div>
+            <div><b style="color:var(--text);">التفاصيل:</b> ${esc(r.description||'—')}</div>
+        </div>
+        ${r.screenshot ? `<img src="${r.screenshot}" style="width:100%;border-radius:10px;margin-bottom:16px;">` : ''}
+        <div style="display:flex;gap:8px;flex-wrap:wrap;">
+            <button class="btn btn-success btn-sm" onclick="resolveReport('${id}','resolved')">✅ حل بدون إجراء</button>
+            <button class="btn btn-ghost btn-sm" onclick="resolveReport('${id}','warned')">⚠️ تحذير للاعب</button>
+            <button class="btn btn-danger btn-sm" onclick="banFromReport('${id}')">🚫 حظر اللاعب</button>
+            <button class="btn btn-ghost btn-sm" onclick="document.getElementById('report-detail-modal').style.display='none'">إغلاق</button>
+        </div>`;
+    document.getElementById('report-detail-modal').style.display = 'flex';
 };
 
-// ── WORD MANAGEMENT ──────────────────────
+window.resolveReport = async function(id, status) {
+    try {
+        await update(ref(db, `reports/${id}`), { status, resolvedAt: Date.now(), resolvedBy: currentAdmin?.username });
+        document.getElementById('report-detail-modal').style.display = 'none';
+        UIAlert('تم التحديث');
+        loadReports();
+    } catch (e) { UIAlert('خطأ: ' + e.message); }
+};
+
+window.banFromReport = async function(id) {
+    const r = reportsCache[id];
+    if (!r || !await UIConfirm(`حظر ${r.reportedUsername} نهائياً؟`)) return;
+    try {
+        await set(ref(db, `bans/${r.reportedUid || id}`), {
+            username: r.reportedUsername, reason: r.reason, bannedAt: Date.now(),
+            permanent: true, bannedByName: currentAdmin?.username
+        });
+        await update(ref(db, `reports/${id}`), { status: 'banned', resolvedAt: Date.now(), resolvedBy: currentAdmin?.username });
+        document.getElementById('report-detail-modal').style.display = 'none';
+        UIAlert('تم الحظر');
+        loadReports(); loadBans();
+    } catch (e) { UIAlert('خطأ: ' + e.message); }
+};
+
+// ── BANS ─────────────────────────────────────────────────────
+let bansCache = {};
+async function loadBans() {
+    try {
+        const snap = await get(ref(db, 'bans'));
+        bansCache = snap.val() || {};
+        renderBans();
+    } catch (e) {
+        document.getElementById('bans-table').innerHTML = `<tr><td colspan="5" style="color:var(--danger);text-align:center;padding:20px;">خطأ: ${esc(e.message)}</td></tr>`;
+    }
+}
+window.loadBans = loadBans;
+
+function renderBans() {
+    const entries = Object.entries(bansCache);
+    const tbody = document.getElementById('bans-table');
+    if (!entries.length) { tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;padding:30px;color:var(--text-faint);">لا يوجد محظورون</td></tr>`; return; }
+    tbody.innerHTML = entries.map(([uid, b]) => `
+        <tr>
+            <td style="font-weight:700;">${esc(b.username||uid)}</td>
+            <td>${esc(b.reason||'—')}</td>
+            <td style="color:var(--text-faint);">${timeAgo(b.bannedAt)}</td>
+            <td>${b.permanent ? 'دائم' : (b.expiresAt ? timeAgo(b.expiresAt) : '—')}</td>
+            <td><button class="btn btn-success btn-sm" onclick="unbanPlayer('${uid}')">إلغاء الحظر</button></td>
+        </tr>`).join('');
+}
+
+window.unbanPlayer = async function(uid) {
+    if (!await UIConfirm('إلغاء الحظر عن هذا اللاعب؟')) return;
+    try { await remove(ref(db, `bans/${uid}`)); UIAlert('تم إلغاء الحظر'); loadBans(); }
+    catch (e) { UIAlert('خطأ: ' + e.message); }
+};
+
+window.openManualBanModal = async function() {
+    const username = await UIPrompt('اسم المستخدم المراد حظره:');
+    if (!username) return;
+    const uid = await UIPrompt('UID اللاعب (من تبويب اللاعبون):');
+    if (!uid) return;
+    const reason = await UIPrompt('سبب الحظر:');
+    try {
+        await set(ref(db, `bans/${uid}`), { username, reason: reason||'مخالفة القواعد', bannedAt: Date.now(), permanent: true, bannedByName: currentAdmin?.username });
+        UIAlert('تم الحظر'); loadBans();
+    } catch (e) { UIAlert('خطأ: ' + e.message); }
+};
+
+// ── ANNOUNCEMENTS ────────────────────────────────────────────
+async function loadCurrentAnnouncement() {
+    try {
+        const snap = await get(ref(db, 'announcements/current'));
+        const a = snap.val();
+        if (a && a.active) document.getElementById('ann-text-input').value = a.text || '';
+    } catch (e) {}
+}
+window.sendAnnouncement = async function() {
+    const text = document.getElementById('ann-text-input').value.trim();
+    if (!text) return UIAlert('اكتب نص الإعلان');
+    try {
+        await set(ref(db, 'announcements/current'), {
+            text, priority: document.getElementById('ann-priority').value,
+            duration: parseInt(document.getElementById('ann-duration').value) || 30,
+            active: true, sentAt: Date.now(), sentBy: currentAdmin?.username
+        });
+        UIAlert('تم البث');
+    } catch (e) { UIAlert('خطأ: ' + e.message); }
+};
+window.clearAnnouncement = async function() {
+    try { await update(ref(db, 'announcements/current'), { active: false }); UIAlert('تم الإلغاء'); }
+    catch (e) { UIAlert('خطأ: ' + e.message); }
+};
+
+// ── WORDS / CATEGORIES ───────────────────────────────────────
+let wordListsCache = {};
+let selectedCategory = null;
 async function loadWords() {
     try {
         const snap = await get(ref(db, 'wordLists'));
-        wordListData = snap.exists() ? snap.val() : {};
+        wordListsCache = snap.val() || {};
         renderCategoryList();
-    } catch(e) {
-        console.error('Failed to load words:', e);
-    }
+    } catch (e) { console.error('loadWords', e); }
 }
 window.loadWords = loadWords;
 
 function renderCategoryList() {
-    const list = document.getElementById('category-list');
-    if (!list) return;
-    const cats  = Object.keys(wordListData);
-    list.innerHTML = cats.map(cat => `
-        <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 12px;
-            border-radius:10px;margin-bottom:4px;cursor:pointer;transition:all .2s;
-            background:${activeCategory===cat?'rgba(168,85,247,.2)':'rgba(255,255,255,.04)'};"
-            onclick="selectCategory('${cat}')">
-            <span style="font-size:13px;font-weight:700;">${cat}</span>
-            <span style="font-size:10px;color:#555;">${Array.isArray(wordListData[cat])?wordListData[cat].length:Object.keys(wordListData[cat]).length} كلمة</span>
-        </div>`).join('') || '<p style="color:#555;font-size:12px;">لا توجد فئات</p>';
+    const cats = Object.keys(wordListsCache);
+    if (!selectedCategory && cats.length) selectedCategory = cats[0];
+    document.getElementById('category-list').innerHTML = cats.map(c => `
+        <div onclick="selectCategory('${c}')" style="display:flex;justify-content:space-between;align-items:center;padding:8px 10px;border-radius:9px;cursor:pointer;margin-bottom:4px;font-size:12.5px;font-weight:700;
+            background:${c===selectedCategory?'rgba(0,229,255,.1)':'transparent'};color:${c===selectedCategory?'var(--accent)':'var(--text-dim)'};">
+            <span>${esc(c)}</span>
+            <span style="font-size:10px;color:var(--text-faint);">${Object.keys(wordListsCache[c]||{}).length}</span>
+        </div>`).join('') || '<p style="color:var(--text-faint);font-size:12px;">لا توجد فئات</p>';
+    renderWordsCloud();
+}
+window.selectCategory = function(c) { selectedCategory = c; renderCategoryList(); };
+
+function renderWordsCloud() {
+    const el = document.getElementById('words-cloud');
+    const titleEl = document.getElementById('words-cloud-title');
+    if (!selectedCategory) { el.innerHTML = ''; return; }
+    titleEl.textContent = `كلمات: ${selectedCategory}`;
+    const words = Object.keys(wordListsCache[selectedCategory] || {});
+    el.innerHTML = words.map(w => `
+        <span style="display:inline-flex;align-items:center;gap:6px;background:rgba(255,255,255,.05);border:1px solid var(--border);border-radius:20px;padding:4px 6px 4px 12px;margin:3px;font-size:11.5px;">
+            ${esc(w)} <button onclick="deleteWord('${esc(w).replace(/'/g,"\\'")}')" style="background:none;border:none;color:var(--danger);cursor:pointer;font-size:10px;">✕</button>
+        </span>`).join('') || '<p style="color:var(--text-faint);font-size:12px;">لا توجد كلمات</p>';
 }
 
-window.selectCategory = (cat) => {
-    activeCategory = cat;
-    document.getElementById('active-cat-name').textContent = cat;
-    const words = Array.isArray(wordListData[cat]) ? wordListData[cat] : Object.keys(wordListData[cat]);
-    document.getElementById('word-count').textContent = words.length + ' كلمة';
-    document.getElementById('words-cloud').innerHTML = words.map(w => `
-        <span class="word-tag">${w}
-            <button onclick="deleteWord('${cat}','${w}')">✕</button>
-        </span>`).join('');
-    renderCategoryList();
+window.addCategory = async function() {
+    const name = document.getElementById('new-category-name').value.trim();
+    if (!name) return;
+    try { await set(ref(db, `wordLists/${name}/_init`), true); document.getElementById('new-category-name').value=''; loadWords(); }
+    catch (e) { UIAlert('خطأ: ' + e.message); }
+};
+window.addWord = async function() {
+    if (!selectedCategory) return UIAlert('اختر فئة أولاً');
+    const w = document.getElementById('new-word-input').value.trim();
+    if (!w) return;
+    try { await set(ref(db, `wordLists/${selectedCategory}/${w}`), true); document.getElementById('new-word-input').value=''; loadWords(); }
+    catch (e) { UIAlert('خطأ: ' + e.message); }
+};
+window.deleteWord = async function(w) {
+    if (!selectedCategory || !await UIConfirm(`حذف "${w}"؟`)) return;
+    try { await remove(ref(db, `wordLists/${selectedCategory}/${w}`)); loadWords(); }
+    catch (e) { UIAlert('خطأ: ' + e.message); }
 };
 
-window.addWord = async () => {
-    const word = document.getElementById('new-word').value.trim();
-    if (!word || !activeCategory) { 
-        await UIAlert('اختر فئة أولاً وأدخل كلمة', { title: 'تنبيه', type: 'warning', icon: '⚠️' }); 
-        return; 
+// ── DATABASE EXPLORER (NEW) ──────────────────────────────────
+let dbCurrentPath = '';
+let dbCurrentData = null;
+let dbEditMode = false;
+
+window.dbNavigate = async function(path) {
+    if (path === undefined) path = document.getElementById('db-path-input').value.trim();
+    path = (path || '').replace(/^\/+|\/+$/g, '');
+    dbCurrentPath = path;
+    document.getElementById('db-path-input').value = path;
+    document.getElementById('db-current-path').textContent = '/' + path;
+    const crumbs = path ? path.split('/') : [];
+    document.getElementById('db-breadcrumb').innerHTML = ['root', ...crumbs].map((c, i) => {
+        const p = crumbs.slice(0, i).join('/');
+        return `<span onclick="dbNavigate('${i===0?'':p}')" style="cursor:pointer;text-decoration:underline;">${esc(c)}</span>`;
+    }).join(' / ');
+
+    dbEditMode = false;
+    document.getElementById('db-view-raw').style.display = 'none';
+    document.getElementById('db-view-tree').style.display = 'block';
+    document.getElementById('db-save-btn').style.display = 'none';
+
+    try {
+        const snap = await get(ref(db, path || '/'));
+        dbCurrentData = snap.exists() ? snap.val() : null;
+        const hasData = dbCurrentData !== null;
+        document.getElementById('db-empty-msg').style.display = hasData ? 'none' : 'block';
+        document.getElementById('db-view-tree').style.display = hasData ? 'block' : 'none';
+        document.getElementById('db-edit-toggle').style.display = 'inline-flex';
+        document.getElementById('db-delete-btn').style.display = path ? 'inline-flex' : 'none';
+        renderDbTree(dbCurrentData);
+    } catch (e) {
+        document.getElementById('db-view-tree').innerHTML = `<p style="color:var(--danger);">خطأ: ${esc(e.message)}</p>`;
     }
-    const words = Array.isArray(wordListData[activeCategory]) ? [...wordListData[activeCategory]] : Object.keys(wordListData[activeCategory]);
-    if (!words.includes(word)) {
-        words.push(word);
-        wordListData[activeCategory] = words;
+};
+
+function renderDbTree(data, depth = 0) {
+    if (depth === 0) document.getElementById('db-view-tree').innerHTML = buildTreeHtml(data);
+}
+function buildTreeHtml(data, indent = 0) {
+    if (data === null || data === undefined) return '<span style="color:var(--text-faint);">null</span>';
+    if (typeof data !== 'object') {
+        const v = typeof data === 'string' ? `"${esc(data)}"` : String(data);
+        return `<span class="db-tree-val">${v}</span>`;
+    }
+    const entries = Object.entries(data);
+    if (!entries.length) return '<span style="color:var(--text-faint);">{}</span>';
+    return '<div style="margin-right:' + (indent ? '18px' : '0') + ';">' + entries.map(([k, v]) => {
+        const isObj = v !== null && typeof v === 'object';
+        const childPath = (dbCurrentPath ? dbCurrentPath + '/' : '') + k;
+        return `<div style="padding:2px 0;">
+            <span class="db-tree-key" onclick="dbNavigate('${childPath.replace(/'/g,"\\'")}')">${esc(k)}</span>:
+            ${isObj ? `<span style="color:var(--text-faint);">{${Object.keys(v).length}}</span>${buildTreeHtml(v, indent+1)}` : buildTreeHtml(v, indent+1)}
+        </div>`;
+    }).join('') + '</div>';
+}
+
+window.dbToggleEdit = function() {
+    dbEditMode = !dbEditMode;
+    document.getElementById('db-view-tree').style.display = dbEditMode ? 'none' : 'block';
+    const raw = document.getElementById('db-view-raw');
+    raw.style.display = dbEditMode ? 'block' : 'none';
+    if (dbEditMode) raw.value = JSON.stringify(dbCurrentData, null, 2);
+    document.getElementById('db-save-btn').style.display = dbEditMode ? 'inline-flex' : 'none';
+};
+
+window.dbSave = async function() {
+    let parsed;
+    try { parsed = JSON.parse(document.getElementById('db-view-raw').value); }
+    catch (e) { return UIAlert('JSON غير صالح: ' + e.message); }
+    const warn = dbCurrentPath === '' || dbCurrentPath.split('/').length === 1
+        ? '⚠️ أنت على وشك الكتابة فوق مسار كبير بالكامل (' + (dbCurrentPath||'الجذر') + '). هذا سيستبدل كل البيانات تحته. متأكد؟'
+        : `حفظ التعديلات في /${dbCurrentPath}؟`;
+    if (!await UIConfirm(warn)) return;
+    try {
+        await set(ref(db, dbCurrentPath || '/'), parsed);
+        UIAlert('تم الحفظ');
+        dbNavigate(dbCurrentPath);
+    } catch (e) { UIAlert('فشل الحفظ: ' + e.message); }
+};
+
+window.dbDeletePath = async function() {
+    if (!dbCurrentPath) return;
+    if (!await UIConfirm(`⚠️ حذف كل شيء تحت /${dbCurrentPath} نهائياً؟ لا يمكن التراجع.`)) return;
+    if (!await UIConfirm(`تأكيد أخير: حذف /${dbCurrentPath}؟`)) return;
+    try {
+        await remove(ref(db, dbCurrentPath));
+        UIAlert('تم الحذف');
+        const parent = dbCurrentPath.split('/').slice(0, -1).join('/');
+        dbNavigate(parent);
+    } catch (e) { UIAlert('فشل الحذف: ' + e.message); }
+};
+
+// ── DIAGNOSTICS / TEST SUITE (NEW) ───────────────────────────
+// Each check pushes { severity, title, detail, fixLabel?, fixFn? } — severity
+// is one of critical / warn / ok / info. These specifically target failure
+// patterns found by hand in this exact codebase (missing hostId, orphaned
+// presence, empty categories, etc.) rather than generic sanity checks.
+window.runDiagnostics = async function() {
+    const btn = document.getElementById('run-diag-btn');
+    btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> جارٍ الفحص...';
+    const results = [];
+    const push = (severity, title, detail, extra) => results.push({ severity, title, detail, ...extra });
+
+    try {
+        // 0. Connectivity baseline
         try {
-            await set(ref(db, `wordLists/${activeCategory}`), words);
-            document.getElementById('new-word').value = '';
-            selectCategory(activeCategory);
-        } catch(e) {
-            await UIAlert('فشل إضافة الكلمة: ' + e.message, { title: 'خطأ', type: 'error', icon: '❌' });
+            await get(ref(db, 'players'));
+            push('ok', 'الاتصال بقاعدة البيانات', 'القراءة تعمل بشكل طبيعي');
+        } catch (e) {
+            push('critical', 'تعذر الاتصال بقاعدة البيانات', e.message);
+            renderDiagResults(results); btn.disabled = false; btn.innerHTML = '<i class="fas fa-play"></i> تشغيل الفحص'; return;
         }
-    } else { 
-        await UIAlert(`الكلمة "${word}" موجودة بالفعل في هذه الفئة`, { title: 'كلمة مكررة', type: 'warning', icon: '⚠️' }); 
-    }
-};
 
-window.deleteWord = async (cat, word) => {
-    const ok = await UIConfirm(`هل تريد حذف الكلمة "${word}" من الفئة "${cat}"؟`, { title: 'حذف كلمة', type: 'error', confirmText: 'حذف', cancelText: 'إلغاء', icon: '🗑️' });
-    if (!ok) return;
-    try {
-        const words = Array.isArray(wordListData[cat]) ? [...wordListData[cat]] : Object.keys(wordListData[cat]);
-        const updated = words.filter(w => w !== word);
-        wordListData[cat] = updated;
-        await set(ref(db, `wordLists/${cat}`), updated);
-        selectCategory(cat);
-    } catch(e) {
-        await UIAlert('فشل حذف الكلمة: ' + e.message, { title: 'خطأ', type: 'error', icon: '❌' });
-    }
-};
+        const [playersSnap, roomsSnap, wordsSnap, invitesSnap, joinReqSnap, bansSnap] = await Promise.all([
+            get(ref(db, 'players')), get(ref(db, 'rooms')), get(ref(db, 'wordLists')),
+            get(ref(db, 'invites')), get(ref(db, 'joinRequests')), get(ref(db, 'bans'))
+        ]);
+        const players = playersSnap.val() || {};
+        const rooms = roomsSnap.val() || {};
+        const words = wordsSnap.val() || {};
+        const invites = invitesSnap.val() || {};
+        const joinReqs = joinReqSnap.val() || {};
+        const bans = bansSnap.val() || {};
 
-window.addCategory = async () => {
-    const cat = document.getElementById('new-category').value.trim();
-    if (!cat) return;
-    if (wordListData[cat]) { 
-        await UIAlert(`الفئة "${cat}" موجودة بالفعل`, { title: 'فئة مكررة', type: 'warning', icon: '⚠️' }); 
-        return; 
-    }
-    try {
-        wordListData[cat] = [];
-        await set(ref(db, `wordLists/${cat}`), []);
-        document.getElementById('new-category').value = '';
-        renderCategoryList();
-        selectCategory(cat);
-    } catch(e) {
-        await UIAlert('فشل إضافة الفئة: ' + e.message, { title: 'خطأ', type: 'error', icon: '❌' });
-    }
-};
+        // 1. Room host integrity — the exact isHost/hostId bug class found earlier
+        let badHostRooms = 0;
+        Object.entries(rooms).forEach(([code, r]) => {
+            if (!r.hostId) { push('critical', `غرفة ${code}: لا يوجد hostId`, 'لن تظهر عناصر تحكم المضيف لأي أحد في هذه الغرفة.'); badHostRooms++; return; }
+            const players_ = r.players || {};
+            const hostMatch = Object.entries(players_).find(([uid,p]) => uid === r.hostId);
+            if (!hostMatch) { push('warn', `غرفة ${code}: hostId لا يطابق أي لاعب حالي`, `hostId=${r.hostId} لكنه غير موجود في قائمة اللاعبين — على الأغلب المضيف غادر.`); }
+            else if (!hostMatch[1].isHost) { push('warn', `غرفة ${code}: isHost غير مطابق`, 'صاحب hostId موجود لكن isHost:true غير مضبوط على سجله.'); }
+        });
+        if (!badHostRooms && Object.keys(rooms).length) push('ok', 'تكامل استضافة الغرف', `${Object.keys(rooms).length} غرفة، كلها تملك hostId صالح`);
 
-// ── ANNOUNCEMENTS ─────────────────────────
-window.setPriority = (p, btn) => {
-    activePriority = p;
-    document.querySelectorAll('[id^="pri-"]').forEach(b => { b.style.fontWeight = '700'; b.style.boxShadow = 'none'; });
-    btn.style.fontWeight = '900'; btn.style.boxShadow = '0 0 10px currentColor';
-};
-
-window.sendAnnouncement = async () => {
-    const text = document.getElementById('ann-text').value.trim();
-    if (!text) { 
-        await UIAlert('الرجاء كتابة نص الإعلان أولاً', { title: 'النص مطلوب', type: 'warning', icon: '✏️' }); 
-        return; 
-    }
-    const duration = parseInt(document.getElementById('ann-duration').value);
-
-    try {
-        await push(ref(db, 'announcements'), {
-            message:   text,
-            priority:  activePriority,
-            timestamp: Date.now(),
-            expiresAt: Date.now() + duration
+        // 2. Orphaned / empty rooms
+        const emptyRooms = Object.entries(rooms).filter(([,r]) => !Object.keys(r.players||{}).length);
+        if (emptyRooms.length) push('warn', `${emptyRooms.length} غرفة بدون لاعبين`, 'غرف مهجورة يُفضّل حذفها: ' + emptyRooms.map(([c])=>c).join(', '), {
+            fixLabel: 'حذف الكل', fixFn: async () => { for (const [c] of emptyRooms) await remove(ref(db, `rooms/${c}`)); }
         });
 
-        document.getElementById('ann-text').value = '';
-        await UIAlert('تم إرسال الإعلان لجميع اللاعبين بنجاح', { title: '📣 إعلان مُرسل', type: 'success', icon: '✅' });
-        loadAnnouncements();
-    } catch(e) {
-        await UIAlert('فشل إرسال الإعلان: ' + e.message, { title: 'خطأ', type: 'error', icon: '❌' });
-    }
-};
+        // 3. Stale waiting rooms (>24h)
+        const dayAgo = Date.now() - 86400000;
+        const staleRooms = Object.entries(rooms).filter(([,r]) => r.status === 'waiting' && r.createdAt && r.createdAt < dayAgo);
+        if (staleRooms.length) push('info', `${staleRooms.length} غرفة انتظار قديمة (+24 ساعة)`, staleRooms.map(([c])=>c).join(', '));
 
-function loadAnnouncements() {
-    get(ref(db,'announcements')).then(snap => {
-        const container = document.getElementById('active-announcements');
-        if (!container) return;
-        if (!snap.exists()) { container.innerHTML='<p style="color:#555;font-size:12px;text-align:center;padding:20px;">لا توجد إعلانات</p>'; return; }
-        const anns = Object.entries(snap.val())
-            .filter(([,a]) => a.expiresAt > Date.now())
-            .sort((a,b) => b[1].timestamp - a[1].timestamp);
+        // 4. Player record completeness
+        const requiredFields = ['username','coins','hints','rankPoints','rank'];
+        const incomplete = Object.entries(players).filter(([,p]) => requiredFields.some(f => p[f] === undefined || p[f] === null));
+        if (incomplete.length) push('warn', `${incomplete.length} سجل لاعب ناقص`, 'حقول أساسية مفقودة (اسم مستخدم/عملات/رتبة). استخدم "إصلاح جماعي" في تبويب اللاعبون.', {
+            fixLabel: 'الذهاب للإصلاح', fixFn: () => { showSection('players'); }
+        });
+        else if (Object.keys(players).length) push('ok', 'اكتمال سجلات اللاعبين', `${Object.keys(players).length} سجل، كلها كاملة`);
 
-        if (!anns.length) { container.innerHTML='<p style="color:#555;font-size:12px;text-align:center;padding:20px;">لا توجد إعلانات نشطة</p>'; return; }
+        // 5. Stale presence — inGame:true pointing at a room that no longer exists
+        const stalePresence = Object.entries(players).filter(([,p]) => p.presence?.inGame && p.presence?.room && !rooms[p.presence.room]);
+        if (stalePresence.length) push('warn', `${stalePresence.length} لاعب لديهم حضور قديم (presence)`, 'inGame:true يشير لغرفة محذوفة — سيظهرون لأصدقائهم وكأنهم في غرفة انتظار فعلياً غير موجودة.', {
+            fixLabel: 'تصحيح الكل', fixFn: async () => { for (const [uid] of stalePresence) await update(ref(db, `players/${uid}/presence`), { inGame:false, phase:null, room:null }); }
+        });
 
-        const priColor = {info:'#3b82f6', warning:'#f59e0b', critical:'#ef4444'};
-        container.innerHTML = anns.map(([id,a]) => `
-            <div style="padding:12px 16px;border-radius:10px;background:rgba(255,255,255,.04);
-                border-right:4px solid ${priColor[a.priority]||'#3b82f6'};margin-bottom:10px;">
-                <div style="display:flex;justify-content:space-between;align-items:start;gap:8px;">
-                    <p style="font-size:13px;font-weight:700;flex:1;">${a.message}</p>
-                    <button onclick="deleteAnn('${id}')" style="background:none;border:none;color:#ef4444;cursor:pointer;font-size:16px;flex-shrink:0;">✕</button>
-                </div>
-                <p style="font-size:10px;color:#555;margin-top:6px;">ينتهي: ${new Date(a.expiresAt).toLocaleDateString('ar-SA')}</p>
-            </div>`).join('');
-    }).catch(()=>{});
-}
-window.loadAnnouncements = loadAnnouncements;
+        // 6. isAdmin audit — directly relevant to the security issue
+        const admins = Object.entries(players).filter(([,p]) => p.isAdmin === true);
+        push('info', `${admins.length} حساب لديه صلاحية مدير`, admins.map(([,p]) => p.username).join(', ') || '—');
 
-window.deleteAnn = async (id) => {
-    try {
-        await remove(ref(db, `announcements/${id}`));
-        loadAnnouncements();
-    } catch(e) {
-        await UIAlert('فشل حذف الإعلان: ' + e.message, { title: 'خطأ', type: 'error', icon: '❌' });
-    }
-};
+        // 7. Expired but uncleaned invites / join requests
+        let staleInv = 0;
+        Object.values(invites).forEach(u => Object.values(u||{}).forEach(inv => { if (inv.status==='pending' && inv.expiresAt < Date.now()) staleInv++; }));
+        let staleJr = 0;
+        Object.values(joinReqs).forEach(u => Object.values(u||{}).forEach(jr => { if (jr.status==='pending' && jr.expiresAt < Date.now()) staleJr++; }));
+        if (staleInv || staleJr) push('info', `${staleInv+staleJr} دعوة/طلب منتهي لم يُنظّف بعد`, 'غير ضار — يُنظَّف تلقائياً عند فتح المستخدم للتطبيق التالي.');
 
-// ── ADMIN ACCESS MANAGEMENT ───────────────────
-window.copyAdminCode = function() {
-    const code = document.getElementById('current-admin-code').textContent;
-    navigator.clipboard.writeText(code).then(() => {
-        UIAlert(`تم نسخ الرمز: <span style="font-family:'Orbitron',sans-serif;font-size:18px;color:#00f2ff;letter-spacing:3px;">${code}</span>`, { title: 'تم النسخ', type: 'success', icon: '📋' });
-    });
-};
+        // 8. Empty word categories
+        const emptyCats = Object.entries(words).filter(([,list]) => {
+            const keys = Object.keys(list||{}).filter(k => k !== '_init');
+            return keys.length === 0;
+        });
+        if (emptyCats.length) push('critical', `${emptyCats.length} فئة كلمات فارغة`, 'اختيار هذه الفئة في غرفة سيمنع بدء اللعب: ' + emptyCats.map(([c])=>c).join(', '));
+        else if (Object.keys(words).length) push('ok', 'فئات الكلمات', `${Object.keys(words).length} فئة، كلها تحتوي كلمات`);
 
-window.generateNewCode = async function() {
-    const ok = await UIConfirm(
-        'إنشاء رمز جديد سيُبطل الرمز الحالي.<br>جميع من يملكون الرمز القديم لن يتمكنوا من استخدامه.',
-        { title: '⚠️ تأكيد الإنشاء', type: 'warning', confirmText: 'إنشاء رمز جديد', cancelText: 'إلغاء', icon: '🔑' }
-    );
-    if (!ok) return;
+        // 9. Orphaned bans (uid no longer in players)
+        const orphanBans = Object.keys(bans).filter(uid => !players[uid]);
+        if (orphanBans.length) push('info', `${orphanBans.length} حظر لحسابات محذوفة`, 'غير ضار، مجرد بيانات قديمة.');
 
-    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
-    let newCode = 'ADMIN';
-    for (let i = 0; i < 6; i++) { newCode += chars[Math.floor(Math.random() * chars.length)]; }
-
-    try {
-        await set(ref(db, 'adminConfig/accessCode'), newCode);
-        await set(ref(db, 'adminConfig/codeCreatedAt'), Date.now());
-        await set(ref(db, 'adminConfig/codeCreatedBy'), auth.currentUser.uid);
-        document.getElementById('current-admin-code').textContent = newCode;
-        await UIAlert(
-            `الرمز الجديد: <span style="font-family:'Orbitron',sans-serif;font-size:22px;color:#00f2ff;letter-spacing:4px;">${newCode}</span><br><span style="font-size:11px;color:#888;">احتفظ بهذا الرمز في مكان آمن</span>`,
-            { title: '✅ تم الإنشاء', type: 'success', icon: '' }
-        );
+        renderDiagResults(results);
     } catch (e) {
-        await UIAlert('خطأ في إنشاء الرمز: ' + e.message, { title: 'خطأ', type: 'error', icon: '❌' });
+        push('critical', 'خطأ أثناء الفحص', e.message);
+        renderDiagResults(results);
     }
+    btn.disabled = false; btn.innerHTML = '<i class="fas fa-play"></i> تشغيل الفحص';
 };
 
-window.loadAdminsList = async function() {
-    const container = document.getElementById('admins-list');
-    if (!container) return;
-    container.innerHTML = '<p style="color:#555;font-size:12px;text-align:center;padding:20px;">جاري التحميل...</p>';
+function renderDiagResults(results) {
+    const counts = { critical:0, warn:0, ok:0, info:0 };
+    results.forEach(r => counts[r.severity]++);
+    document.getElementById('diag-critical').textContent = counts.critical;
+    document.getElementById('diag-warn').textContent = counts.warn;
+    document.getElementById('diag-ok').textContent = counts.ok;
+    document.getElementById('diag-info').textContent = counts.info;
+    const ncDiag = document.getElementById('nc-diag');
+    if (counts.critical + counts.warn > 0) { ncDiag.style.display='inline-block'; ncDiag.textContent = counts.critical + counts.warn; }
+    else ncDiag.style.display = 'none';
 
-    try {
-        const snap = await get(ref(db, 'players'));
-        if (!snap.exists()) {
-            container.innerHTML = '<p style="color:#555;font-size:12px;text-align:center;padding:20px;">لا يوجد مسؤولون</p>';
-            return;
-        }
-
-        const players = snap.val();
-        const admins = Object.entries(players)
-            .filter(([uid, p]) => p.isAdmin === true)
-            .sort((a, b) => (b[1].adminSince || 0) - (a[1].adminSince || 0));
-
-        if (!admins.length) {
-            container.innerHTML = '<p style="color:#555;font-size:12px;text-align:center;padding:20px;">لا يوجد مسؤولون</p>';
-            return;
-        }
-
-        container.innerHTML = admins.map(([uid, p]) => {
-            const since = p.adminSince ? new Date(p.adminSince).toLocaleDateString('ar-SA') : '—';
-            const isSelf = uid === auth.currentUser.uid;
-            return `
-                <div style="display:flex;align-items:center;justify-content:space-between;
-                    padding:12px;border-bottom:1px solid rgba(255,255,255,.05);
-                    ${isSelf ? 'background:rgba(0,242,255,.05);' : ''}">
-                    <div style="display:flex;align-items:center;gap:12px;">
-                        <div style="width:40px;height:40px;border-radius:50%;
-                            background:linear-gradient(135deg,#00f2ff,#7c30ff);
-                            display:flex;align-items:center;justify-content:center;">
-                            <i class="fas fa-user-shield" style="color:white;font-size:16px;"></i>
-                        </div>
-                        <div>
-                            <p style="font-size:13px;font-weight:700;">${p.username || 'مسؤول'}
-                                ${isSelf ? '<span style="color:#00f2ff;font-size:11px;margin-right:6px;">(أنت)</span>' : ''}</p>
-                            <p style="font-size:11px;color:#666;">منذ: ${since}</p>
-                        </div>
+    const order = { critical:0, warn:1, ok:2, info:3 };
+    const icons = { critical:'fa-circle-exclamation', warn:'fa-triangle-exclamation', ok:'fa-circle-check', info:'fa-circle-info' };
+    const labels = { critical:'حرج', warn:'تحذير', ok:'سليم', info:'معلومة' };
+    document.getElementById('diag-results').innerHTML = results
+        .sort((a,b) => order[a.severity]-order[b.severity])
+        .map((r, i) => `
+        <div class="diag-item sev-${r.severity}">
+            <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;">
+                <div style="flex:1;">
+                    <div style="display:flex;align-items:center;gap:8px;margin-bottom:3px;">
+                        <span class="badge badge-${r.severity==='ok'?'ok':(r.severity==='warn'?'warn':(r.severity==='critical'?'critical':'info'))}"><i class="fas ${icons[r.severity]}"></i> ${labels[r.severity]}</span>
+                        <b style="font-size:12.5px;">${esc(r.title)}</b>
                     </div>
-                    ${!isSelf ? `<button onclick="revokeAdmin('${uid}', '${p.username || 'هذا المسؤول'}')"
-                        class="btn-danger" style="font-size:11px;padding:6px 12px;">
-                        <i class="fas fa-user-times ml-1"></i> إلغاء
-                    </button>` : ''}
-                </div>`;
-        }).join('');
+                    <p style="font-size:11.5px;color:var(--text-dim);">${esc(r.detail)}</p>
+                </div>
+                ${r.fixLabel ? `<button class="btn btn-ghost btn-sm" onclick="runDiagFix(${i})">${esc(r.fixLabel)}</button>` : ''}
+            </div>
+        </div>`).join('') || '<p style="color:var(--text-faint);text-align:center;padding:30px;">اضغط "تشغيل الفحص" للبدء</p>';
+    window._diagResults = results;
+}
+window.runDiagFix = async function(i) {
+    const r = window._diagResults[i];
+    if (!r?.fixFn) return;
+    try { await r.fixFn(); UIAlert('تم'); runDiagnostics(); }
+    catch (e) { UIAlert('فشل: ' + e.message); }
+};
 
-    } catch (e) {
-        container.innerHTML = '<p style="color:#ef4444;font-size:12px;text-align:center;padding:20px;">خطأ في التحميل</p>';
+// ── AI ASSISTANT (NEW) ───────────────────────────────────────
+// Talks to the Cloudflare Worker at AI_WORKER_URL. The exact request/
+// response shape of that worker isn't inspectable from here (it only
+// exposes a JSON health-check at its root), so this sends the most
+// standard shape for a Claude-proxying worker (Anthropic Messages-style
+// {messages:[...]}) and parses the reply defensively — checking several
+// likely field names before giving up and showing the raw response, so
+// it's obvious immediately if the shape needs adjusting on either side.
+//
+// Safety: the assistant is told (via the system prompt below) to propose
+// database writes as a fenced ```action block rather than doing anything
+// itself — there is no code path here that executes a write without the
+// admin clicking "تنفيذ" on the resulting card first.
+const AI_WORKER_URL = 'https://super-paper-1cd0.ahmedelgoharymessi.workers.dev/';
+const AI_SYSTEM_PROMPT = `أنت مساعد لوحة إدارة لعبة "الجاسوس" (El Jasus). لديك معرفة بهيكل قاعدة البيانات:
+- players/{uid}: username, email, coins, hints, rankPoints, rank, isAdmin, presence{online,inGame,phase,room}, stats{...}
+- rooms/{code}: hostId, status(waiting/playing/discussion/voting/reveal), category, visibility, players{uid:{isHost,username,...}}
+- reports/{id}, bans/{uid}, wordLists/{category}/{word}, invites/{uid}/{key}, joinRequests/{uid}/{key}, announcements/current
+
+أجب بإيجاز وبالعربية. إذا طُلب منك تعديل بيانات، لا تفترض أنك نفّذت أي شيء — بدلاً من ذلك اقترح الإجراء كـ block من نوع action بصيغة JSON بالضبط هكذا، وسيقوم المسؤول بمراجعته والموافقة عليه يدوياً:
+\`\`\`action
+{"op":"update","path":"players/UID_HERE","data":{"coins":500}}
+\`\`\`
+العمليات المتاحة لـ op: "update" (دمج حقول)، "set" (استبدال المسار بالكامل)، "delete" (حذف المسار). لا تكتب أكثر من action واحد لكل رد ما لم يُطلب صراحة عدة إجراءات.`;
+
+let aiHistory = [];
+
+window.toggleAiPanel = function(open) {
+    document.getElementById('ai-panel').classList.toggle('open', open);
+    document.getElementById('ai-backdrop').classList.toggle('show', open);
+    if (open && !aiHistory.length) {
+        appendAiMsg('bot', 'أهلاً! اسألني عن أي شيء يخص اللعبة أو البيانات، أو اطلب مني تعديل شيء وسأقترحه عليك للموافقة قبل التنفيذ.');
     }
 };
 
-window.revokeAdmin = async function(uid, username) {
-    const ok = await UIConfirm(
-        `لن يتمكن <b>${username}</b> من الوصول لهذه اللوحة بعد الآن.`,
-        { title: 'إلغاء صلاحيات الإدارة', type: 'error', confirmText: 'إلغاء الصلاحيات', cancelText: 'تراجع', icon: '👤' }
-    );
-    if (!ok) return;
+function appendAiMsg(role, text) {
+    const box = document.getElementById('ai-messages');
+    const div = document.createElement('div');
+    div.className = 'ai-msg ' + role;
+    div.textContent = text;
+    box.appendChild(div);
+    box.scrollTop = box.scrollHeight;
+    return div;
+}
 
+function appendAiActionCard(action) {
+    const box = document.getElementById('ai-messages');
+    const div = document.createElement('div');
+    div.className = 'ai-action-card';
+    const opLabel = { update:'تحديث (دمج)', set:'استبدال كامل', delete:'حذف' }[action.op] || action.op;
+    div.innerHTML = `
+        <div style="font-size:11.5px;font-weight:900;color:var(--warn);margin-bottom:4px;"><i class="fas fa-triangle-exclamation"></i> إجراء مقترح: ${esc(opLabel)}</div>
+        <div style="font-size:11px;color:var(--text-dim);direction:ltr;text-align:left;">/${esc(action.path)}</div>
+        ${action.data ? `<pre>${esc(JSON.stringify(action.data, null, 2))}</pre>` : ''}
+        <div style="display:flex;gap:8px;margin-top:6px;">
+            <button class="btn btn-success btn-sm">تنفيذ</button>
+            <button class="btn btn-ghost btn-sm">تجاهل</button>
+        </div>`;
+    const [execBtn, cancelBtn] = div.querySelectorAll('button');
+    execBtn.onclick = async () => {
+        execBtn.disabled = true; execBtn.textContent = '...';
+        try {
+            if (action.op === 'update') await update(ref(db, action.path), action.data);
+            else if (action.op === 'set') await set(ref(db, action.path), action.data);
+            else if (action.op === 'delete') await remove(ref(db, action.path));
+            div.style.opacity = '.5';
+            execBtn.textContent = '✅ تم';
+            appendAiMsg('bot', '✅ نُفّذ الإجراء بنجاح.');
+        } catch (e) {
+            execBtn.disabled = false; execBtn.textContent = 'تنفيذ';
+            appendAiMsg('error', 'فشل التنفيذ: ' + e.message);
+        }
+    };
+    cancelBtn.onclick = () => { div.remove(); };
+    box.appendChild(div);
+    box.scrollTop = box.scrollHeight;
+}
+
+function extractActions(text) {
+    const actions = [];
+    const re = /```action\s*([\s\S]*?)```/g;
+    let m;
+    while ((m = re.exec(text)) !== null) {
+        try {
+            const obj = JSON.parse(m[1].trim());
+            if (obj.op && obj.path) actions.push(obj);
+        } catch (e) { /* ignore malformed block */ }
+    }
+    return actions;
+}
+
+window.sendAiMessage = async function() {
+    const input = document.getElementById('ai-input');
+    const text = input.value.trim();
+    if (!text) return;
+    input.value = '';
+    appendAiMsg('user', text);
+    aiHistory.push({ role: 'user', content: text });
+
+    const thinking = appendAiMsg('bot', '...');
     try {
-        await set(ref(db, `players/${uid}/isAdmin`), false);
-        await set(ref(db, `players/${uid}/adminRevokedAt`), Date.now());
-        await UIAlert('تم إلغاء الصلاحيات بنجاح', { title: '✅ تم', type: 'success', icon: '' });
-        loadAdminsList();
+        const res = await fetch(AI_WORKER_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                system: AI_SYSTEM_PROMPT,
+                messages: aiHistory
+            })
+        });
+        const raw = await res.text();
+        let data;
+        try { data = JSON.parse(raw); } catch { data = null; }
+
+        if (!res.ok) {
+            thinking.remove();
+            appendAiMsg('error', `الخادم أعاد ${res.status}: ${raw.slice(0, 300)}`);
+            return;
+        }
+
+        // Defensive extraction — try the shapes a Claude-proxying worker is
+        // most likely to use, in order, before giving up.
+        let reply = null;
+        if (data) {
+            if (typeof data.reply === 'string') reply = data.reply;
+            else if (typeof data.response === 'string') reply = data.response;
+            else if (typeof data.text === 'string') reply = data.text;
+            else if (typeof data.message === 'string') reply = data.message;
+            else if (Array.isArray(data.content)) reply = data.content.map(b => b.text || '').join('\n');
+            else if (data.message?.content) reply = Array.isArray(data.message.content) ? data.message.content.map(b => b.text||'').join('\n') : String(data.message.content);
+            else if (typeof data.content === 'string') reply = data.content;
+        }
+
+        thinking.remove();
+        if (reply === null) {
+            appendAiMsg('error', 'لم أتمكن من فهم شكل رد الـ worker. الرد الخام:\n' + raw.slice(0, 500));
+            return;
+        }
+
+        const actions = extractActions(reply);
+        const cleanText = reply.replace(/```action\s*[\s\S]*?```/g, '').trim();
+        if (cleanText) appendAiMsg('bot', cleanText);
+        actions.forEach(appendAiActionCard);
+        aiHistory.push({ role: 'assistant', content: reply });
+
     } catch (e) {
-        await UIAlert('خطأ: ' + e.message, { title: 'خطأ', type: 'error', icon: '❌' });
+        thinking.remove();
+        appendAiMsg('error', 'تعذر الاتصال بالمساعد: ' + e.message);
     }
 };
 
-// ═══════════════════════════════════════════════
-// DIAGNOSTICS ENGINE - see separate script
-// ═══════════════════════════════════════════════
-// Load diagnostics script
-const diagScript = document.createElement('script');
-diagScript.src = 'admin-diagnostics.js';
-diagScript.onerror = () => {
-    console.warn('Diagnostics script failed to load - diagnostics section will not work');
-};
-document.head.appendChild(diagScript);
-
-// ═══════════════════════════════════════════════
-// FIREBASE DATABASE VIEWER - see separate script
-// ═══════════════════════════════════════════════
-// Load viewer script
-const viewerScript = document.createElement('script');
-viewerScript.src = 'firebase-viewer.js';
-viewerScript.onerror = () => {
-    console.warn('Firebase viewer script failed to load - viewer section will not work');
-};
-document.head.appendChild(viewerScript);
-
+document.getElementById('ai-input')?.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendAiMessage(); }
+});
 </script>
 </body>
 </html>
