@@ -1427,12 +1427,26 @@ function extractActions(text) {
     return actions;
 }
 
+function buildPromptText(userText) {
+    // The worker expects a single "prompt" string (not a messages array) —
+    // fold the system instructions and prior turns into it so the
+    // assistant keeps its context even if the worker ignores every field
+    // except "prompt" itself.
+    let p = AI_SYSTEM_PROMPT + '\n\n';
+    aiHistory.forEach(m => {
+        p += (m.role === 'user' ? 'المستخدم' : 'المساعد') + ': ' + m.content + '\n\n';
+    });
+    p += 'المستخدم: ' + userText + '\n\nالمساعد:';
+    return p;
+}
+
 window.sendAiMessage = async function() {
     const input = document.getElementById('ai-input');
     const text = input.value.trim();
     if (!text) return;
     input.value = '';
     appendAiMsg('user', text);
+    const promptText = buildPromptText(text);
     aiHistory.push({ role: 'user', content: text });
 
     const thinking = appendAiMsg('bot', '...');
@@ -1441,6 +1455,7 @@ window.sendAiMessage = async function() {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
+                prompt: promptText,
                 system: AI_SYSTEM_PROMPT,
                 messages: aiHistory
             })
@@ -1455,17 +1470,23 @@ window.sendAiMessage = async function() {
             return;
         }
 
-        // Defensive extraction — try the shapes a Claude-proxying worker is
+        // Defensive extraction — try the shapes a "prompt"-style worker is
         // most likely to use, in order, before giving up.
         let reply = null;
         if (data) {
             if (typeof data.reply === 'string') reply = data.reply;
             else if (typeof data.response === 'string') reply = data.response;
+            else if (typeof data.completion === 'string') reply = data.completion;
+            else if (typeof data.output === 'string') reply = data.output;
+            else if (typeof data.result === 'string') reply = data.result;
             else if (typeof data.text === 'string') reply = data.text;
             else if (typeof data.message === 'string') reply = data.message;
             else if (Array.isArray(data.content)) reply = data.content.map(b => b.text || '').join('\n');
             else if (data.message?.content) reply = Array.isArray(data.message.content) ? data.message.content.map(b => b.text||'').join('\n') : String(data.message.content);
             else if (typeof data.content === 'string') reply = data.content;
+        } else if (raw && typeof raw === 'string') {
+            // Some prompt-style workers just return plain text, no JSON at all
+            reply = raw;
         }
 
         thinking.remove();
