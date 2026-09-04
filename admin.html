@@ -1220,16 +1220,24 @@ window.runDiagnostics = async function() {
             renderDiagResults(results); btn.disabled = false; btn.innerHTML = '<i class="fas fa-play"></i> تشغيل الفحص'; return;
         }
 
-        const [playersSnap, roomsSnap, wordsSnap, invitesSnap, joinReqSnap, bansSnap] = await Promise.all([
-            get(ref(db, 'players')), get(ref(db, 'rooms')), get(ref(db, 'wordLists')),
-            get(ref(db, 'invites')), get(ref(db, 'joinRequests')), get(ref(db, 'bans'))
-        ]);
-        const players = playersSnap.val() || {};
-        const rooms = roomsSnap.val() || {};
-        const words = wordsSnap.val() || {};
-        const invites = invitesSnap.val() || {};
-        const joinReqs = joinReqSnap.val() || {};
-        const bans = bansSnap.val() || {};
+        // Read each path independently — a permission error on one path
+        // (e.g. invites/joinRequests, which are rules-scoped to their
+        // owner only, with no admin exception) used to abort the entire
+        // scan via Promise.all. Now it's reported as its own finding and
+        // everything else still runs, using {} for whatever couldn't be read.
+        async function safeRead(path) {
+            try { const snap = await get(ref(db, path)); return snap.val() || {}; }
+            catch (e) {
+                push('critical', `تعذرت قراءة "${path}"`, `${e.message} — على الأغلب قواعد الأمان لا تمنح المدير صلاحية قراءة هذا المسار بالكامل (راجع تبويب الإعدادات).`);
+                return {};
+            }
+        }
+        const players  = await safeRead('players');
+        const rooms    = await safeRead('rooms');
+        const words    = await safeRead('wordLists');
+        const invites  = await safeRead('invites');
+        const joinReqs = await safeRead('joinRequests');
+        const bans     = await safeRead('bans');
 
         // 1. Room host integrity — the exact isHost/hostId bug class found earlier
         let badHostRooms = 0;
