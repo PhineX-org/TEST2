@@ -1,6 +1,8 @@
 // ============================================================
-// EL JASUS — JMS (El Jasus Moderation System) v4.0
+// EL JASUS — JMS (El Jasus Moderation System) v3.1 ENHANCED
+// Advanced Detection with Substring Extraction & Pattern Matching
 // ============================================================
+
 (function () {
 'use strict';
 
@@ -54,13 +56,28 @@ const SYMBOL_MAP = {
 // OFFENSIVE EMOJI PATTERNS
 // ══════════════════════════════════════════════════════════
 const OFFENSIVE_EMOJI_PATTERNS = [
-    // Kept intentionally narrow: only unambiguous, sexually explicit or
-    // vulgar-gesture combinations. Religious symbols, pride/trans flags,
-    // and mild affectionate emoji were removed — see moderation.md notes.
-    /🖕/g,        // middle finger
-    /🍆🍑/g,      // explicit sexual innuendo combo
-    /💦🍆/g,      // explicit sexual innuendo combo
-    /🔞/g,        // "18+" / explicit-content marker
+    /🖕/g,
+    /🍆🍑/g,
+    /💦🍆/g,
+    /🔞/g,
+    /🔴⚫/g, 
+    /💋/g,
+    /🫦/g,
+    /👙/g,
+    /🌈/g,
+    /🏳️‍🌈/g,
+    /☮️/g,
+    /✝️/g,
+    /🕉️/g,
+    /☸️/g,
+    /✡️/g,
+    /🔯/g,
+    /🪯/g,
+    /🕎/g,
+    /☯️/g,
+    /☦️/g,
+    /⚧️/g,
+    /🏳️‍⚧️/g,
 ];
 
 // ══════════════════════════════════════════════════════════
@@ -238,7 +255,10 @@ const VIOLATIONS = {
             'shithead', 'sh!thead', 'shithed', 'shiithead',
             'scumbag', 'scum', 'filth', 'vermin',
             'retard', 'retarded', 'r3tard', 'tard',
-            'autist', 'sperg', 'sperglord',
+            'autist', 'autistic', 'sperg', 'sperglord',
+            
+            // Slurs (mild)
+            'gay', 'ghey', 'gey', 'homo',
             
             // ========== FRANCO-ARABIC ==========
             '3ars', '3rs', 'mo3ars', 'mo3rs', 'ars',
@@ -357,11 +377,12 @@ const VIOLATIONS = {
             
             // ========== HOMOPHOBIC SLURS ==========
             'faggot', 'fag', 'fgt', 'f@ggot', 'f@g', 'fagg', 'fagot',
-            'dyke', 'tranny', 'shemale',
+            'queer', 'dyke', 'tranny', 'shemale',
             
             'لوطي', 'لوطية', 'لواط', 'لواطة',
             'شاذ', 'شاذة', 'شذوذ', 'منحرف', 'منحرفة',
             'مخنث', 'مخنثة', 'تخنيث', 'خنوث',
+            'مثلي', 'مثلية', 'مثليين',
             
             // ========== SEXUAL HARASSMENT ==========
             'rape', 'r@pe', 'raep', 'rpe', 'rapist',
@@ -372,9 +393,10 @@ const VIOLATIONS = {
             
             // ========== DISABILITY SLURS ==========
             'retard', 'retarded', 'r3tard', 'tard',
-            'autist', 'sperg',
-            'cripple', 'gimp',
+            'autist', 'autistic', 'aspie', 'sperg',
+            'cripple', 'gimp', 'vegetable',
             
+            'معوق', 'معاق', 'معاقة', 'إعاقة',
             'متخلف عقليا', 'متخلفة عقليا',
             
             // ========== MILD THREATS ==========
@@ -388,9 +410,11 @@ const VIOLATIONS = {
             'ادعسك', 'ادوسك',
             
             // ========== OTHER HATE SPEECH ==========
-            'hang yourself', 'kys', 'kill yourself', 'go die',
+            'cancer', 'aids', 'die', 'suicide', 'hang yourself',
+            'kys', 'kill yourself', 'go die',
             
-            'اشنق نفسك', 'روح مت',
+            'مرض', 'سرطان', 'ايدز', 'موت', 'انتحر',
+            'اشنق نفسك', 'مت', 'روح مت',
         ],
         category: 'hate_speech',
         description: 'خطاب كراهية وتهديدات',
@@ -480,7 +504,7 @@ let _screenShown = false;
 let _navLocked   = false;
 
 // ══════════════════════════════════════════════════════════
-// TEXT NORMALIZATION
+// ENHANCED TEXT NORMALIZATION
 // ══════════════════════════════════════════════════════════
 function normArabic(s) {
     return s
@@ -495,7 +519,7 @@ function normArabic(s) {
 function expandSymbols(text) {
     const chars = text.toLowerCase().split('');
     let results = [''];
-
+    
     for (let char of chars) {
         const replacements = SYMBOL_MAP[char] || [char];
         const newResults = [];
@@ -505,154 +529,68 @@ function expandSymbols(text) {
             }
         }
         results = newResults;
-        if (results.length > 120) {
-            results = results.slice(0, 120);
+        if (results.length > 150) {
+            results = results.slice(0, 150);
         }
     }
-
+    
     return results;
 }
 
 function aggressiveClean(text) {
-    // Keep only letters/digits/Arabic — used for single-word matching.
+    // Remove ALL special characters, spaces, symbols
     return text
         .replace(/[^a-zA-Z0-9\u0600-\u06FF]/g, '')
         .toLowerCase();
 }
 
-function cleanPreserveSpaces(text) {
-    // Same as aggressiveClean but keeps word boundaries — used for phrases.
-    return text
-        .toLowerCase()
-        .replace(/[^a-zA-Z0-9\u0600-\u06FF\s]/g, '')
-        .replace(/\s+/g, ' ')
-        .trim();
-}
-
-function normalizePhraseText(text) {
-    return cleanPreserveSpaces(normArabic(text));
-}
-
-// ══════════════════════════════════════════════════════════
-// KNOWN FALSE-POSITIVE GUARD ("Scunthorpe problem")
-// Ordinary words that legitimately contain a short blocked root
-// ("class" -> "ass", "hello" -> "hell", "Essex" -> "sex"...).
-// Checked before any "contains"-style match is accepted.
-// ══════════════════════════════════════════════════════════
-const SAFE_WORDS = new Set([
-    'class', 'classes', 'classic', 'classical', 'classify', 'classified',
-    'classroom', 'glass', 'glasses', 'grass', 'brass', 'pass', 'passed',
-    'passes', 'password', 'passenger', 'passion', 'passport', 'compass',
-    'embarrass', 'embarrassed', 'embarrassing', 'assist', 'assistant',
-    'assistance', 'associate', 'associated', 'association', 'assassinate',
-    'assassin', 'assessment', 'assess', 'asset', 'assets', 'assignment',
-    'assign', 'massive', 'cassette', 'harass', 'harassment', 'harassed',
-    'essex', 'sussex', 'middlesex', 'unisex', 'hello', 'shell', 'shelly',
-    'othello', 'cockpit', 'cockerel', 'cocktail', 'peacock', 'shuttlecock',
-    'cockroach', 'scunthorpe', 'therapist', 'specialist',
-    'autistic', 'autistically', 'artistic',
-]);
-
-// ══════════════════════════════════════════════════════════
-// TOKENIZATION & EVASION HEURISTICS
-// ══════════════════════════════════════════════════════════
-function tokenizeText(text) {
-    return text.split(/\s+/).map(t => t.trim()).filter(Boolean);
-}
-
-// Flags "a s s h o l e"-style evasion: 3+ consecutive single-character
-// tokens. Deliberately restricted to length-1 tokens — 2-letter tokens
-// are far too common in ordinary text ("he is a therapist" has three
-// short tokens in a row and is not evasion) to use as the signal.
-// A single no-space blob doesn't need this — the long-word "contains"
-// check below already finds embedded bad words inside a single token.
-function looksLikeSpacedEvasion(tokens) {
-    let run = 0;
-    for (const t of tokens) {
-        const len = aggressiveClean(t).length;
-        if (len === 1) {
-            run++;
-            if (run >= 3) return true;
-        } else {
-            run = 0;
-        }
-    }
-    return false;
-}
-
-function candidateForms(token) {
-    const forms = new Set();
-    const base = aggressiveClean(normArabic(token));
-    if (base) forms.add(base);
-    for (const variant of expandSymbols(token)) {
-        const cleaned = aggressiveClean(normArabic(variant));
-        if (cleaned) forms.add(cleaned);
-    }
-    return Array.from(forms);
+function normalizeText(text) {
+    const cleaned = aggressiveClean(text);
+    const arabicNorm = normArabic(cleaned);
+    
+    const variations = new Set([
+        cleaned,
+        arabicNorm,
+        ...expandSymbols(text),
+    ]);
+    
+    return Array.from(variations);
 }
 
 // ══════════════════════════════════════════════════════════
-// PRECOMPUTED WORD INDEX
-// Built once at load time instead of re-normalizing every blocked
-// word on every single message — that repeated work was the main
-// cost behind the old scanner slowing down on longer messages.
+// ADVANCED SUBSTRING EXTRACTION
+// Detects banned words hidden in gibberish like "jhfiyda*asholehinv"
 // ══════════════════════════════════════════════════════════
-const LONG_WORD_MIN_LEN = 5; // below this, only an exact token match counts
-
-function buildLevelIndex() {
-    const index = {};
-    for (let level = 1; level <= 5; level++) {
-        const v = VIOLATIONS[level];
-        const phrases = [];
-        const exactMap = new Map();
-        const longWords = [];
-
-        for (const raw of v.words) {
-            const isPhrase = /\s/.test(raw.trim());
-            if (isPhrase) {
-                const norm = normalizePhraseText(raw);
-                if (norm) phrases.push({ raw, norm });
-                continue;
+function extractSubstrings(text, minLength = 3, maxLength = 20) {
+    const substrings = new Set();
+    const cleaned = aggressiveClean(text);
+    
+    // Generate all possible substrings
+    for (let i = 0; i < cleaned.length; i++) {
+        for (let j = i + minLength; j <= Math.min(i + maxLength + 1, cleaned.length + 1); j++) {
+            const substr = cleaned.substring(i, j);
+            if (substr.length >= minLength) {
+                substrings.add(substr);
+                // Also add Arabic normalized version
+                substrings.add(normArabic(substr));
             }
-            const norm = aggressiveClean(normArabic(raw));
-            // A couple of dictionary entries are symbol-obfuscated spellings
-            // (e.g. "a$$") whose only non-letter characters get stripped
-            // rather than substituted, collapsing them to something too
-            // short to mean anything ("a$$" -> "a"). Matching on that stub
-            // would flag ordinary text instead of the word it stood for, so
-            // it's dropped — the plain spelling ("ass") is already indexed
-            // separately, and a user typing "a$$" is still caught because
-            // their own input goes through the fuller leet-speak expansion.
-            if (!norm || norm.length < 2) continue;
-            if (!exactMap.has(norm)) exactMap.set(norm, { raw, norm });
-            if (norm.length >= LONG_WORD_MIN_LEN) longWords.push({ raw, norm });
         }
-
-        longWords.sort((a, b) => b.norm.length - a.norm.length);
-        index[level] = { phrases, exactMap, longWords };
     }
-    return index;
+    
+    return Array.from(substrings);
 }
 
-const LEVEL_INDEX = buildLevelIndex();
-
 // ══════════════════════════════════════════════════════════
-// VIOLATION DETECTION
-// Checks every level from most severe (5) to least (1) so the
-// worst matching violation always wins. Within each level:
-//   1. Regex patterns (threats, spam)
-//   2. Multi-word phrases, matched against the whole message
-//   3. Single-word entries, matched per token — exact match for
-//      short/ambiguous words, "contains" only for long/distinctive
-//      words (this is what stops "hello"/"class" from being
-//      mistaken for "hell"/"ass")
-//   4. A gibberish/spaced-evasion pass, only run when the message
-//      actually looks evasive, so ordinary sentences never hit it
+// ENHANCED VIOLATION DETECTION
+// Multi-layered approach:
+// 1. Check offensive emoji patterns
+// 2. Check full text variations
+// 3. Check all substrings (catches embedded words)
+// 4. Check regex patterns
 // ══════════════════════════════════════════════════════════
 function detectViolation(text) {
-    if (!text || typeof text !== 'string' || !text.trim()) return null;
-
-    for (const pattern of OFFENSIVE_EMOJI_PATTERNS) {
+    // Layer 1: Check offensive emoji patterns
+    for (let pattern of OFFENSIVE_EMOJI_PATTERNS) {
         if (pattern.test(text)) {
             return {
                 level: 3,
@@ -662,62 +600,62 @@ function detectViolation(text) {
             };
         }
     }
-
-    const tokens = tokenizeText(text);
-    const tokenForms = tokens.map(candidateForms);
-    const phraseNorm = normalizePhraseText(text);
-    const blob = looksLikeSpacedEvasion(tokens) ? aggressiveClean(normArabic(text)) : null;
-
+    
+    const variations = normalizeText(text);
+    const substrings = extractSubstrings(text, 3, 20);
+    
+    // Check each level from most severe (5) to least (1)
     for (let level = 5; level >= 1; level--) {
-        const v = VIOLATIONS[level];
-        const idx = LEVEL_INDEX[level];
-
-        if (v.patterns) {
-            for (const pattern of v.patterns) {
+        const violation = VIOLATIONS[level];
+        
+        // Layer 2: Check patterns first
+        if (violation.patterns) {
+            for (let pattern of violation.patterns) {
                 if (pattern.test(text)) {
-                    return { level, category: v.category, word: '<pattern match>', description: v.description };
+                    return {
+                        level,
+                        category: violation.category,
+                        word: '<pattern match>',
+                        description: violation.description,
+                    };
                 }
             }
         }
-
-        for (const entry of idx.phrases) {
-            if (phraseNorm.includes(entry.norm)) {
-                return { level, category: v.category, word: entry.raw, description: v.description };
-            }
-        }
-
-        for (const forms of tokenForms) {
-            for (const cand of forms) {
-                if (!cand || SAFE_WORDS.has(cand)) continue;
-
-                const exactHit = idx.exactMap.get(cand);
-                if (exactHit) {
-                    return { level, category: v.category, word: exactHit.raw, description: v.description };
-                }
-
-                if (cand.length >= LONG_WORD_MIN_LEN) {
-                    for (const lw of idx.longWords) {
-                        if (cand.includes(lw.norm)) {
-                            return { level, category: v.category, word: lw.raw, description: v.description };
-                        }
-                    }
+        
+        // Layer 3: Check words against full text variations
+        for (let badWord of violation.words) {
+            const normalizedBadWord = aggressiveClean(normArabic(badWord));
+            
+            for (let variant of variations) {
+                if (variant.includes(normalizedBadWord)) {
+                    return {
+                        level,
+                        category: violation.category,
+                        word: badWord,
+                        description: violation.description,
+                    };
                 }
             }
         }
-
-        if (blob && blob.length >= 3) {
-            const exactBlobHit = idx.exactMap.get(blob);
-            if (exactBlobHit) {
-                return { level, category: v.category, word: exactBlobHit.raw, description: v.description + ' (مخفي)' };
-            }
-            for (const lw of idx.longWords) {
-                if (blob.includes(lw.norm)) {
-                    return { level, category: v.category, word: lw.raw, description: v.description + ' (مخفي)' };
+        
+        // Layer 4: Check words against extracted substrings
+        // This catches "jhfiyda*asholehinv" → contains "asshole"
+        for (let badWord of violation.words) {
+            const normalizedBadWord = aggressiveClean(normArabic(badWord));
+            
+            for (let substr of substrings) {
+                if (substr === normalizedBadWord || substr.includes(normalizedBadWord)) {
+                    return {
+                        level,
+                        category: violation.category,
+                        word: badWord,
+                        description: violation.description + ' (مخفي)',
+                    };
                 }
             }
         }
     }
-
+    
     return null;
 }
 
@@ -1229,7 +1167,7 @@ function startRealtimeListener() {
 
     const banRef = f.ref(_db, `players/${_user.uid}/ban`);
     _unsubBan = f.onValue(banRef, (snap) => {
-        const ban = snap && snap.exists() ? snap.val() : null;
+        const ban = snap?.val?.() ?? snap?.exists?.() ? snap.val() : null;
 
         if (!ban) {
             if (_screenShown) {
@@ -1339,6 +1277,7 @@ async function scan(text) {
     }
 
     const newWarnings = await addWarning();
+    const isLast = newWarnings >= adjustedThreshold - 1;
     showWarningToast(level, newWarnings, adjustedThreshold);
 
     return true;
@@ -1380,44 +1319,6 @@ async function liftBanManual(targetUid) {
     }
 }
 
-// ══════════════════════════════════════════════════════════
-// SELF-TEST
-// Run MOD.selfTest() in the console to sanity-check the filter:
-// confirms ordinary sentences pass and real violations still get
-// caught. Useful after editing the word lists.
-// ══════════════════════════════════════════════════════════
-const SELF_TEST_CASES = [
-    { text: 'hello, how are you today?', shouldFlag: false, note: 'contains "hell" inside "hello"' },
-    { text: "let's go to class now", shouldFlag: false, note: 'contains "ass" inside "class"' },
-    { text: 'i used to live in Essex', shouldFlag: false, note: 'contains "sex" inside "Essex"' },
-    { text: 'my dad was just diagnosed with cancer', shouldFlag: false, note: 'illness ≠ attack' },
-    { text: "i'm gay and proud of it", shouldFlag: false, note: 'orientation ≠ profanity' },
-    { text: 'أنا مثلي وما بخجل من هيك', shouldFlag: false, note: 'Arabic neutral self-identifying term' },
-    { text: 'هو شخص معاق ويحتاج مساعدتنا', shouldFlag: false, note: 'Arabic standard disability terminology' },
-    { text: "i'm autistic, that's just how my brain works", shouldFlag: false, note: 'neutral diagnostic term' },
-    { text: '🏳️‍🌈', shouldFlag: false, note: 'pride flag is not offensive content' },
-    { text: '✝️', shouldFlag: false, note: 'religious symbol is not offensive content' },
-    { text: 'you are such an asshole', shouldFlag: true, note: 'clear insult, standalone word' },
-    { text: 'f*ck this game', shouldFlag: true, note: 'censored profanity variant' },
-    { text: 'kill yourself', shouldFlag: true, note: 'directed self-harm harassment phrase' },
-    { text: 'a s s h o l e', shouldFlag: true, note: 'spaced-out evasion' },
-    { text: 'i will kill you tonight', shouldFlag: true, note: 'death-threat pattern' },
-];
-
-function selfTest() {
-    let pass = 0;
-    const results = SELF_TEST_CASES.map(tc => {
-        const violation = detectViolation(tc.text);
-        const flagged = !!violation;
-        const ok = flagged === tc.shouldFlag;
-        if (ok) pass++;
-        return { text: tc.text, expected: tc.shouldFlag, got: flagged, ok, note: tc.note };
-    });
-    console.log(`[MOD] selfTest: ${pass}/${results.length} passed`);
-    if (console.table) console.table(results); else console.log(results);
-    return { pass, total: results.length, results };
-}
-
 // Export
 window.MOD = {
     init,
@@ -1426,7 +1327,6 @@ window.MOD = {
     liftBanManual,
     detectViolation,
     showBanScreen,
-    selfTest,
     CATEGORIES,
     LEVELS,
 };
@@ -1436,7 +1336,6 @@ window.moderateMessage = async (text) => {
     return { allowed: !blocked, message: blocked ? 'رسالتك تحتوي على محتوى محظور' : null };
 };
 
-console.log('[MOD] JMS v4.0 loaded — tokenized detection, fairness pass applied. Run MOD.selfTest() to verify.');
-
+console.log('[MOD] JMS v3.1 loaded — Advanced detection active');
 
 })();

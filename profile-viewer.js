@@ -163,6 +163,9 @@
         font-size: 13px;
         color: rgba(255,255,255,0.6);
         font-family: 'Orbitron', sans-serif;
+        display: flex;
+        align-items: center;
+        gap: 6px;
       }
       
       .pv-content {
@@ -426,10 +429,20 @@
     // Calculate rank
     const rank = window.NameThemes ? 
       window.NameThemes.getRank(profileData.rankPoints) : 
-      { nameAr: 'برونز', icon: '🥉', division: 'Division I' };
+      { nameAr: 'برونزي', icon: '🥉' };
     
-    document.getElementById('pv-rank-info').textContent = 
-      `${rank.icon} ${rank.nameAr} · ${rank.division} · ${profileData.rankPoints} نقطة`;
+    const rankInfoEl = document.getElementById('pv-rank-info');
+    rankInfoEl.innerHTML = '';
+    if (window.NameThemes) {
+      rankInfoEl.appendChild(window.NameThemes.createRankIcon(profileData.rankPoints, 18));
+    } else {
+      const iconSpan = document.createElement('span');
+      iconSpan.textContent = rank.icon;
+      rankInfoEl.appendChild(iconSpan);
+    }
+    const textSpan = document.createElement('span');
+    textSpan.textContent = `${rank.nameAr} · ${profileData.rankPoints} نقطة`;
+    rankInfoEl.appendChild(textSpan);
     
     // Render content
     const content = document.getElementById('pv-content');

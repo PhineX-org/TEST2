@@ -350,9 +350,14 @@
       const db  = getDatabase(app);
       await set(ref(db, `players/${uid}`), {
         username, email, uid,
-        coins: 0, rankPoints: 0,
+        coins: 0, rankPoints: 0, rank: 'Bronze',
         createdAt: Date.now(),
-        stats: { wins: 0, losses: 0, gamesPlayed: 0 },
+        stats: {
+          totalGames: 0, spyGames: 0, innocentGames: 0,
+          spyWins: 0, innocentWins: 0,
+          timesCaughtAsSpy: 0, spyDetectionRate: 0,
+          currentStreak: 0, longestWinStreak: 0
+        },
         inventory: { nameThemes: ['default'], nameTags: [] },
         activeTheme: 'default', activeTitle: null,
       });

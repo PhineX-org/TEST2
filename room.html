@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>الغرفة | El Jasus</title>
-    <link rel="icon" type="image/png" href="ElJasus.jpg">
+    <link rel="icon" type="image/png" href="ElJasus.png">
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css"/>
@@ -204,41 +204,6 @@
             }
         }
 
-        /* Rank progress overlay created by handleRankScreen() */
-        #rankProgressScreen {
-            padding: max(16px, env(safe-area-inset-top))
-                     max(16px, env(safe-area-inset-right))
-                     max(16px, env(safe-area-inset-bottom))
-                     max(16px, env(safe-area-inset-left));
-            overflow-y: auto;
-        }
-
-        #rankProgressScreen > .glass {
-            width: min(100%, 460px);
-            max-height: calc(100dvh - 32px);
-            overflow-y: auto;
-            padding: clamp(20px, 5vw, 32px);
-            border-radius: 24px;
-        }
-
-        #rankProgressScreen h2 {
-            font-size: clamp(1.35rem, 5vw, 1.8rem);
-        }
-
-        #rankProgressScreen p {
-            overflow-wrap: anywhere;
-        }
-
-        @media (max-width: 480px) {
-            #rankProgressScreen {
-                align-items: flex-start;
-            }
-
-            #rankProgressScreen > .glass {
-                margin-top: 8vh;
-            }
-        }
-
         /* ═══════════════════════════════════════════════════
            PANEL DOCK — chat / voice / friends / reports
            Phones & tablets (<1180px, mobile-first default below):
@@ -431,102 +396,6 @@
         .reveal-card-back {
             transform: rotateY(180deg);
         }
-
-        .rank-card {
-    position: relative;
-    overflow: hidden;
-    padding: 32px 24px;
-    text-align: center;
-    border: 1px solid rgba(251, 191, 36, .5);
-    border-radius: 12px;
-    background: linear-gradient(145deg, #202631, #090d14);
-    box-shadow: 0 0 45px rgba(251, 191, 36, .18),
-                inset 0 0 30px rgba(251, 191, 36, .04);
-}
-
-.rank-label {
-    color: #fbbf24;
-    font: 900 11px Orbitron, sans-serif;
-    letter-spacing: 3px;
-}
-
-.rank-card h2 {
-    margin: 10px 0 4px;
-    font-size: 30px;
-    font-weight: 900;
-}
-
-.rank-card > p {
-    color: rgba(255,255,255,.65);
-}
-
-.rank-badge {
-    width: 130px;
-    height: 130px;
-    display: grid;
-    place-items: center;
-    margin: 24px auto 12px;
-    border: 5px solid #fbbf24;
-    border-radius: 50%;
-    color: #ffe8a3;
-    font-size: 64px;
-    background: radial-gradient(circle, #70551e, #171717 70%);
-    box-shadow: 0 0 28px rgba(251,191,36,.65),
-                inset 0 0 20px #fbbf24;
-}
-
-.rank-name {
-    margin: 0;
-    color: #fbbf24;
-    font: 900 28px Orbitron, sans-serif;
-    text-transform: uppercase;
-}
-
-.rank-points {
-    margin: 8px 0 24px;
-    color: white !important;
-    font: 900 18px Orbitron, sans-serif;
-}
-
-.rank-progress-info {
-    display: flex;
-    justify-content: space-between;
-    margin-bottom: 8px;
-    color: rgba(255,255,255,.65);
-    font-size: 12px;
-    font-weight: 900;
-}
-
-.rank-progress-track {
-    height: 14px;
-    overflow: hidden;
-    border-radius: 4px;
-    background: #10151d;
-    border: 1px solid rgba(255,255,255,.2);
-}
-
-#rankProgressBar {
-    width: 0;
-    height: 100%;
-    background: linear-gradient(90deg, #d88b14, #ffe69b);
-    box-shadow: 0 0 15px #fbbf24;
-    transition: width 1.2s ease;
-}
-
-.rank-change {
-    margin: 24px 0 8px;
-    color: #22c55e;
-    font: 900 28px Orbitron, sans-serif;
-}
-
-.rank-change.negative {
-    color: #ef4444;
-}
-
-.rank-message {
-    min-height: 25px;
-    margin-bottom: 24px;
-}
 
         /* Friends list */
         .friend-item {
@@ -966,50 +835,38 @@
                     <!-- Player results -->
                 </div>
 
+                <!-- Rank Card -->
+                <div id="rankCard" class="hidden rounded-2xl p-5 mb-6 text-right relative overflow-hidden"
+                     style="background: linear-gradient(135deg, rgba(0,242,255,0.08), rgba(124,48,255,0.08)); border: 2px solid rgba(0,242,255,0.25);">
+                    <div class="flex items-center gap-4">
+                        <div id="rankCardIconWrap" class="flex-shrink-0"></div>
+                        <div class="flex-1 min-w-0 text-right">
+                            <div class="flex items-center justify-between gap-2 mb-1">
+                                <span id="rankCardDelta" class="text-lg font-black" style="font-family: 'Orbitron', sans-serif;"></span>
+                                <span id="rankCardName" class="text-xl font-black"></span>
+                            </div>
+                            <p id="rankCardPoints" class="text-xs opacity-70 mb-2"></p>
+                            <div class="w-full h-2 rounded-full overflow-hidden" style="background: rgba(255,255,255,0.1);">
+                                <div id="rankCardProgressBar" class="h-full rounded-full transition-all duration-700" style="width:0%;"></div>
+                            </div>
+                            <p id="rankCardProgressLabel" class="text-[10px] opacity-60 mt-1"></p>
+                        </div>
+                    </div>
+                    <p id="rankCardTierChange" class="hidden text-center text-sm font-black mt-3 pt-3" style="border-top: 1px solid rgba(255,255,255,0.1);"></p>
+                </div>
+
                 <!-- Screenshot button -->
                 <button onclick="takeScreenshot()" 
                     class="w-full mb-3 bg-gradient-to-r from-purple-600 to-blue-600 py-3 rounded-2xl font-black uppercase tracking-wider border-2 border-purple-400/50">
                     <i class="fas fa-camera ml-2"></i>التقط صورة
                 </button>
 
-                <button id="rankNextBtn" onclick="rankScreen()"
+                <button id="returnToRoomBtn" onclick="returnToWaiting()"
                     class="w-full btn-gradient py-4 rounded-2xl font-black uppercase tracking-wider">
-                    <i class="fas fa-home ml-2"></i>التالي
+                    <i class="fas fa-home ml-2"></i>العودة للغرفة
                 </button>
             </div>
         </div>
-
-        <!-- RANK SCREEN -->
-
-<div id="rankScreen" class="hidden w-full max-w-lg">
-    <div class="rank-card fade-in-up">
-        <span class="rank-label">MATCH COMPLETE</span>
-        <h2 id="rankTitle">تقدم الرتبة</h2>
-        <p id="rankRoleResult"></p>
-
-        <div id="rankIcon" class="rank-badge">♜</div>
-
-        <h3 id="rankName" class="rank-name">Bronze</h3>
-        <p id="rankPoints" class="rank-points">0 RP</p>
-
-        <div class="rank-progress-info">
-            <span id="rankCurrentPoints">0 RP</span>
-            <span id="rankNextPoints">1200 RP</span>
-        </div>
-
-        <div class="rank-progress-track">
-            <div id="rankProgressBar"></div>
-        </div>
-
-        <div id="rankChange" class="rank-change">+500 RP</div>
-        <p id="rankMessage" class="rank-message"></p>
-
-        <button id="returnToRoomBtn" onclick="returnToWaiting()"
-            class="w-full btn-gradient py-4 rounded-2xl font-black uppercase tracking-wider">
-            <i class="fas fa-home ml-2"></i> إلى الغرفة
-        </button>
-    </div>
-</div>
 
     </div>
 
@@ -1214,7 +1071,7 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
         import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-        import { getDatabase, ref, set, get, update, onValue, remove, push, onDisconnect, serverTimestamp, onChildAdded, query, orderByChild, equalTo } 
+        import { getDatabase, ref, set, get, update, onValue, remove, push, onDisconnect, serverTimestamp, onChildAdded, query, orderByChild, equalTo, runTransaction } 
             from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 
         const firebaseConfig = {
@@ -1431,6 +1288,10 @@ async function joinRoom(uid, username) {
         const roomData = roomSnap.val();
         console.log('Room data loaded:', roomData);
 
+        // Host status is derived from the room's persisted hostId (written once, at
+        // creation time, in home.html) — never a one-time client flag. Recomputing it
+        // here means it's correct for the creator, every joiner, and on every refresh
+        // or rejoin.
         const amHost = !!roomData.hostId && roomData.hostId === uid;
         window.gameState.isHost = amHost;
         localStorage.setItem('isHost', amHost ? 'true' : 'false');
@@ -1465,6 +1326,7 @@ async function joinRoom(uid, username) {
             connected: true,
             status: 'online',
             isHost: amHost,
+            // ✅ FIX: Use activeTheme/activeTitle from your database structure
             nameTheme: playerProfile.activeTheme || playerProfile.nameTheme || 'default',
             nameTag: playerProfile.activeTitle || playerProfile.nameTag || null,
             rankPoints: playerProfile.rankPoints || 0
@@ -1490,6 +1352,10 @@ async function joinRoom(uid, username) {
             }
         });
 
+        // Presence: mark this player as in-game, in this room, at the
+        // waiting phase (the room listener below keeps `phase` in sync as
+        // the room's actual status changes). This is what makes a friend's
+        // "ask to join" button appear for other players at all.
         await update(presenceRef, {
             online: true,
             inGame: true,
@@ -1528,16 +1394,26 @@ async function joinRoom(uid, username) {
                 window.gameState.category = roomData.category || 'places';
                 window.gameState.secretWord = roomData.secretWord;
                 
+                // Update UI based on status
                 updateGameScreen(roomData.status || 'waiting');
                 
+                // Update players list
                 updatePlayersList();
 
+                // Keep this player's presence.phase in sync with the room's real
+                // status, so a friend looking at "is this person in a waiting
+                // room?" (the ask-to-join gate) sees a live, accurate answer —
+                // only write when it actually changed, since onValue re-fires
+                // for every room update (chat, player list, etc.), not just status.
                 const myUid = window.gameState.currentUser?.uid;
                 if (myUid && roomData.status && roomData.status !== _lastSyncedPhase) {
                     _lastSyncedPhase = roomData.status;
                     update(ref(db, `players/${myUid}/presence`), { phase: roomData.status }).catch(() => {});
                 }
-
+                
+                // Host-only controls: show/hide + populate for whichever role this
+                // client actually has. #hostControls, #startBtn, and #waitingMsg all
+                // start hidden in the HTML and nothing was ever toggling them.
                 const hostControlsEl = document.getElementById('hostControls');
                 const startBtnEl     = document.getElementById('startBtn');
                 const waitingMsgEl   = document.getElementById('waitingMsg');
@@ -1580,7 +1456,6 @@ async function joinRoom(uid, username) {
             document.getElementById('spinnerScreen').classList.add('hidden');
             document.getElementById('spyGuessScreen').classList.add('hidden');
             document.getElementById('resultScreen').classList.add('hidden');
-            document.getElementById('rankScreen').classList.add('hidden');
 
             // Show current screen
             switch(status) {
@@ -1617,10 +1492,6 @@ async function joinRoom(uid, username) {
                 case 'result':
                     document.getElementById('resultScreen').classList.remove('hidden');
                     handleResultStatus();
-                    break;
-                case 'rank':
-                    document.getElementById('rankScreen').classList.remove('hidden');
-                    handleRankStatus();
                     break;
                 default:
                     document.getElementById('waitingScreen').classList.remove('hidden');
@@ -1741,7 +1612,9 @@ async function joinRoom(uid, username) {
             if (window.gameState.isHost) {
                 await remove(ref(db, `rooms/${window.gameState.roomCode}`));
             }
-
+            // Clear presence (so "ask to join" stops offering this room to
+            // friends) and the stale currentRoom/isHost bookkeeping — none of
+            // this was being cleared before, so both stuck around after leaving.
             await update(ref(db, `players/${window.gameState.currentUser.uid}/presence`), {
                 inGame: false, phase: null, room: null
             }).catch(() => {});
@@ -1792,63 +1665,12 @@ async function joinRoom(uid, username) {
 
         function getWordsForCategory(category) {
             const categories = {
-                places: [
-                "المدرسة", "المستشفى", "حديقة الحيوان", "المطار", "النادي", "السينما", "المطعم", "البحر", "المزرعة", "السيرك",
-                "المكتبة", "المسجد", "المحل", "الصيدلية", "البنك", "المحكمة", "السجن", "الغابة", "الصحراء",
-                "الجبل", "القلعة", "القصر", "الفندق", "المتحف", "المسرح", "المخبز", "المقهى (القهوة)", "السوبر ماركت", "محطة القطار",
-                "محطة المترو", "الورشة", "الاستاد", "الجيم", "الحضانة", "الجامعة", "صالون الحلاقة", "المعمل", "المنزل", "المطبخ",
-                "غرفة النوم", "الحمام", "السطوح", "الشارع", "الكوبري", "الميناء", "السفارة", "المرصد", "المخيم", "الشلال",
-                "البحيرة", "الكهف", "المسبح (البيسين)", "المصنع", "المكتب", "الأتوبيس", "الطيارة", "المركب", "الفضاء", "القمر",
-                "المريخ", "السوق", "الملاهي", "حديقة عامة", "الشقة", "الفيلا", "الخيمة", "الجراج", "المصلحة الحكومية", "البريد",
-                "قسم الشرطة", "المطافئ", "الإسعاف", "العيادة", "المول", "محل الموبايلات", "السايبر", "استوديو تصوير", "قاعة أفراح", "عزاء",
-                "معرض سيارات", "محل ورد", "محل هدايا", "كشك", "بنزينة", "موقف ميكروباصات", "مغسلة سيارات", "محل حلويات", "فرن عيش", "محل سمك",
-                "محل جزارة", "محل بقالة", "صالة بولينج", "تنس طاولة", "ملعب كورة", "البورصة", "المدبح", "الجزيرة", "المنارة", "المقابر"
-            ],
-            football_teams: [
-                "الأهلي المصري", "الزمالك", "الإسماعيلي", "المصري البورسعيدي", "الاتحاد السكندري", "بيراميدز", "سموحة", "مودرن فيوتشر", "المقاولون العرب", "غزل المحلة", "الجونة", "البنك الأهلي", "سيراميكا كليوباترا", "إنبي", "طلائع الجيش", "حرس الحدود", "أسوان",
-                "الهلال السعودي", "النصر السعودي", "الاتحاد السعودي", "الأهلي السعودي", "الشباب السعودي", "العين الإماراتي", "شباب الأهلي", "الوداد المغربي", "الرجاء المغربي", "الجيش الملكي", "الترجي التونسي", "النجم الساحلي", "الإفريقي التونسي", "السد القطري", "الدحيل", "الكويت الكويتي", "القادسية الكويتي", "الوحدات الأردني", "الزوراء العراقي",
-                "ليفربول", "مانشستر سيتي", "مانشستر يونايتد", "أرسنال", "تشيلسي", "توتنهام", "أستون فيلا", "نيوكاسل يونايتد", "ليستر سيتي", "وست هام",
-                "ريال مدريد", "برشلونة", "أتلتيكو مدريد", "إشبيلية", "فالنسيا", "ريال سوسيداد", "فياريال", "بيلباو",
-                "يوفنتوس", "إيه سي ميلان", "إنتر ميلان", "نابولي", "روما", "لاتسيو", "فيورنتينا", "بايرن ميونخ", "بوروسيا دورتموند", "باير ليفركوزن", "لايبزيج", "باريس سان جيرمان", "مارسيليا", "ليون", "موناكو", "أياكس أمستردام", "بنفيكا", "بورتو",
-                "منتخب مصر", "منتخب السعودية", "منتخب المغرب", "منتخب الجزائر", "منتخب تونس", "منتخب قطر", "منتخب البرازيل", "منتخب الأرجنتين", "منتخب فرنسا", "منتخب ألمانيا", "منتخب إسبانيا", "منتخب إيطاليا", "منتخب إنجلترا", "منتخب البرتغال", "منتخب بلجيكا", "منتخب كرواتيا", "منتخب هولندا", "منتخب الأوروغواي", "منتخب اليابان", "منتخب كوريا الجنوبية", "منتخب السنغال", "منتخب نيجيريا", "منتخب الكاميرون"
-            ],
-            food: [
-                "كشري", "ملوخية", "فول", "طعمية (فلافل)", "فتة باللحمة", "حواوشي", "محشي كرنب", "محشي ورق عنب", "ممبار", "كوارع",
-                "فتة كوارع", "كفتة مشوية", "طرب", "كباب", "كبدة إسكندراني", "سجق شرقي", "مكرونة بشاميل", "رقاق باللحمة", "جلاش", "أرز بلبن",
-                "أم علي", "بسبوسة", "كنافة", "لقيمات (قاضي)", "فطير مشلتت", "مش وجبنة قديمة", "عسل أسود وطحينة", "كشك", "بصارة", "عدس",
-                "شوربة لسان عصفور", "أرز معمر", "مسقعة", "تورلي خضار", "بامية باللحمة", "قلقاس", "سبانخ", "أرز بالشعرية", "فراخ محمرة", "حمام محشي",
-                "بط", "أرانب", "سمك بلطي", "سمك بوري", "جمبري", "سبيط", "فسيخ", "رنجة", "ملوحة", "بطاطس محمرة", "بابا غنوج", "سلطة خضراء", "مخلل (طرشي)",
-                "باذنجان مخلل", "بيض بالبسطرمة", "شكشوكة", "عجة", "مخ بانيه", "كبدة وقوانص", "كفتة",
-                "كفتة أرز", "أرز صيادية", "كيكة برتقال", "رز بلبن", "مهلبية", "قمر الدين", "عاشورا", "زلابيا", "بلح الشام", "صوابع زينب",
-                "كحك العيد", "بسكويت نشادر", "غريبة", "بيتيفور", "منين (قراقيش)", "قرص بعجوة", "عيش بلدي", "عيش فينو", "شاورما مصري", "فراخ بانيه",
-                "صينية بطاطس", "مكرونة بالصلصة", "ساندوتش جبنة", "شاي بلبن", "سحلب", "عصير قصب", "عرقسوس", "تمرهندي", "خروب", "سوبيا",
-                "مدمس", "بيض مسلوق", "جبنة بيضا", "لانشون", "بسطرمة", "مخروطة", "كوسة بالبشاميل", "أرز بالخلطة", "كبدة جملي", "فريك"
-            ],
-            jobs: [
-                "دكتور", "مهندس", "مدرس", "ضابط", "محامي", "محاسب", "ممرض", "صيدلي", "طيار", "سواق",
-                "نجار", "سباك", "كهربائي", "نقاش", "بنا", "ميكانيكي", "حلاق", "خياط", "طباخ", "جزار",
-                "بائع", "صحفي", "مذيع", "ممثل", "مغني", "رسام", "مصور", "لاعب كورة", "مدرب", "حكم",
-                "عامل نظافة", "بواب", "عامل دليفري", "نجار مسلح", "حداد", "فلاح", "صياد", "قاضي", "رجل إطفاء", "عسكري",
-                "مأذون", "إمام مسجد", "قسيس", "مألف", "شاعر", "مخرج", "مونتير", "مصمم جرافيك", "مبرمج", "هكر",
-                "عالم", "رائد فضاء", "غطاس", "طيار حربي", "مضيفة طيران", "مترجم", "سكرتير", "مدير", "وزير", "رئيس",
-                "خبير تجميل", "موديل", "يوتيوبر", "تيكتوكر", "بلوجر", "عامل بنزينة", "صراف", "جرسون", "شيف", "حلواني",
-                "خفير", "بودي جارد", "محقق", "جاسوس", "رجل أعمال", "بائع خضار", "بائع فاكهة", "بائع لبن", "مكوجي", "منجد",
-                "عامل بناء", "فني تكييف", "فني راديو", "ساحر", "مهرج", "راقص", "مدرب جيم", "سباح محترف", "عامل منجم", "عامل شحن",
-                "ساعي بريد", "موظف استقبال", "طبيب بيطري", "طبيب أسنان", "طبيب عيون", "محلل كورة", "سمسار", "تاجر", "مقاول", "طيار درون"
-            ],
-            companies: [
-                "Apple", "Google", "Microsoft", "Amazon", "Facebook", "Instagram", "WhatsApp", "YouTube", "TikTok", "Netflix",
-                "Samsung", "Huawei", "Xiaomi", "Oppo", "Sony", "LG", "Dell", "HP", "Intel", "Canon",
-                "Tesla", "Toyota", "Mercedes", "BMW", "Audi", "Ferrari", "Lamborghini", "Ford", "Chevrolet", "Jeep",
-                "Nike", "Adidas", "Puma", "Zara", "H&M", "Gucci", "Prada", "Rolex", "Lacoste", "Chanel",
-                "McDonald's", "KFC", "Burger King", "Pizza Hut", "Subway", "Starbucks", "Pepsi", "Coca-Cola", "Red Bull", "KitKat",
-                "Disney", "Marvel", "DC Comics", "Warner Bros", "Paramount", "Pixar", "Universal", "Spotify", "Snapchat", "Telegram",
-                "Visa", "Mastercard", "PayPal", "Binance", "Amazon", "eBay", "Alibaba", "AliExpress", "Shein", "Noon",
-                "Uber", "Careem", "Airbnb", "Booking", "FedEx", "DHL", "Aramex", "IKEA", "Walmart", "Carrefour",
-                "Nestle", "Dove", "Nivea", "L'Oreal", "Johnson's", "Colgate", "Gillette", "Rolex", "Casio", "Nikon",
-                "Lego", "Barbie", "Hot Wheels", "PlayStation", "Xbox", "Nintendo", "Zoom", "Skype", "Slack", "LinkedIn"
-            ]
-        };
+                places: ["المدرسة", "المستشفى", "حديقة الحيوان", "المطار", "النادي", "السينما", "المطعم", "البحر", "المزرعة", "السيرك"],
+                food: ["كشري", "ملوخية", "فول", "طعمية", "فتة", "حواوشي", "محشي", "كفتة", "أرز بلبن", "كنافة"],
+                jobs: ["دكتور", "مهندس", "مدرس", "ضابط", "محامي", "محاسب", "ممرض", "صيدلي", "طيار", "سواق"],
+                companies: ["Apple", "Google", "Microsoft", "Amazon", "Facebook", "Samsung", "Nike", "Adidas", "McDonald's", "Coca-Cola"],
+                football_teams: ["الأهلي", "الزمالك", "ريال مدريد", "برشلونة", "ليفربول", "مانشستر", "يوفنتوس", "بايرن", "باريس", "منتخب مصر"]
+            };
             return categories[category] || categories.places;
         }
 
@@ -1874,6 +1696,7 @@ async function joinRoom(uid, username) {
             const isMyTurn = currentPlayerId === window.gameState.currentUser.uid;
             const revealCard = document.getElementById('revealCard');
             
+            // ✅ FIX: Disable card flipping if not your turn
             if (!isMyTurn) {
                 revealCard.classList.add('not-your-turn');
                 revealCard.onclick = null;
@@ -1973,6 +1796,7 @@ async function joinRoom(uid, username) {
         // ═══════════════════════════════════════════════════════════
 
         async function handleDiscussionStatus() {
+            // ✅ FIX: Reset spy hints at start of discussion
             window.gameState.spyHintsUsed = 0;
             document.getElementById('hintBalance').textContent = '3';
             document.getElementById('hintList').innerHTML = '';
@@ -2291,7 +2115,8 @@ async function joinRoom(uid, username) {
                 await update(roomRef, {
                     status: 'result',
                     winner: 'spy',
-                    votedOutInnocent: votedUid
+                    votedOutInnocent: votedUid,
+                    resultId: Date.now()
                 });
             }
         }
@@ -2385,7 +2210,8 @@ async function joinRoom(uid, username) {
                     await update(roomRef, {
                         status: 'result',
                         winner: 'spy',
-                        spyGuessedCorrectly: true
+                        spyGuessedCorrectly: true,
+                        resultId: Date.now()
                     });
                 }, 2000);
             } else {
@@ -2395,7 +2221,8 @@ async function joinRoom(uid, username) {
                     await update(roomRef, {
                         status: 'result',
                         winner: 'innocent',
-                        spyGuessedWrong: true
+                        spyGuessedWrong: true,
+                        resultId: Date.now()
                     });
                 }, 2000);
             }
@@ -2458,127 +2285,155 @@ async function joinRoom(uid, username) {
                 }
             });
             
-            await updatePlayerStats(winner, roles);
+            renderRankCardLoading();
+            const outcome = await updatePlayerStats(winner, roles, roomData.resultId);
+            renderRankCard(outcome);
         }
 
-        // ═══════════════════════════════════════════════════════════
-        // RANK SCREEN
-        // ═══════════════════════════════════════════════════════════
-        function getRankInfo(points) {
-    const ranks = [
-        { name: 'Bronze', min: 0, max: 1200, icon: '♜' },
-        { name: 'Silver', min: 1200, max: 2000, icon: '♞' },
-        { name: 'Gold', min: 2000, max: 3000, icon: '♛' },
-        { name: 'Platinum', min: 3000, max: 4000, icon: '♕' },
-        { name: 'Diamond', min: 4000, max: 5000, icon: '◆' },
-        { name: 'Crown', min: 5000, max: 6500, icon: '♔' },
-        { name: 'Ace', min: 6500, max: 8000, icon: '★' }
-    ];
+        // Renders a neutral/loading state for the rank card while the
+        // transaction below is in flight (or hides it entirely if this
+        // client isn't part of this round, e.g. a spectator).
+        function renderRankCardLoading() {
+            const card = document.getElementById('rankCard');
+            if (!card) return;
+            card.classList.remove('hidden');
+            document.getElementById('rankCardDelta').textContent = '…';
+            document.getElementById('rankCardName').textContent = '';
+            document.getElementById('rankCardPoints').textContent = 'جاري تحديث الرتبة...';
+            document.getElementById('rankCardTierChange').classList.add('hidden');
+        }
 
-    return ranks.find(rank => points < rank.max) || ranks.at(-1);
-}
+        // Paints the rank card from the outcome object returned by
+        // updatePlayerStats() — old/new points, delta, old/new rank, and
+        // whether the player was promoted/demoted this round.
+        function renderRankCard(outcome) {
+            const card = document.getElementById('rankCard');
+            if (!card) return;
 
-async function updatePlayerStats(winner, roles) {
-    // Only the host distributes the reward.
-    if (!window.gameState.isHost) return;
+            if (!outcome || !window.NameThemes) {
+                card.classList.add('hidden');
+                return;
+            }
 
-    const roomRef = ref(db, `rooms/${window.gameState.roomCode}`);
-    const snap = await get(roomRef);
-    const roomData = snap.val() || {};
+            card.classList.remove('hidden');
 
-    // Prevent awarding points more than once.
-    if (roomData.rankResults) return;
+            const { delta, oldPoints, newPoints, oldRank, newRank, promoted, demoted } = outcome;
+            const progress = window.NameThemes.getProgress(newPoints);
 
-    const updates = {};
-    const rankResults = {};
+            // Icon
+            const iconWrap = document.getElementById('rankCardIconWrap');
+            iconWrap.innerHTML = '';
+            iconWrap.appendChild(window.NameThemes.createRankIcon(newPoints, 56));
 
-    Object.entries(roles || {}).forEach(([uid, role]) => {
-        const player = roomData.players?.[uid] || {};
-        const oldPoints = Number(player.rankPoints || 0);
+            // Delta chip (+500 / -300 style, colored by sign)
+            const deltaEl = document.getElementById('rankCardDelta');
+            const won = delta > 0;
+            deltaEl.textContent = `${won ? '+' : ''}${delta}`;
+            deltaEl.style.color = won ? '#22c55e' : '#ef4444';
 
-        const won =
-            (role === 'spy' && winner === 'spy') ||
-            (role === 'innocent' && winner === 'innocent');
+            // Name + points
+            document.getElementById('rankCardName').textContent = newRank.nameAr;
+            document.getElementById('rankCardName').style.color = newRank.color;
+            document.getElementById('rankCardPoints').textContent =
+                `${oldPoints} ← ${newPoints} نقطة`;
 
-        const change = won
-            ? role === 'spy' ? 500 : 400
-            : role === 'spy' ? -100 : -300;
+            // Progress bar toward next tier
+            const bar = document.getElementById('rankCardProgressBar');
+            bar.style.width = `${progress.progressPercent}%`;
+            bar.style.background = newRank.color;
+            document.getElementById('rankCardProgressLabel').textContent = progress.next
+                ? `${progress.pointsForNextTier} نقطة للوصول إلى ${progress.next.nameAr}`
+                : 'أعلى رتبة — استمر بالفوز للبقاء في القمة';
 
-        const newPoints = Math.max(0, oldPoints + change);
+            // Promotion / demotion banner
+            const tierChangeEl = document.getElementById('rankCardTierChange');
+            if (promoted) {
+                tierChangeEl.textContent = `🎉 ترقية! أصبحت رتبتك الآن ${newRank.nameAr}`;
+                tierChangeEl.style.color = '#22c55e';
+                tierChangeEl.classList.remove('hidden');
+            } else if (demoted) {
+                tierChangeEl.textContent = `⚠️ هبوط رتبة إلى ${newRank.nameAr}`;
+                tierChangeEl.style.color = '#ef4444';
+                tierChangeEl.classList.remove('hidden');
+            } else {
+                tierChangeEl.classList.add('hidden');
+            }
+        }
 
-        updates[`players/${uid}/rankPoints`] = newPoints;
-        rankResults[uid] = {
-            oldPoints,
-            newPoints,
-            change,
-            role,
-            won
-        };
-    });
+        // Applies this match's result to the CURRENT player only — every
+        // client writes only its own players/{uid} node, which is what the
+        // Firebase rules allow (and what the rest of this app already does).
+        // Uses a transaction so concurrent writes never clobber each other,
+        // and a resultId guard so re-renders of the result screen (or a
+        // page refresh mid-result) never double-apply the same match.
+        async function updatePlayerStats(winner, roles, resultId) {
+            const uid = window.gameState.currentUser?.uid;
+            if (!uid || !roles || !roles[uid]) return null; // not a player this round
 
-    updates[`rooms/${window.gameState.roomCode}/rankResults`] = rankResults;
-    await update(ref(db), updates);
-}
+            const role = roles[uid]; // 'spy' | 'innocent'
+            const won = role === winner;
 
-window.rankScreen = async function() {
-    const roomRef = ref(db, `rooms/${window.gameState.roomCode}`);
-    const snap = await get(roomRef);
-    const roomData = snap.val() || {};
-    const uid = window.gameState.currentUser.uid;
-    const result = roomData.rankResults?.[uid];
+            if (!window.NameThemes) {
+                console.error('updatePlayerStats: NameThemes not loaded, cannot compute rank');
+                return null;
+            }
 
-    if (!result) {
-        showToast('نتيجة الرتبة غير جاهزة');
-        return;
-    }
+            const playerRef = ref(db, `players/${uid}`);
+            let outcome = null;
 
-    document.getElementById('resultScreen').classList.add('hidden');
-    document.getElementById('rankScreen').classList.remove('hidden');
+            try {
+                await runTransaction(playerRef, (player) => {
+                    player = player || {};
+                    const stats = player.stats || {};
+                    outcome = null; // reset every retry — only a committing run should set this
 
-    const rank = getRankInfo(result.newPoints);
-    const progress = Math.min(
-        100,
-        ((result.newPoints - rank.min) / (rank.max - rank.min)) * 100
-    );
+                    // Already processed this exact round for this player —
+                    // abort without changing anything.
+                    if (resultId && stats.lastResultId === resultId) {
+                        return; // undefined = abort transaction
+                    }
 
-    document.getElementById('rankIcon').textContent = rank.icon;
-    document.getElementById('rankName').textContent = rank.name;
-    document.getElementById('rankPoints').textContent =
-        `${result.newPoints.toLocaleString()} RP`;
+                    const currentPoints = parseInt(player.rankPoints) || 0;
+                    const result = window.NameThemes.applyMatchResult(currentPoints, role, won);
 
-    document.getElementById('rankCurrentPoints').textContent =
-        `${result.newPoints.toLocaleString()} RP`;
+                    const spyGames = (stats.spyGames || 0) + (role === 'spy' ? 1 : 0);
+                    const innocentGames = (stats.innocentGames || 0) + (role === 'innocent' ? 1 : 0);
+                    const spyWins = (stats.spyWins || 0) + (role === 'spy' && won ? 1 : 0);
+                    const innocentWins = (stats.innocentWins || 0) + (role === 'innocent' && won ? 1 : 0);
+                    const timesCaughtAsSpy = (stats.timesCaughtAsSpy || 0) + (role === 'spy' && !won ? 1 : 0);
+                    const totalGames = (stats.totalGames || 0) + 1;
+                    const currentStreak = won ? (stats.currentStreak || 0) + 1 : 0;
+                    const longestWinStreak = Math.max(stats.longestWinStreak || 0, currentStreak);
+                    const spyDetectionRate = spyGames > 0 ? Math.round((timesCaughtAsSpy / spyGames) * 100) : 0;
 
-    document.getElementById('rankNextPoints').textContent =
-        `${rank.max.toLocaleString()} RP`;
+                    player.rankPoints = result.newPoints;
+                    player.rank = result.newRank.name;
+                    player.stats = {
+                        ...stats,
+                        totalGames,
+                        spyGames,
+                        innocentGames,
+                        spyWins,
+                        innocentWins,
+                        timesCaughtAsSpy,
+                        spyDetectionRate,
+                        currentStreak,
+                        longestWinStreak,
+                        lastResultId: resultId || Date.now()
+                    };
 
-    document.getElementById('rankChange').textContent =
-        `${result.change >= 0 ? '+' : ''}${result.change} RP`;
+                    outcome = result;
+                    return player;
+                });
+            } catch (err) {
+                console.error('updatePlayerStats transaction failed:', err);
+                return null;
+            }
 
-    document.getElementById('rankChange').classList.toggle(
-        'negative',
-        result.change < 0
-    );
+            return outcome; // null if this round was already processed
+        }
 
-    document.getElementById('rankRoleResult').textContent =
-        result.role === 'spy'
-            ? result.won ? '🕵️ فوز الجاسوس' : '🕵️ خسارة الجاسوس'
-            : result.won ? '🛡️ فوز الأبرياء' : '🛡️ خسارة الأبرياء';
-
-    document.getElementById('rankMessage').textContent =
-        result.won
-            ? 'أداء ممتاز! استمر في التقدم.'
-            : 'حاول مرة أخرى في الجولة القادمة.';
-
-    requestAnimationFrame(() => {
-        document.getElementById('rankProgressBar').style.width = `${progress}%`;
-    });
-};
-
-function handleRankStatus() {
-    window.rankScreen();
-}
-
+        // ✅ FIX: Reset spy hints when returning to waiting
         window.returnToWaiting = async function() {
             if (!window.gameState.isHost) {
                 alert('فقط المضيف يمكنه إعادة اللعب');
@@ -2818,6 +2673,12 @@ function handleRankStatus() {
                 const snap = await get(friendPlayerRef);
                 const friendPlayer = snap.val();
                 
+                // FIX: this checked players/{uid}/status, a top-level field
+                // nothing actually writes for general "is this player
+                // online" purposes — only presence.online (written on
+                // home.html and room.html now) is ever kept accurate. This
+                // was the same field friends-panel.js and friends.html
+                // already correctly check.
                 const friendPresence = friendPlayer?.presence || {};
                 const isOnline = !!friendPresence.online;
                 const friendInWaitingRoom = !!(friendPresence.inGame && friendPresence.phase === 'waiting' && friendPresence.room);
