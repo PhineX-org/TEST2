@@ -1,5 +1,13 @@
 /* ═══════════════════════════════════════════════════════════════════════
    EJInbox — El Jasus inbox (news + announcements + room invites)
+   • movable window (drag by header) + movable launcher button
+   • News list on the left, large details pane on the right (title + body)
+   • Mobile (<=720px): full-screen, list -> details with a back button
+   Data:  news/{id}  userNews/{uid}/{id}  invites/{uid}/{key}
+          announcements/current (legacy banner shown as an item)
+   API:   EJInbox.init(db, user, { onJoin(roomCode), dbApi? })   (idempotent per user)
+          EJInbox.setHandlers({ acceptInvite, declineInvite, acceptRequest, declineRequest, getTheme })
+          EJInbox.open(tab?, id?)  .close()  .toggle()  .destroy()
    ═══════════════════════════════════════════════════════════════════════ */
 (function () {
   'use strict';
@@ -16,6 +24,7 @@
   };
 
   var S = null; // runtime state
+  var HANDLERS = {}; // optional page-supplied actions: acceptInvite, declineInvite, acceptRequest, declineRequest, getTheme
 
   /* ── tiny helpers ─────────────────────────────────────────────── */
   function lsGet(k, d) { try { var v = localStorage.getItem(k); return v == null ? d : JSON.parse(v); } catch (e) { return d; } }
@@ -109,6 +118,10 @@
     '.ejx-empty{padding:40px 16px;text-align:center;color:#8fb3a1;font-size:13.5px;line-height:1.8}',
     '.ejx-empty .i{font-size:38px;display:block;margin-bottom:8px;opacity:.8}',
     '.ejx-code{display:inline-block;font:900 30px "Orbitron",monospace;letter-spacing:6px;color:var(--c);padding:8px 18px;border:1px dashed rgba(0,242,255,.6);border-radius:12px;margin:8px 0 4px;direction:ltr}',
+    '.ejx-th-fire{--tc:#ff8c00;--tbg:linear-gradient(135deg,rgba(139,0,0,.55),rgba(255,69,0,.22))}.ejx-th-ice{--tc:#88ddff;--tbg:linear-gradient(135deg,rgba(0,50,100,.6),rgba(100,150,200,.22))}',
+    '.ejx-th-neon{--tc:#a070ff;--tbg:linear-gradient(135deg,rgba(20,0,40,.7),rgba(80,20,120,.3))}.ejx-th-gold{--tc:#ffd700;--tbg:linear-gradient(135deg,rgba(50,40,0,.7),rgba(100,80,0,.3))}.ejx-th-emerald{--tc:#00ff88;--tbg:linear-gradient(135deg,rgba(0,50,40,.7),rgba(0,100,60,.3))}',
+    '.ejx-it[class*="ejx-th-"]{border-color:var(--tc)}.ejx-it[class*="ejx-th-"].sel{background:var(--tbg)}.ejx-detail[class*="ejx-th-"]{background:var(--tbg)}',
+    '.ejx-act:disabled,.ejx-act.no:disabled{opacity:.5;cursor:wait}',
     '.ejx-toasts{position:fixed;top:14px;left:50%;transform:translateX(-50%);z-index:9999;display:flex;flex-direction:column;gap:8px;align-items:center;pointer-events:none;width:min(420px,94vw)}',
     '.ejx-toast{pointer-events:auto;width:100%;background:#000;border:1.5px solid var(--l);border-radius:14px;padding:11px 14px;font:700 13.5px "Cairo",sans-serif;color:#fff;cursor:pointer;box-shadow:0 0 24px rgba(163,230,53,.3);direction:rtl;display:flex;gap:10px;align-items:center}',
     '.ejx-toast small{display:block;color:#8fb3a1;font-weight:600;font-size:11.5px}',
@@ -141,7 +154,9 @@
   }
   function invitesActive() {
     var now = Date.now();
-    return S.invites.filter(function (v) { return (!v.status || v.status === 'pending') && (!v.exp || v.exp > now); });
+    var live = function (v) { return (!v.status || v.status === 'pending') && (!v.exp || v.exp > now); };
+    var reqs = HANDLERS.acceptRequest ? S.requests.filter(live) : []; // "ask to join" needs the page's handlers
+    return S.invites.filter(live).concat(reqs).sort(function (a, b) { return b.ts - a.ts; });
   }
   function sortedNews() {
     return newsVisible().slice().sort(function (a, b) { return (b.pinned ? 1 : 0) - (a.pinned ? 1 : 0) || (b.ts || 0) - (a.ts || 0); });
@@ -175,9 +190,25 @@
     var out = [], o = S.raw.inv || {};
     Object.keys(o).forEach(function (k) {
       var v = o[k]; if (!v || !v.roomCode) return;
-      out.push({ id: 'inv:' + k, key: k, fromName: String(v.fromName || 'لاعب').slice(0, 30), roomCode: String(v.roomCode).slice(0, 12), ts: Number(v.timestamp) || 0, exp: Number(v.expiresAt) || 0, status: v.status });
+      out.push({ id: 'inv:' + k, kind: 'invite', key: k, fromUid: v.fromUid || '', fromName: String(v.fromName || 'لاعب').slice(0, 30), roomCode: String(v.roomCode).slice(0, 12), ts: Number(v.timestamp) || 0, exp: Number(v.expiresAt) || 0, status: v.status, raw: v });
     });
     S.invites = out.sort(function (a, b) { return b.ts - a.ts; });
+  }
+  function rebuildRequests() {
+    var out = [], o = S.raw.jr || {};
+    Object.keys(o).forEach(function (k) {
+      var v = o[k]; if (!v || !v.fromUid) return;
+      out.push({ id: 'req:' + k, kind: 'request', key: k, fromUid: v.fromUid, fromName: String(v.fromName || 'لاعب').slice(0, 30), roomCode: String(v.roomCode || '').slice(0, 12), ts: Number(v.timestamp) || 0, exp: Number(v.expiresAt) || 0, status: v.status, raw: v });
+    });
+    S.requests = out;
+  }
+  function themeOf(it) { // inviter's name-theme -> accent class (supplied by the page via getTheme)
+    if (!it.fromUid || !HANDLERS.getTheme) return '';
+    if (!(it.fromUid in S.themes)) {
+      S.themes[it.fromUid] = '';
+      try { Promise.resolve(HANDLERS.getTheme(it.fromUid)).then(function (c) { c = String(c || '').replace(/^themed-/, ''); if (/^(fire|ice|neon|gold|emerald)$/.test(c)) { S.themes[it.fromUid] = 'ejx-th-' + c; render(); } }).catch(function () {}); } catch (e) {}
+    }
+    return S.themes[it.fromUid] || '';
   }
   function badgeCount() { return newsVisible().filter(function (n) { return !isRead(n.id); }).length + invitesActive().length; }
 
@@ -280,7 +311,7 @@
     if (!items.some(function (x) { return x.id === S.sel; })) S.sel = (!isMobile() && items[0]) ? items[0].id : null;
     var top = S.el.list.scrollTop;
     if (!items.length) {
-      S.el.list.innerHTML = '<div class="ejx-empty"><span class="i">' + (S.tab === 'news' ? '📰' : '🎮') + '</span>' + (S.tab === 'news' ? 'لا توجد أخبار حالياً.<br>سنعلمك عند نشر تحديث جديد.' : 'لا توجد دعوات.<br>عندما يدعوك صديق إلى غرفة ستظهر هنا.') + '</div>';
+      S.el.list.innerHTML = '<div class="ejx-empty"><span class="i">' + (S.tab === 'news' ? '📰' : '🎮') + '</span>' + (S.tab === 'news' ? 'لا توجد أخبار حالياً.<br>سنعلمك عند نشر تحديث جديد.' : 'لا توجد دعوات.<br>عندما يدعوك صديق إلى غرفة أو يطلب الانضمام إليك ستظهر هنا.') + '</div>';
     } else {
       S.el.list.innerHTML = items.map(function (it) { return S.tab === 'invites' ? invItem(it) : newsItem(it); }).join('');
       Array.prototype.forEach.call(S.el.list.querySelectorAll('.ejx-it'), function (b) { b.onclick = function () { select(b.getAttribute('data-id'), false); }; });
@@ -295,9 +326,10 @@
       '<div class="m"><span class="ejx-chip" style="color:' + c.color + '">' + c.ico + ' ' + (n.tag ? esc(n.tag) : c.label) + '</span>' + (n.personal ? '<span>لك أنت</span>' : '') + '<span style="margin-inline-start:auto">' + ago(n.ts) + '</span></div></button>';
   }
   function invItem(v) {
-    return '<button type="button" role="option" class="ejx-it' + (v.id === S.sel ? ' sel' : '') + ' unread" data-id="' + esc(v.id) + '">' +
-      '<div class="t"><i class="ejx-dot"></i><span class="tt">دعوة من ' + esc(v.fromName) + '</span></div>' +
-      '<div class="m"><span class="ejx-chip" style="color:#00f2ff">🎮 ' + esc(v.roomCode) + '</span><span style="margin-inline-start:auto" data-cd="' + v.exp + '">' + cd(v.exp) + '</span></div></button>';
+    var req = v.kind === 'request', th = themeOf(v);
+    return '<button type="button" role="option" class="ejx-it' + (v.id === S.sel ? ' sel' : '') + ' unread' + (th ? ' ' + th : '') + '" data-id="' + esc(v.id) + '">' +
+      '<div class="t"><i class="ejx-dot"></i><span class="tt">' + (req ? '🤝 ' + esc(v.fromName) + ' يريد الانضمام' : 'دعوة من ' + esc(v.fromName)) + '</span></div>' +
+      '<div class="m"><span class="ejx-chip" style="color:' + (req ? '#a3e635' : '#00f2ff') + '">' + (req ? 'طلب انضمام' : '🎮 ' + esc(v.roomCode)) + '</span><span style="margin-inline-start:auto" data-cd="' + v.exp + '">' + cd(v.exp) + '</span></div></button>';
   }
   function cd(exp) {
     if (!exp) return ago(0);
@@ -309,15 +341,17 @@
     var items = currentItems(), it = items.filter(function (x) { return x.id === S.sel; })[0];
     S.el.win.classList.toggle('det', !!it && S.mobileDetail);
     if (!it) {
-      d.innerHTML = back + '<div class="ejx-empty"><span class="i">' + (S.tab === 'news' ? '📖' : '🎮') + '</span>' + (items.length ? 'اختر عنصراً من القائمة لعرض تفاصيله.' : (S.tab === 'news' ? 'لا شيء لعرضه الآن.' : 'لا توجد دعوات الآن.')) + '</div>';
+      d.innerHTML = back + '<div class="ejx-empty"><span class="i">' + (S.tab === 'news' ? '📖' : '🎮') + '</span>' + (items.length ? 'اختر عنصراً من القائمة لعرض تفاصيله.' : (S.tab === 'news' ? 'لا شيء لعرضه الآن.' : 'لا توجد دعوات أو طلبات انضمام الآن.')) + '</div>';
     } else if (S.tab === 'invites') {
-      d.innerHTML = back + '<div class="ejx-d-top"><span class="ejx-chip" style="color:#00f2ff">🎮 دعوة غرفة</span></div>' +
-        '<h2 class="ejx-d-title">' + esc(it.fromName) + ' يدعوك للعب</h2>' +
+      var req = it.kind === 'request', busy = !!S.busy[it.id];
+      d.innerHTML = back + '<div class="ejx-d-top"><span class="ejx-chip" style="color:' + (req ? '#a3e635' : '#00f2ff') + '">' + (req ? '🤝 طلب انضمام' : '🎮 دعوة غرفة') + '</span></div>' +
+        '<h2 class="ejx-d-title">' + esc(it.fromName) + (req ? ' يريد الانضمام إلى غرفتك' : ' يدعوك للعب') + '</h2>' +
         '<div class="ejx-d-meta">' + (it.ts ? fullDate(it.ts) : '') + ' &nbsp;·&nbsp; <span data-cd="' + it.exp + '">' + cd(it.exp) + '</span></div>' +
-        '<div class="ejx-d-body"><p>كود الغرفة:</p><span class="ejx-code">' + esc(it.roomCode) + '</span></div>' +
-        '<button class="ejx-act" id="ejx-acc" type="button">🚪 انضم الآن</button><button class="ejx-act no" id="ejx-dec" type="button">رفض</button>';
-      d.querySelector('#ejx-acc').onclick = function () { acceptInvite(it); };
-      d.querySelector('#ejx-dec').onclick = function () { declineInvite(it); };
+        (req ? '<div class="ejx-d-body"><p>عند القبول ستُرسل له دعوة إلى غرفتك الحالية (يجب أن تكون في غرفة انتظار).</p></div>'
+             : '<div class="ejx-d-body"><p>كود الغرفة:</p><span class="ejx-code">' + esc(it.roomCode) + '</span></div>') +
+        '<button class="ejx-act" id="ejx-acc" type="button"' + (busy ? ' disabled' : '') + '>' + (busy ? '…' : req ? '✅ قبول وإرسال دعوة' : '🚪 انضم الآن') + '</button><button class="ejx-act no" id="ejx-dec" type="button"' + (busy ? ' disabled' : '') + '>رفض</button>';
+      d.querySelector('#ejx-acc').onclick = function () { req ? acceptRequest(it) : acceptInvite(it); };
+      d.querySelector('#ejx-dec').onclick = function () { req ? declineRequest(it) : declineInvite(it); };
     } else {
       var c = CATS[it.cat];
       d.innerHTML = back + '<div class="ejx-d-top"><span class="ejx-chip" style="color:' + c.color + '">' + c.ico + ' ' + c.label + '</span>' + (it.tag ? '<span class="ejx-chip" style="color:#fff">' + esc(it.tag) + '</span>' : '') + (it.pinned ? '<span class="ejx-chip" style="color:#fbbf24">📌 مثبّت</span>' : '') + (it.personal ? '<span class="ejx-chip" style="color:#67e8f9">رسالة لك</span>' : '') + '</div>' +
@@ -328,6 +362,7 @@
         '<button type="button" class="ejx-link" id="ejx-unread">وضع علامة «غير مقروء»</button>';
       d.querySelector('#ejx-unread').onclick = function () { markRead(it.id, false); S.mobileDetail = false; render(); };
     }
+    d.className = 'ejx-detail' + (it && S.tab === 'invites' && themeOf(it) ? ' ' + themeOf(it) : '');
     var b = d.querySelector('#ejx-back'); if (b) b.onclick = function () { S.mobileDetail = false; render(); };
     d.scrollTop = 0;
   }
@@ -339,16 +374,30 @@
   function setTab(t) { S.tab = t; lsSet(LS.tab, t); S.sel = null; S.mobileDetail = false; render(); if (!isMobile()) { var it = currentItems()[0]; if (it) select(it.id); } }
 
   /* ── actions ──────────────────────────────────────────────────── */
+  // Runs the page-supplied handler if there is one (friend-invite-enhanced.js does the room checks,
+  // status writes and navigation); otherwise falls back to a simple default. Buttons stay disabled meanwhile.
+  function act(kind, it, fallback, after) {
+    if (S.busy[it.id]) return;
+    S.busy[it.id] = 1; render();
+    var h = HANDLERS[kind], p;
+    try { p = h ? h(Object.assign({ key: it.key }, it.raw || {}, { fromName: it.fromName, roomCode: it.roomCode })) : (fallback && fallback()); }
+    catch (e) { p = Promise.reject(e); }
+    Promise.resolve(p).then(function (r) { return r; }, function (e) { console.warn('[EJInbox] ' + kind + ' failed', e); return false; }).then(function (res) {
+      if (!S) return; delete S.busy[it.id]; if (after) after(res); render();
+    });
+  }
   function acceptInvite(v) {
-    var go = function () { try { close(); } catch (e) {} if (S.onJoin) S.onJoin(v.roomCode, v); };
-    var p;
-    try { p = S.api.remove(S.api.ref(S.db, 'invites/' + S.uid + '/' + v.key)); } catch (e) {}
-    Promise.resolve(p).then(go, go);
+    act('acceptInvite', v, function () {
+      var go = function () { if (S && S.onJoin) S.onJoin(v.roomCode, v); };
+      return Promise.resolve(S.api.remove(S.api.ref(S.db, 'invites/' + S.uid + '/' + v.key))).then(go, go);
+    }, function (res) { if (res !== false) close(); }); // handler resolves false when joining failed (room full/gone): stay open
   }
   function declineInvite(v) {
-    try { Promise.resolve(S.api.remove(S.api.ref(S.db, 'invites/' + S.uid + '/' + v.key))).catch(function () {}); } catch (e) {}
-    S.invites = S.invites.filter(function (x) { return x.key !== v.key; }); S.sel = null; S.mobileDetail = false; render();
+    act('declineInvite', v, function () { return S.api.remove(S.api.ref(S.db, 'invites/' + S.uid + '/' + v.key)); },
+      function () { S.invites = S.invites.filter(function (x) { return x.key !== v.key; }); S.sel = null; S.mobileDetail = false; });
   }
+  function acceptRequest(r) { act('acceptRequest', r, null, function () { S.sel = null; S.mobileDetail = false; }); }
+  function declineRequest(r) { act('declineRequest', r, null, function () { S.sel = null; S.mobileDetail = false; }); }
   function toast(html, onClick) {
     var t = document.createElement('div'); t.className = 'ejx-toast'; t.innerHTML = html;
     t.onclick = function () { t.remove(); onClick && onClick(); };
@@ -389,16 +438,19 @@
     }
     var knownInv = {};
     function invAfter(first) {
-      var before = knownInv; rebuildInvites(); knownInv = {};
+      var before = knownInv; rebuildInvites(); rebuildRequests(); knownInv = {};
       invitesActive().forEach(function (v) {
         knownInv[v.id] = 1;
-        if (!first && S.ready && !before[v.id]) toast('<span style="font-size:22px">🎮</span><div>دعوة من ' + esc(v.fromName) + '<small>اضغط لعرضها والانضمام</small></div>', function () { open('invites', v.id); });
+        if (first || !S.ready || before[v.id]) return;
+        var req = v.kind === 'request';
+        toast('<span style="font-size:22px">' + (req ? '🤝' : '🎮') + '</span><div>' + (req ? esc(v.fromName) + ' يريد الانضمام إلى غرفتك' : 'دعوة من ' + esc(v.fromName)) + '<small>اضغط لعرضها' + (req ? ' والرد' : ' والانضمام') + '</small></div>', function () { open('invites', v.id); });
       });
     }
     listen('news', 'news', newsAfter);
     listen('userNews/' + S.uid, 'user', newsAfter);
     listen('announcements/current', 'ann', newsAfter);
     listen('invites/' + S.uid, 'inv', invAfter);
+    listen('joinRequests/' + S.uid, 'jr', invAfter);
     setTimeout(function () { S.ready = true; }, 2500);
     S.timer = setInterval(function () {
       if (!S.isOpen) return;
@@ -410,9 +462,10 @@
 
   function init(db, user, opts) {
     if (!user || !user.uid) return;
-    if (S) destroy();
     opts = opts || {};
-    S = { db: db, uid: user.uid, onJoin: opts.onJoin, raw: {}, news: [], invites: [], offs: [], tab: lsGet(LS.tab, 'news'), sel: null, isOpen: false, ready: false, mobileDetail: false, lastInv: 0 };
+    if (S && S.uid === user.uid) { if (opts.onJoin) S.onJoin = opts.onJoin; return; } // already running for this user (home + invite script both call init)
+    if (S) destroy();
+    S = { db: db, uid: user.uid, onJoin: opts.onJoin, raw: {}, news: [], invites: [], requests: [], busy: {}, themes: {}, offs: [], tab: lsGet(LS.tab, 'news'), sel: null, isOpen: false, ready: false, mobileDetail: false, lastInv: 0 };
     S.read = readMap();
     var go = function (api) { S.api = api; build(); wire(); render(); };
     if (opts.dbApi) return go(opts.dbApi);
@@ -427,5 +480,5 @@
     S = null;
   }
 
-  window.EJInbox = { init: init, open: open, close: close, toggle: toggle, destroy: destroy };
+  window.EJInbox = { setHandlers: function (h) { HANDLERS = Object.assign({}, HANDLERS, h || {}); if (S && S.el) render(); }, init: init, open: open, close: close, toggle: toggle, destroy: destroy };
 })();

@@ -8,10 +8,20 @@
 //   missed 5-second prompt is never actually lost
 // Applies inviter's theme to notifications. Works on every
 // page that loads this file (home.html, room.html, friends.html).
+//
+// v3.1 — INBOX MODE: when Assets/inbox.js (window.EJInbox) is loaded BEFORE
+// this file, the new unified inbox owns the whole UI (floating mailbox,
+// news list + details pane, invites + join requests, toasts). This file then
+// only supplies the logic: it registers accept/decline handlers (room
+// checks, status writes, "join when the round ends", theme lookup) and
+// starts the inbox itself, so ANY page that loads both files gets the inbox.
+// Without inbox.js it falls back to the old toasts + mailbox panel.
 // ============================================================
 
 (function () {
   'use strict';
+
+  const INBOX = !!window.EJInbox; // new inbox present -> it renders everything
 
   const FIREBASE_CONFIG = {
     apiKey: 'AIzaSyDnd-pmKEatI3DaFz6xHWB5ucurtHXt9tk',
@@ -355,37 +365,40 @@
   document.head.appendChild(styleEl);
 
   // ── Containers ─────────────────────────────────────────────
-  const globalContainer = document.createElement('div');
-  globalContainer.id = 'fi-container';
-  document.body.appendChild(globalContainer);
+  let globalContainer = null, homeContainer = null, inboxBackdrop = null;
+  if (!INBOX) {
+    globalContainer = document.createElement('div');
+    globalContainer.id = 'fi-container';
+    document.body.appendChild(globalContainer);
 
-  const homeContainer = document.createElement('div');
-  homeContainer.id = 'fi-home-panel';
-  document.body.appendChild(homeContainer);
+    homeContainer = document.createElement('div');
+    homeContainer.id = 'fi-home-panel';
+    document.body.appendChild(homeContainer);
 
-  // Inbox trigger + panel (universal on every page that loads this file)
-  const inboxBtn = document.createElement('button');
-  inboxBtn.id = 'fi-inbox-btn';
-  inboxBtn.setAttribute('aria-label', 'صندوق الدعوات');
-  inboxBtn.innerHTML = '<i class="fas fa-envelope"></i><span id="fi-inbox-badge">0</span>';
-  document.body.appendChild(inboxBtn);
+    // Inbox trigger + panel (universal on every page that loads this file)
+    const inboxBtn = document.createElement('button');
+    inboxBtn.id = 'fi-inbox-btn';
+    inboxBtn.setAttribute('aria-label', 'صندوق الدعوات');
+    inboxBtn.innerHTML = '<i class="fas fa-envelope"></i><span id="fi-inbox-badge">0</span>';
+    document.body.appendChild(inboxBtn);
 
-  const inboxBackdrop = document.createElement('div');
-  inboxBackdrop.id = 'fi-inbox-backdrop';
-  inboxBackdrop.innerHTML = `
-    <div id="fi-inbox-panel">
-      <div id="fi-inbox-head">
-        <h3>📬 صندوق الدعوات</h3>
-        <button id="fi-inbox-close">✕</button>
+    inboxBackdrop = document.createElement('div');
+    inboxBackdrop.id = 'fi-inbox-backdrop';
+    inboxBackdrop.innerHTML = `
+      <div id="fi-inbox-panel">
+        <div id="fi-inbox-head">
+          <h3>📬 صندوق الدعوات</h3>
+          <button id="fi-inbox-close">✕</button>
+        </div>
+        <div id="fi-inbox-list"></div>
       </div>
-      <div id="fi-inbox-list"></div>
-    </div>
-  `;
-  document.body.appendChild(inboxBackdrop);
+    `;
+    document.body.appendChild(inboxBackdrop);
 
-  inboxBtn.addEventListener('click', () => { inboxBackdrop.classList.add('fi-open'); renderInbox(); });
-  inboxBackdrop.addEventListener('click', (e) => { if (e.target === inboxBackdrop) inboxBackdrop.classList.remove('fi-open'); });
-  inboxBackdrop.querySelector('#fi-inbox-close').addEventListener('click', () => inboxBackdrop.classList.remove('fi-open'));
+    inboxBtn.addEventListener('click', () => { inboxBackdrop.classList.add('fi-open'); renderInbox(); });
+    inboxBackdrop.addEventListener('click', (e) => { if (e.target === inboxBackdrop) inboxBackdrop.classList.remove('fi-open'); });
+    inboxBackdrop.querySelector('#fi-inbox-close').addEventListener('click', () => inboxBackdrop.classList.remove('fi-open'));
+  }
 
   // ── Active toasts + inbox model ─────────────────────────────
   const active = {};       // key -> { el, interval, shrinkTimeout }  (live toast elements)
@@ -405,7 +418,7 @@
     if (!badge) return;
     badge.textContent = count > 9 ? '9+' : String(count);
     badge.classList.toggle('fi-show', count > 0);
-    if (inboxBackdrop.classList.contains('fi-open')) renderInbox();
+    if (inboxBackdrop && inboxBackdrop.classList.contains('fi-open')) renderInbox();
   }
 
   function relTime(ts) {
@@ -500,7 +513,30 @@
       if (user) {
         listenInvites(user.uid);
         listenJoinRequests(user.uid);
+        if (INBOX) startInbox(user);
       }
+    });
+  }
+
+  // ── Hand the UI over to the unified inbox ───────────────────
+  // The inbox calls these when the player taps accept/decline. Each returns
+  // the underlying promise so the inbox can disable its buttons meanwhile.
+  function startInbox(user) {
+    const uid = user.uid;
+    window.EJInbox.setHandlers({
+      acceptInvite:   (inv) => acceptInvite(uid, inv.key, inv),
+      declineInvite:  (inv) => { dismiss(uid, inv.key, 'declined'); },
+      acceptRequest:  (req) => acceptJoinRequest(uid, req.key, req),
+      declineRequest: (req) => { declineJoinRequest(uid, req.key); },
+      getTheme:       async (fromUid) => getInviteThemeClass(await fetchInviterTheme(fromUid)),
+    });
+    // Same behaviour as before when the player taps an invite with no handler involved.
+    window.EJInbox.init(db, user, {
+      onJoin: (code) => {
+        localStorage.setItem('currentRoom', code);
+        localStorage.setItem('isHost', 'false');
+        window.location.href = `/room.html?room=${encodeURIComponent(code)}`;
+      },
     });
   }
 
@@ -549,9 +585,9 @@
       }
       upsertPending('invite', key, data);
 
-      // Fetch inviter theme
-      fetchInviterTheme(data.fromUid).then(theme => {
-        if (!active[key]) showInvite(uid, key, data, theme);
+      // Fetch inviter theme (legacy toast only — the inbox asks via getTheme)
+      if (!INBOX) fetchInviterTheme(data.fromUid).then(theme => {
+        if (!INBOX && !active[key]) showInvite(uid, key, data, theme);
       });
     });
     _onChildRemoved(invRef, snap => removePending(snap.key));
@@ -569,7 +605,7 @@
         return;
       }
       upsertPending('join-request', key, data);
-      if (!active[key]) showJoinRequest(uid, key, data);
+      if (!INBOX && !active[key]) showJoinRequest(uid, key, data);
     });
     _onChildRemoved(jrRef, snap => removePending(snap.key));
   }
@@ -695,6 +731,8 @@
   }
 
   // ── Accept a game invite ────────────────────────────────────
+  // Resolves true when the player is joining (or queued to join) — the inbox
+  // closes on true and stays open on false so other items remain reachable.
   async function acceptInvite(myUid, key, data) {
     const accBtn = document.getElementById(`fi-acc-${key}`);
     const decBtn = document.getElementById(`fi-dec-${key}`);
@@ -706,7 +744,7 @@
       if (!roomSnap.exists()) {
         showBanner('❌ الغرفة لم تعد موجودة', 'error');
         dismiss(myUid, key, 'expired');
-        return;
+        return false;
       }
 
       const room = roomSnap.val();
@@ -716,13 +754,14 @@
         if (playerCount >= 10) {
           showBanner('❌ الغرفة ممتلئة', 'error');
           dismiss(myUid, key, 'expired');
-          return;
+          return false;
         }
         localStorage.setItem('currentRoom', data.roomCode);
         localStorage.setItem('isHost', 'false');
         await _update(_ref(db, `invites/${myUid}/${key}`), { status: 'accepted' });
         dismiss(myUid, key, null, true);
         window.location.href = `/room.html?room=${data.roomCode}`;
+        return true;
       } else {
         // Game in progress — notify and wait for the round to end
         const phaseLabel = {
@@ -737,11 +776,13 @@
         await _update(_ref(db, `invites/${myUid}/${key}`), { status: 'accepted' });
         dismiss(myUid, key, null, true);
         watchRoomForWaiting(data.roomCode);
+        return true;
       }
     } catch (e) {
       showBanner('❌ خطأ: ' + e.message, 'error');
       if (accBtn) { accBtn.disabled = false; accBtn.textContent = '✅ قبول'; }
       if (decBtn) decBtn.disabled = false;
+      return false;
     }
   }
 
