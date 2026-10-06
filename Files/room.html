@@ -1127,7 +1127,7 @@
     </div>
 
     <!-- Load moderation system FIRST -->
-    <script src="moderation.js"></script>
+    <script src="../Assets/moderation.js"></script>
 
     <!-- Firebase & Game Logic -->
     <script type="module">
@@ -1389,7 +1389,6 @@ async function joinRoom(uid, username) {
             connected: true,
             status: 'online',
             isHost: amHost,
-            // ✅ FIX: Use activeTheme/activeTitle from your database structure
             nameTheme: playerProfile.activeTheme || playerProfile.nameTheme || 'default',
             nameTag: playerProfile.activeTitle || playerProfile.nameTag || null,
             rankPoints: playerProfile.rankPoints || 0
@@ -3198,8 +3197,8 @@ async function joinRoom(uid, username) {
         //  - Gemini is reached ONLY through the Cloudflare Worker; the
         //    API key never touches the browser.
         // ═══════════════════════════════════════════════════════════
-        const AI_WORKER_URL = window.AI_WORKER_URL || 'https://eljasus-ai.YOUR-SUBDOMAIN.workers.dev';
-        const AI_NAMES_POOL = ['كريم','يوسف','ليلى','سارة','عمر','نور','زياد','ملك','حسن','جنى','مصطفى','رنا','آدم','هنا','طارق'];
+        const AI_WORKER_URL = window.AI_WORKER_URL || 'https://eljasus.ahmedelgoharymessi.workers.dev/';
+        const AI_NAMES_POOL = ['كريم','يوسف','ليلى','سارة','عمر','نور','زياد','ملك','حسن','جنى','مصطفى','رنا','آدم','هنا','طارق','أيمن','ابراهيم'];
         const AI_PAGE_LOAD_TS = Date.now();
         const AI_DIFF_LABEL = { easy: 'سهل', medium: 'متوسط', hard: 'صعب' };
         const AI_DIFF_PROMPT = {
