@@ -1,14 +1,6 @@
-/* ═══════════════════════════════════════════════════════════════════════
-   EJInbox — El Jasus inbox (news + announcements + room invites)
-   • movable window (drag by header) + movable launcher button
-   • News list on the left, large details pane on the right (title + body)
-   • Mobile (<=720px): full-screen, list -> details with a back button
-   Data:  news/{id}  userNews/{uid}/{id}  invites/{uid}/{key}
-          announcements/current (legacy banner shown as an item)
-   API:   EJInbox.init(db, user, { onJoin(roomCode), dbApi? })   (idempotent per user)
-          EJInbox.setHandlers({ acceptInvite, declineInvite, acceptRequest, declineRequest, getTheme })
-          EJInbox.open(tab?, id?)  .close()  .toggle()  .destroy()
-   ═══════════════════════════════════════════════════════════════════════ */
+/* ══════════════════════════
+   EJInbox — El Jasus inbox
+   ══════════════════════════ */
 (function () {
   'use strict';
   if (window.EJInbox) return;
@@ -23,8 +15,8 @@
     notice:       { ico: '🔔', label: 'إشعار',  color: '#67e8f9' }
   };
 
-  var S = null; // runtime state
-  var HANDLERS = {}; // optional page-supplied actions: acceptInvite, declineInvite, acceptRequest, declineRequest, getTheme
+  var S = null; 
+  var HANDLERS = {}; 
 
   /* ── tiny helpers ─────────────────────────────────────────────── */
   function lsGet(k, d) { try { var v = localStorage.getItem(k); return v == null ? d : JSON.parse(v); } catch (e) { return d; } }
@@ -374,8 +366,6 @@
   function setTab(t) { S.tab = t; lsSet(LS.tab, t); S.sel = null; S.mobileDetail = false; render(); if (!isMobile()) { var it = currentItems()[0]; if (it) select(it.id); } }
 
   /* ── actions ──────────────────────────────────────────────────── */
-  // Runs the page-supplied handler if there is one (friend-invite-enhanced.js does the room checks,
-  // status writes and navigation); otherwise falls back to a simple default. Buttons stay disabled meanwhile.
   function act(kind, it, fallback, after) {
     if (S.busy[it.id]) return;
     S.busy[it.id] = 1; render();
@@ -390,7 +380,7 @@
     act('acceptInvite', v, function () {
       var go = function () { if (S && S.onJoin) S.onJoin(v.roomCode, v); };
       return Promise.resolve(S.api.remove(S.api.ref(S.db, 'invites/' + S.uid + '/' + v.key))).then(go, go);
-    }, function (res) { if (res !== false) close(); }); // handler resolves false when joining failed (room full/gone): stay open
+    }, function (res) { if (res !== false) close(); }); 
   }
   function declineInvite(v) {
     act('declineInvite', v, function () { return S.api.remove(S.api.ref(S.db, 'invites/' + S.uid + '/' + v.key)); },
