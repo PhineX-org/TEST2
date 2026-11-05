@@ -15,6 +15,8 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css"/>
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700;900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <script src="../Assets/friend-invite-enhanced.js" defer></script>
+    <script src="../Assets/presence.js"></script>
     <script src="../Assets/dialogs.js"></script>
     <script src="../Assets/moderation.js"></script>
     <script src="../Assets/inbox.js"></script>
@@ -308,6 +310,11 @@
                                 ⚽ أندية كورة
                             </span>
                         </button>
+                        <button class="filter-chip category-filter" data-category="famous_players">
+                            <span class="px-4 py-2.5 rounded-xl border-2 border-white/20 bg-white/5 text-xs font-bold hover:border-cyan-400 transition-all">
+                                🌟 لاعبين مشهورين
+                            </span>
+                        </button>
                     </div>
                 </div>
                 <div>
@@ -454,7 +461,8 @@
             food:           { label:"أكلات مصرية",   icon:"🍕" },
             jobs:           { label:"مهن ووظائف",    icon:"🛠️" },
             companies:      { label:"شركات عالمية",  icon:"🏢" },
-            football_teams: { label:"أندية كورة",    icon:"⚽" }
+            football_teams: { label:"أندية كورة",    icon:"⚽" },
+            famous_players: { label:"لاعبين مشهورين", icon:"🌟" }
         };
         const defaultCategory = { label:"عامة", icon:"🎮" };
 
@@ -554,13 +562,16 @@
                         room.status === 'waiting' ||
                         room.status === 'lobby';
 
+                    // private rooms are reachable only by link / QR / code / invite — never listed
+                    if (room.visibility === 'private') return null;
+
                     if (isWaiting) {
                         const hostUsername = await getHostUsername(room);
                         return {
                             code,
                             category:    room.category  || null,
                             playerCount: getPlayerCount(room),
-                            maxPlayers:  room.maxPlayers || 10,
+                            maxPlayers:  room.maxPlayers || 15,
                             hostId:      room.hostId,
                             hostUsername: hostUsername,
                             visibility:  room.visibility || 'public',
@@ -641,7 +652,7 @@
                 const isAlmostFull = pct >= 70;
                 const isFull       = room.playerCount >= room.maxPlayers;
                 const pillState    = isFull ? 'full' : isAlmostFull ? 'filling' : 'plenty';
-                const pillNote     = isFull ? 'ممتلئة' : isAlmostFull ? 'شبه ممتلئة' : 'مقاعد متاحة';
+                const pillNote     = room.playerCount === 0 ? 'غرفة فارغة 👻' : isFull ? 'ممتلئة' : isAlmostFull ? 'شبه ممتلئة' : 'مقاعد متاحة';
 
                 return `
                 <div class="room-container" data-room-id="${room.code}">

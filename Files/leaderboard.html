@@ -16,7 +16,10 @@
     <link rel="stylesheet" href="../Assets/mobile.css">
     <script src="../Assets/sound-system.js" defer></script>
     <script src="../Assets/qr-notifications.js" defer></script>
+    <script src="../Assets/friend-invite-enhanced.js" defer></script>
+    <script src="../Assets/presence.js"></script>
     <script src="../Assets/dialogs.js"></script>
+    <script src="../Assets/name-themes.js"></script>
     <script src="../Assets/inbox.js"></script>
     <style>
         :root { 
@@ -123,34 +126,6 @@
                 0 0 10px rgba(0, 242, 255, 0.8),
                 0 0 20px rgba(0, 242, 255, 0.6),
                 0 0 30px rgba(0, 242, 255, 0.4);
-        }
-
-        /* Leaderboard Tab Styles */
-        .tab-btn {
-            position: relative;
-            transition: all 0.3s ease;
-            border: 2px solid transparent;
-        }
-
-        .tab-btn.active {
-            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
-            border-color: var(--primary-color);
-            box-shadow: 0 0 20px rgba(0, 242, 255, 0.5);
-        }
-
-        .tab-btn::before {
-            content: '';
-            position: absolute;
-            inset: 0;
-            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
-            opacity: 0;
-            transition: opacity 0.3s ease;
-            border-radius: inherit;
-            z-index: -1;
-        }
-
-        .tab-btn:not(.active):hover::before {
-            opacity: 0.2;
         }
 
         /* Medal Styles */
@@ -275,6 +250,73 @@
             box-shadow: 0 0 15px rgba(163, 230, 53, 0.5);
             color: #000;
         }
+
+        /* ── Leaderboard picker (dropdown) — styled after the Classic Edition list menu ── */
+        .lb-picker{overflow:visible !important;position:relative;z-index:30}
+        .lb-picker::before,.lb-picker::after{display:none !important}
+        .lb-picker-top{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px;min-height:22px}
+        .lb-picker-label{font-size:11px;font-weight:900;letter-spacing:.08em;color:rgba(255,255,255,.5)}
+        .lb-mypos{font-size:11px;font-weight:900;color:#000;background:#a3e635;border-radius:999px;padding:3px 10px}
+        .lbdd{position:relative}
+        .lbdd-btn{width:100%;display:flex;align-items:center;justify-content:space-between;gap:10px;min-height:52px;padding:10px 16px;
+            background:#000;color:#fff;border:2px solid #00f2ff;border-radius:14px;font:900 16px 'Cairo',sans-serif;cursor:pointer;text-align:right;
+            box-shadow:0 0 0 1px rgba(0,0,0,.9),0 0 18px rgba(0,242,255,.18);transition:box-shadow .15s}
+        .lbdd-btn:hover,.lbdd.open .lbdd-btn{box-shadow:0 0 0 1px rgba(0,0,0,.9),0 0 26px rgba(0,242,255,.35)}
+        .lbdd-btn:focus-visible{outline:2px solid #a3e635;outline-offset:2px}
+        .lbdd-cur{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+        .lbdd-caret{flex:none;color:#00f2ff;transition:transform .2s}
+        .lbdd.open .lbdd-caret{transform:rotate(180deg)}
+        .lbdd-list{position:absolute;z-index:60;top:calc(100% + 6px);right:0;left:0;margin:0;padding:6px 0;list-style:none;
+            background:#f0ffff;color:#0b1f33;border-radius:10px;max-height:min(62vh,440px);overflow-y:auto;overscroll-behavior:contain;
+            box-shadow:0 18px 50px rgba(0,0,0,.75),0 0 0 1px rgba(0,242,255,.35)}
+        .lbdd-list[hidden]{display:none}
+        .lbdd-grp{padding:9px 16px 4px;font:900 11px 'Cairo',sans-serif;letter-spacing:.06em;color:#5b7287;background:#f0ffff;position:sticky;top:0;z-index:1}
+        .lbdd-grp:not(:first-child){border-top:1px solid rgba(11,31,51,.12);margin-top:4px}
+        .lbdd-opt{display:flex;align-items:center;gap:8px;padding:11px 16px;font:700 15px 'Cairo',sans-serif;cursor:pointer;min-height:44px;user-select:none}
+        .lbdd-opt:hover,.lbdd-opt.act{background:#1a6bd8;color:#fff}
+        .lbdd-opt[aria-selected="true"]{font-weight:900}
+        .lbdd-opt[aria-selected="true"]::after{content:'✓';margin-inline-start:auto;font-weight:900}
+        .lbdd-opt.dim{color:#8aa0b3}
+
+        /* selected board panel */
+        .lb-head{display:flex;align-items:center;gap:12px;margin-bottom:14px}
+        .lb-head-ic{flex:none;width:46px;height:46px;border-radius:12px;display:grid;place-items:center;font-size:24px;background:rgba(0,242,255,.1);border:1px solid rgba(0,242,255,.35)}
+        .lb-head-tx{flex:1;min-width:0}
+        .lb-title{font-size:19px;font-weight:900;margin:0;line-height:1.3}
+        .lb-desc{font-size:12px;color:rgba(255,255,255,.5);margin:2px 0 0;line-height:1.5}
+        .lb-badge{flex:none;font-size:10px;font-weight:900;letter-spacing:.08em;padding:6px 12px;border-radius:999px;background:rgba(0,242,255,.9);color:#000;max-width:42%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+        .lb-tiers{display:grid;grid-template-columns:repeat(auto-fit,minmax(74px,1fr));gap:6px;margin-bottom:14px}
+        .lb-tier{display:block;width:100%;text-align:center;padding:6px 2px;border-radius:10px;cursor:pointer;background:rgba(255,255,255,.03);font-family:'Cairo',sans-serif;color:inherit}
+        .lb-tier b{display:block;font:900 10px 'Orbitron',sans-serif}
+        .lb-tier span{display:block;font:900 16px 'Orbitron',sans-serif}
+        .lb-list{display:flex;flex-direction:column;gap:8px;max-height:640px;overflow-y:auto;padding-inline-end:2px}
+        .lb-row{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:14px;background:rgba(255,255,255,.035);border:1px solid rgba(255,255,255,.08);cursor:pointer;transition:border-color .15s,background .15s;width:100%;text-align:right;color:inherit;font-family:'Cairo',sans-serif}
+        .lb-row:hover{border-color:rgba(0,242,255,.5);background:rgba(0,242,255,.05)}
+        .lb-row.me{border-color:#a3e635;background:rgba(163,230,53,.07)}
+        .lb-pos{flex:none;width:38px;height:38px;border-radius:50%;display:grid;place-items:center;font:900 15px 'Orbitron',sans-serif;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);color:rgba(255,255,255,.75)}
+        .lb-pos.p1{background:linear-gradient(135deg,#ffd700,#ffed4e);color:#000;border-color:transparent;box-shadow:0 0 18px rgba(255,215,0,.45)}
+        .lb-pos.p2{background:linear-gradient(135deg,#c0c0c0,#e8e8e8);color:#000;border-color:transparent}
+        .lb-pos.p3{background:linear-gradient(135deg,#cd7f32,#e09856);color:#000;border-color:transparent}
+        .lb-mid{flex:1;min-width:0}
+        .lb-name{font-size:15px;font-weight:900;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:block}
+        .lb-sub{font-size:11px;color:rgba(255,255,255,.5);font-weight:700;margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+        .lb-val{flex:none;text-align:left;min-width:56px}
+        .lb-val b{display:block;font:900 19px 'Orbitron',sans-serif;color:#00f2ff;line-height:1.1}
+        .lb-val small{display:block;font-size:9px;color:rgba(255,255,255,.45);font-weight:800;letter-spacing:.06em;margin-top:2px}
+        .lb-you{font-size:9px;font-weight:900;color:#000;background:#a3e635;border-radius:6px;padding:1px 6px;margin-inline-start:6px;vertical-align:middle}
+        .lb-empty{text-align:center;padding:44px 12px;color:rgba(255,255,255,.5)}
+        .lb-empty .e{font-size:42px;display:block;margin-bottom:8px}
+        .lb-empty a,.lb-empty button{display:inline-block;margin-top:12px;padding:9px 20px;border-radius:10px;background:#00f2ff;color:#000;font-weight:900;font-size:13px}
+        .lb-foot{margin:12px 0 0;font-size:11px;color:rgba(255,255,255,.35);text-align:center}
+        @media(max-width:639px){
+            .lb-stats.grid{grid-template-columns:repeat(3,1fr) !important}
+            .lb-stats .stat-card{padding:10px 8px !important;border-radius:14px !important}
+            .lb-stats .stat-card>div{flex-direction:column-reverse;align-items:flex-start !important;gap:6px;justify-content:flex-start !important}
+            .lb-stats .stat-card .rounded-full{display:none !important}
+            .lb-stats .stat-card h3{font-size:18px !important;max-width:100% !important}
+            .lb-stats .stat-card p{font-size:9px !important;margin:0 !important}
+        }
+        @media(max-width:420px){.lb-row{gap:8px;padding:9px 10px}.lb-badge{display:none}.lb-title{font-size:17px}}
         /* Palette utility classes — replace the old red/purple/green Tailwind
            swatches so every color traces back to the same cyan/lime tokens
            used across the rest of the site. spy=cyan, innocent=lime,
@@ -327,7 +369,7 @@
     <div class="max-w-6xl mx-auto relative z-10">
         
         <!-- Stats Overview -->
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+        <div class="lb-stats grid grid-cols-3 gap-2 sm:gap-4 mb-5">
             
             <!-- Total Players -->
             <div class="glass rounded-2xl p-5 stat-card">
@@ -375,139 +417,39 @@
             </div>
         </div>
 
-        <!-- Tabs Navigation -->
-        <div class="glass rounded-2xl p-2 mb-6">
-            <div class="grid grid-cols-2 md:grid-cols-4 gap-2">
-                <button onclick="switchTab('spy')" id="tab-spy" class="tab-btn active px-4 py-3 rounded-xl font-black text-sm uppercase tracking-wider transition-all flex items-center justify-center gap-2">
-                    <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                        <path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd"/>
-                    </svg>
-                    انتصارات الجواسيس
+        <!-- Board picker (dropdown) -->
+        <div class="lb-picker glass rounded-2xl p-4 mb-5">
+            <div class="lb-picker-top">
+                <span class="lb-picker-label">اختر لوحة المتصدرين</span>
+                <span id="lbMyPos" class="lb-mypos" hidden></span>
+            </div>
+            <div class="lbdd" id="lbdd">
+                <button type="button" class="lbdd-btn" id="lbddBtn" aria-haspopup="listbox" aria-expanded="false" aria-controls="lbddList">
+                    <span class="lbdd-cur" id="lbddCur">🌍 الترتيب العام</span>
+                    <svg class="lbdd-caret" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>
                 </button>
-                <button onclick="switchTab('innocent')" id="tab-innocent" class="tab-btn px-4 py-3 rounded-xl font-black text-sm uppercase tracking-wider transition-all flex items-center justify-center gap-2">
-                    <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                        <path fill-rule="evenodd" d="M2.166 4.999A11.954 11.954 0 0010 1.944 11.954 11.954 0 0017.834 5c.11.65.166 1.32.166 2.001 0 5.225-3.34 9.67-8 11.317C5.34 16.67 2 12.225 2 7c0-.682.057-1.35.166-2.001zm11.541 3.708a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
-                    </svg>
-                    انتصارات الأبرياء
-                </button>
-                <button onclick="switchTab('total')" id="tab-total" class="tab-btn px-4 py-3 rounded-xl font-black text-sm uppercase tracking-wider transition-all flex items-center justify-center gap-2">
-                    <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                        <path d="M2 6a2 2 0 012-2h6a2 2 0 012 2v8a2 2 0 01-2 2H4a2 2 0 01-2-2V6zM14.553 7.106A1 1 0 0014 8v4a1 1 0 00.553.894l2 1A1 1 0 0018 13V7a1 1 0 00-1.447-.894l-2 1z"/>
-                    </svg>
-                    الإجمالي
-                </button>
-                <button onclick="switchTab('rank')" id="tab-rank" class="tab-btn px-4 py-3 rounded-xl font-black text-sm uppercase tracking-wider transition-all flex items-center justify-center gap-2">
-                    <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                        <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
-                    </svg>
-                    الرتب
-                </button>
+                <ul class="lbdd-list" id="lbddList" role="listbox" tabindex="-1" aria-label="لوحات المتصدرين" hidden></ul>
             </div>
         </div>
 
-        <!-- Leaderboard Content -->
-        <div>
-            
-            <!-- Spy Wins Leaderboard -->
-            <div id="leaderboard-spy" class="leaderboard-content">
-                <div class="glass rounded-2xl p-6 mb-4">
-                    <div class="flex items-center justify-between mb-6">
-                        <h2 class="text-xl font-black uppercase tracking-tight flex items-center gap-2">
-                            <span class="w-10 h-10 rounded-lg u-bg-cyan border-2 u-border-cyan flex items-center justify-center">
-                                <svg class="w-5 h-5 u-cyan" fill="currentColor" viewBox="0 0 20 20">
-                                    <path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd"/>
-                                </svg>
-                            </span>
-                            <span class="neon-text">انتصارات الجواسيس</span>
-                        </h2>
-                        <span class="badge-spy px-4 py-2 rounded-full text-xs font-black uppercase" style="font-family: 'Orbitron', sans-serif;">
-                            SPY WINS
-                        </span>
-                    </div>
-                    
-                    <div id="spyLeaderboardList" class="space-y-3 max-h-[600px] overflow-y-auto custom-scrollbar">
-                        <!-- Loading skeleton -->
-                        <div class="skeleton rounded-xl h-20"></div>
-                        <div class="skeleton rounded-xl h-20"></div>
-                        <div class="skeleton rounded-xl h-20"></div>
-                    </div>
+        <!-- Selected board -->
+        <section class="glass rounded-3xl p-4 sm:p-6" aria-live="polite">
+            <div class="lb-head">
+                <div class="lb-head-ic" id="lbHeadIc">🌍</div>
+                <div class="lb-head-tx">
+                    <h2 id="lbTitle" class="lb-title">الترتيب العام</h2>
+                    <p id="lbDesc" class="lb-desc"></p>
                 </div>
+                <span id="lbBadge" class="lb-badge" style="font-family:'Orbitron',sans-serif;">GLOBAL</span>
             </div>
-
-            <!-- Innocent Wins Leaderboard -->
-            <div id="leaderboard-innocent" class="leaderboard-content hidden">
-                <div class="glass rounded-2xl p-6 mb-4">
-                    <div class="flex items-center justify-between mb-6">
-                        <h2 class="text-xl font-black uppercase tracking-tight flex items-center gap-2">
-                            <span class="w-10 h-10 rounded-lg u-bg-lime border-2 u-border-lime flex items-center justify-center">
-                                <svg class="w-5 h-5 u-lime" fill="currentColor" viewBox="0 0 20 20">
-                                    <path fill-rule="evenodd" d="M2.166 4.999A11.954 11.954 0 0010 1.944 11.954 11.954 0 0017.834 5c.11.65.166 1.32.166 2.001 0 5.225-3.34 9.67-8 11.317C5.34 16.67 2 12.225 2 7c0-.682.057-1.35.166-2.001zm11.541 3.708a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
-                                </svg>
-                            </span>
-                            <span class="neon-text">انتصارات الأبرياء</span>
-                        </h2>
-                        <span class="badge-innocent px-4 py-2 rounded-full text-xs font-black uppercase" style="font-family: 'Orbitron', sans-serif;">
-                            INNOCENT WINS
-                        </span>
-                    </div>
-                    
-                    <div id="innocentLeaderboardList" class="space-y-3 max-h-[600px] overflow-y-auto custom-scrollbar">
-                        <!-- Loading skeleton -->
-                        <div class="skeleton rounded-xl h-20"></div>
-                        <div class="skeleton rounded-xl h-20"></div>
-                        <div class="skeleton rounded-xl h-20"></div>
-                    </div>
-                </div>
+            <div id="lbTiers" class="lb-tiers" hidden></div>
+            <div id="lbList" class="lb-list custom-scrollbar">
+                <div class="skeleton rounded-xl h-16"></div>
+                <div class="skeleton rounded-xl h-16"></div>
+                <div class="skeleton rounded-xl h-16"></div>
             </div>
-
-            <!-- Total Games Leaderboard -->
-            <div id="leaderboard-total" class="leaderboard-content hidden">
-                <div class="glass rounded-2xl p-6 mb-4">
-                    <div class="flex items-center justify-between mb-6">
-                        <h2 class="text-xl font-black uppercase tracking-tight flex items-center gap-2">
-                            <span class="w-10 h-10 rounded-lg bg-yellow-500/20 border-2 border-yellow-500/30 flex items-center justify-center">
-                                <svg class="w-5 h-5 text-yellow-400" fill="currentColor" viewBox="0 0 20 20">
-                                    <path d="M2 6a2 2 0 012-2h6a2 2 0 012 2v8a2 2 0 01-2 2H4a2 2 0 01-2-2V6zM14.553 7.106A1 1 0 0014 8v4a1 1 0 00.553.894l2 1A1 1 0 0018 13V7a1 1 0 00-1.447-.894l-2 1z"/>
-                                </svg>
-                            </span>
-                            <span class="neon-text">إجمالي المباريات</span>
-                        </h2>
-                        <span class="px-4 py-2 rounded-full text-xs font-black uppercase u-bg-neutral u-border-neutral" style="border-width:2px;font-family: 'Orbitron', sans-serif;">
-                            TOTAL GAMES
-                        </span>
-                    </div>
-                    
-                    <div id="totalLeaderboardList" class="space-y-3 max-h-[600px] overflow-y-auto custom-scrollbar">
-                        <!-- Loading skeleton -->
-                        <div class="skeleton rounded-xl h-20"></div>
-                        <div class="skeleton rounded-xl h-20"></div>
-                        <div class="skeleton rounded-xl h-20"></div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Rank Leaderboard -->
-            <div id="leaderboard-rank" class="leaderboard-content hidden">
-                <div class="glass rounded-2xl p-6">
-                    <h2 class="text-xl font-black mb-2 flex items-center gap-2">
-                        <span class="w-10 h-10 rounded-lg bg-yellow-500/20 border-2 border-yellow-500/30 flex items-center justify-center">
-                            <svg class="w-5 h-5 text-yellow-400" fill="currentColor" viewBox="0 0 20 20">
-                                <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
-                            </svg>
-                        </span>
-                        ترتيب الرتب
-                    </h2>
-                    <p id="season-name" class="u-cyan text-sm font-bold mb-1"></p>
-                    <p id="season-dates" class="text-gray-500 text-xs mb-4"></p>
-                    <div class="grid grid-cols-4 md:grid-cols-7 gap-2 mb-5" id="rank-tier-counts"></div>
-                    <div id="rank-leaderboard-list" class="space-y-2">
-                        <div class="skeleton rounded-xl h-14"></div>
-                        <div class="skeleton rounded-xl h-14"></div>
-                        <div class="skeleton rounded-xl h-14"></div>
-                    </div>
-                </div>
-            </div>
-        </div>
+            <p class="lb-foot" id="lbFoot"></p>
+        </section>
     </div>
 
     <script type="module">
@@ -534,250 +476,236 @@ const firebaseConfig = {
         window._firebaseFns = { ref, get, onValue };
 
         let allPlayers = [];
+        let myUid = null;
+        let myFriends = {};
         let loadTimeoutHandle = null;
+        let currentBoard = 'global';
+        let loaded = false;
 
-        // Tab Switching
-        window.switchTab = (tab) => {
-            // Update tab buttons
-            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
-            document.getElementById(`tab-${tab}`).classList.add('active');
+        const TIERS = [
+            { key: 'Ace',      min: 7500, ar: 'ايس',      color: '#ffffff', emoji: '🌟' },
+            { key: 'Crown',    min: 6500, ar: 'كراون',    color: '#ffd700', emoji: '👑' },
+            { key: 'Diamond',  min: 5000, ar: 'الماس',    color: '#00f2ff', emoji: '💎' },
+            { key: 'Platinum', min: 3000, ar: 'بلاتينيوم', color: '#e5e4e2', emoji: '🔷' },
+            { key: 'Gold',     min: 2000, ar: 'ذهبي',     color: '#ffd700', emoji: '🥇' },
+            { key: 'Silver',   min: 1000, ar: 'فضي',      color: '#c0c0c0', emoji: '🥈' },
+            { key: 'Bronze',   min: 0,    ar: 'برونزي',   color: '#cd7f32', emoji: '🥉' }
+        ];
+        const tierOf = (pts) => TIERS.find(t => pts >= t.min) || TIERS[TIERS.length - 1];
+        const MIN_GAMES_RATE = 10;
 
-            // Update content
-            document.querySelectorAll('.leaderboard-content').forEach(content => content.classList.add('hidden'));
-            document.getElementById(`leaderboard-${tab}`).classList.remove('hidden');
-            
-            // Load rank leaderboard when tab is clicked
-            if (tab === 'rank') loadRankLeaderboard();
-        };
+        // ── Board catalogue ─────────────────────────────────────
+        // Each board: how to filter, how to sort, what number to show.
+        const BOARDS = [
+            { group: 'عام' },
+            { id: 'global',   emoji: '🌍', label: 'الترتيب العام',          badge: 'GLOBAL',   desc: 'كل اللاعبين مرتبين حسب نقاط الرتبة',
+              sort: p => p.rankPoints, val: p => p.rankPoints, unit: 'نقطة' },
+            { id: 'spy',      emoji: '🕵️', label: 'انتصارات الجواسيس',      badge: 'SPY WINS', desc: 'أكثر اللاعبين فوزاً كجاسوس',
+              filter: p => p.spyWins > 0, sort: p => p.spyWins, val: p => p.spyWins, unit: 'فوز' },
+            { id: 'innocent', emoji: '🛡️', label: 'انتصارات الأبرياء',      badge: 'INNOCENT', desc: 'أكثر اللاعبين فوزاً كبريء',
+              filter: p => p.innocentWins > 0, sort: p => p.innocentWins, val: p => p.innocentWins, unit: 'فوز' },
+            { id: 'games',    emoji: '🎮', label: 'الأكثر لعباً',            badge: 'GAMES',    desc: 'إجمالي المباريات التي لُعبت',
+              filter: p => p.totalGames > 0, sort: p => p.totalGames, val: p => p.totalGames, unit: 'مباراة' },
+            { id: 'winrate',  emoji: '📈', label: 'أعلى نسبة فوز',          badge: 'WIN RATE', desc: 'لاعبون أنهوا ' + MIN_GAMES_RATE + ' مباريات أو أكثر',
+              filter: p => p.totalGames >= MIN_GAMES_RATE, sort: p => p.winRate, val: p => p.winRate + '%', unit: 'نسبة الفوز' },
+            { id: 'streak',   emoji: '🔥', label: 'أطول سلسلة انتصارات',     badge: 'STREAK',   desc: 'أطول عدد انتصارات متتالية',
+              filter: p => p.longestStreak > 0, sort: p => p.longestStreak, val: p => p.longestStreak, unit: 'متتالية' },
+            { group: 'الأصدقاء' },
+            { id: 'friends',  emoji: '👥', label: 'أفضل أصدقائي',            badge: 'FRIENDS',  desc: 'أنت وأصدقاؤك مرتبون حسب نقاط الرتبة', needsLogin: true,
+              filter: p => p.uid === myUid || !!myFriends[p.uid], sort: p => p.rankPoints, val: p => p.rankPoints, unit: 'نقطة' },
+            { group: 'حسب الرتبة' },
+            ...TIERS.map(t => ({
+              id: 'tier-' + t.key.toLowerCase(), tier: t, emoji: t.emoji, label: 'أفضل رتبة ' + t.ar + ' (' + t.key + ')', badge: t.key.toUpperCase(),
+              desc: 'لاعبو رتبة ' + t.key + ' فقط مرتبين حسب النقاط',
+              filter: p => tierOf(p.rankPoints).key === t.key, sort: p => p.rankPoints, val: p => p.rankPoints, unit: 'نقطة'
+            }))
+        ];
+        const BOARD_BY_ID = Object.fromEntries(BOARDS.filter(b => b.id).map(b => [b.id, b]));
 
-        // Fetch Leaderboard Data
+        // ── Dropdown ────────────────────────────────────────────
+        const dd = document.getElementById('lbdd'), ddBtn = document.getElementById('lbddBtn'),
+              ddList = document.getElementById('lbddList'), ddCur = document.getElementById('lbddCur');
+        let activeIdx = -1;
+
+        function buildMenu() {
+            ddList.innerHTML = BOARDS.map(b => b.group
+                ? `<li class="lbdd-grp" role="presentation">${esc(b.group)}</li>`
+                : `<li class="lbdd-opt" role="option" id="lbo-${b.id}" data-id="${b.id}" aria-selected="${b.id === currentBoard}">${b.emoji} ${esc(b.label)}</li>`
+            ).join('');
+        }
+        const opts = () => [...ddList.querySelectorAll('.lbdd-opt')];
+        function setActive(i) {
+            const o = opts(); if (!o.length) return;
+            activeIdx = (i + o.length) % o.length;
+            o.forEach((el, k) => el.classList.toggle('act', k === activeIdx));
+            o[activeIdx].scrollIntoView({ block: 'nearest' });
+            ddBtn.setAttribute('aria-activedescendant', o[activeIdx].id);
+        }
+        function openMenu() {
+            ddList.hidden = false; dd.classList.add('open'); ddBtn.setAttribute('aria-expanded', 'true');
+            setActive(opts().findIndex(o => o.dataset.id === currentBoard));
+        }
+        function closeMenu(focusBtn) {
+            ddList.hidden = true; dd.classList.remove('open'); ddBtn.setAttribute('aria-expanded', 'false');
+            ddBtn.removeAttribute('aria-activedescendant'); activeIdx = -1;
+            ddList.querySelectorAll('.act').forEach(e => e.classList.remove('act'));
+            if (focusBtn) ddBtn.focus();
+        }
+        ddBtn.addEventListener('click', () => ddList.hidden ? openMenu() : closeMenu());
+        ddBtn.addEventListener('keydown', (e) => {
+            const open = !ddList.hidden;
+            if (e.key === 'ArrowDown' || e.key === 'ArrowUp') { e.preventDefault(); if (!open) openMenu(); else setActive(activeIdx + (e.key === 'ArrowDown' ? 1 : -1)); }
+            else if ((e.key === 'Enter' || e.key === ' ') && open && activeIdx >= 0) { e.preventDefault(); selectBoard(opts()[activeIdx].dataset.id); closeMenu(true); }
+            else if (e.key === 'Escape' && open) { e.preventDefault(); closeMenu(true); }
+            else if (e.key === 'Home' && open) { e.preventDefault(); setActive(0); }
+            else if (e.key === 'End' && open) { e.preventDefault(); setActive(opts().length - 1); }
+        });
+        ddList.addEventListener('click', (e) => { const li = e.target.closest('.lbdd-opt'); if (li) { selectBoard(li.dataset.id); closeMenu(true); } });
+        ddList.addEventListener('mousemove', (e) => { const li = e.target.closest('.lbdd-opt'); if (li) setActive(opts().indexOf(li)); });
+        document.addEventListener('mousedown', (e) => { if (!dd.contains(e.target)) closeMenu(); });
+        document.addEventListener('focusin', (e) => { if (!dd.contains(e.target)) closeMenu(); });
+
+        function selectBoard(id, silent) {
+            if (!BOARD_BY_ID[id]) id = 'global';
+            currentBoard = id;
+            const b = BOARD_BY_ID[id];
+            ddCur.textContent = b.emoji + ' ' + b.label;
+            ddList.querySelectorAll('.lbdd-opt').forEach(o => o.setAttribute('aria-selected', String(o.dataset.id === id)));
+            try { localStorage.setItem('eljasus_lb_board', id); } catch (e) {}
+            if (!silent) { try { history.replaceState(null, '', '#' + id); } catch (e) {} }
+            renderBoard();
+        }
+
+        // ── Data ────────────────────────────────────────────────
+        function calculateWinRate(stats) {
+            if (!stats || !stats.totalGames) return 0;
+            const w = (stats.spyWins || 0) + (stats.innocentWins || 0);
+            return Math.round((w / stats.totalGames) * 1000) / 10;
+        }
+
         async function fetchLeaderboard() {
-            const playersRef = ref(db, 'players');
-
             if (loadTimeoutHandle) clearTimeout(loadTimeoutHandle);
-            loadTimeoutHandle = setTimeout(() => {
-                showLoadError('استغرق التحميل وقتاً طويلاً. تحقق من اتصالك وحاول مجدداً.');
-            }, 12000);
-
-            onValue(playersRef, (snapshot) => {
+            loadTimeoutHandle = setTimeout(() => showLoadError('استغرق التحميل وقتاً طويلاً. تحقق من اتصالك وحاول مجدداً.'), 12000);
+            onValue(ref(db, 'players'), (snapshot) => {
                 if (loadTimeoutHandle) { clearTimeout(loadTimeoutHandle); loadTimeoutHandle = null; }
-                const data = snapshot.val();
+                const data = snapshot.val() || {};
                 allPlayers = [];
-                
-                if (data) {
-                    Object.keys(data).forEach(uid => {
-                        const player = data[uid];
-                        if (!player || !player.username) return;
-                        allPlayers.push({
-                            uid: uid,
-                            username: player.username || 'مجهول',
-                            email: player.email || '',
-                            spyWins: player.stats?.spyWins || 0,
-                            innocentWins: player.stats?.innocentWins || 0,
-                            totalGames: player.stats?.totalGames || 0,
-                            winRate: calculateWinRate(player.stats)
-                        });
+                Object.keys(data).forEach(uid => {
+                    const p = data[uid];
+                    if (!p || !p.username) return;
+                    const st = p.stats || {};
+                    allPlayers.push({
+                        uid, username: p.username || 'مجهول',
+                        nameTheme: p.nameTheme || 'default', nameTag: p.nameTag || null,
+                        rankPoints: Number(p.rankPoints) || 0,
+                        spyWins: st.spyWins || 0, innocentWins: st.innocentWins || 0, totalGames: st.totalGames || 0,
+                        longestStreak: st.longestWinStreak || 0, winRate: calculateWinRate(st)
                     });
-                }
-
+                });
+                myFriends = (myUid && data[myUid] && data[myUid].friends) || {};
+                loaded = true;
                 updateStats();
-                renderLeaderboards();
+                buildMenu(); selectBoard(currentBoard, true);
             }, (error) => {
                 console.error('[leaderboard] players read failed:', error.code, error.message);
                 showLoadError(`${error.code || ''} ${error.message || ''}`.trim());
             });
         }
-
-        // Shows a clear error + retry button in place of the skeletons,
-        // instead of leaving them spinning forever when a read fails.
-        function showLoadError(message) {
-            if (loadTimeoutHandle) { clearTimeout(loadTimeoutHandle); loadTimeoutHandle = null; }
-            const errorHtml = `
-                <div class="text-center py-10">
-                    <svg class="w-12 h-12 text-red-400 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z"/>
-                    </svg>
-                    <p class="text-red-400 font-black mb-1">تعذّر تحميل البيانات</p>
-                    <p class="text-xs text-gray-500 mb-4">${esc(message || '')}</p>
-                    <button onclick="fetchLeaderboard()" class="px-6 py-2 bg-red-500/15 border-2 border-red-500/40 rounded-xl text-sm font-black text-red-400">
-                        إعادة المحاولة
-                    </button>
-                </div>`;
-            ['spyLeaderboardList', 'innocentLeaderboardList', 'totalLeaderboardList'].forEach(id => {
-                document.getElementById(id).innerHTML = errorHtml;
-            });
-        }
         window.fetchLeaderboard = fetchLeaderboard;
 
-        function calculateWinRate(stats) {
-            if (!stats || stats.totalGames === 0) return 0;
-            const totalWins = (stats.spyWins || 0) + (stats.innocentWins || 0);
-            return ((totalWins / stats.totalGames) * 100).toFixed(1);
+        function showLoadError(message) {
+            if (loadTimeoutHandle) { clearTimeout(loadTimeoutHandle); loadTimeoutHandle = null; }
+            document.getElementById('lbList').innerHTML = `
+                <div class="lb-empty">
+                    <span class="e">⚠️</span>
+                    <p class="font-black" style="color:#f87171">تعذّر تحميل البيانات</p>
+                    <p class="text-xs" style="opacity:.6">${esc(message || '')}</p>
+                    <button type="button" onclick="fetchLeaderboard()">إعادة المحاولة</button>
+                </div>`;
         }
 
-        // Update Stats Overview
         function updateStats() {
             document.getElementById('totalPlayers').innerText = allPlayers.length;
-            
-            const totalGamesPlayed = allPlayers.reduce((sum, p) => sum + p.totalGames, 0);
-            document.getElementById('totalGames').innerText = totalGamesPlayed;
-
+            document.getElementById('totalGames').innerText = allPlayers.reduce((s, p) => s + p.totalGames, 0);
             const topSpy = [...allPlayers].sort((a, b) => b.spyWins - a.spyWins)[0];
-            document.getElementById('bestSpy').innerText = topSpy ? topSpy.username : '---';
+            document.getElementById('bestSpy').innerText = topSpy && topSpy.spyWins ? topSpy.username : '---';
         }
 
-        // Render Leaderboards
-        function renderLeaderboards() {
-            // Spy Wins Leaderboard
-            const spyRanked = [...allPlayers].sort((a, b) => b.spyWins - a.spyWins).slice(0, 50);
-            renderLeaderboardList('spyLeaderboardList', spyRanked, 'spyWins', 'spy');
+        // ── Render the selected board ───────────────────────────
+        function renderBoard() {
+            const b = BOARD_BY_ID[currentBoard];
+            document.getElementById('lbTitle').textContent = b.label;
+            document.getElementById('lbDesc').textContent = b.desc;
+            document.getElementById('lbHeadIc').textContent = b.emoji;
+            document.getElementById('lbBadge').textContent = b.badge;
+            const list = document.getElementById('lbList'), tiers = document.getElementById('lbTiers');
+            const mypos = document.getElementById('lbMyPos'), foot = document.getElementById('lbFoot');
+            mypos.hidden = true; foot.textContent = '';
 
-            // Innocent Wins Leaderboard
-            const innocentRanked = [...allPlayers].sort((a, b) => b.innocentWins - a.innocentWins).slice(0, 50);
-            renderLeaderboardList('innocentLeaderboardList', innocentRanked, 'innocentWins', 'innocent');
+            // rank boards show a clickable strip of tier counts
+            const isRank = currentBoard === 'global' || !!b.tier;
+            if (isRank && loaded) {
+                const counts = {}; TIERS.forEach(t => counts[t.key] = 0);
+                allPlayers.forEach(p => counts[tierOf(p.rankPoints).key]++);
+                tiers.hidden = false;
+                tiers.innerHTML = TIERS.map(t => {
+                    const on = b.tier && b.tier.key === t.key;
+                    return `<button type="button" class="lb-tier" data-board="tier-${t.key.toLowerCase()}" style="border:2px solid ${t.color}${on ? 'cc' : '44'};background:${t.color}${on ? '22' : '0d'}">
+                        <b style="color:${t.color}">${t.key}</b><span style="color:${t.color}">${counts[t.key]}</span></button>`;
+                }).join('');
+            } else tiers.hidden = true;
 
-            // Total Games Leaderboard
-            const totalRanked = [...allPlayers].sort((a, b) => b.totalGames - a.totalGames).slice(0, 50);
-            renderLeaderboardList('totalLeaderboardList', totalRanked, 'totalGames', 'total');
-        }
+            if (!loaded) return;
 
-        function renderLeaderboardList(containerId, players, statKey, type) {
-            const container = document.getElementById(containerId);
-            
-            if (players.length === 0) {
-                container.innerHTML = `
-                    <div class="text-center py-16 empty-state">
-                        <svg class="w-16 h-16 text-gray-700 mx-auto mb-4" fill="currentColor" viewBox="0 0 20 20">
-                            <path fill-rule="evenodd" d="M3 3a1 1 0 000 2v8a2 2 0 002 2h2.586l-1.293 1.293a1 1 0 101.414 1.414L10 15.414l2.293 2.293a1 1 0 001.414-1.414L12.414 15H15a2 2 0 002-2V5a1 1 0 100-2H3zm11.707 4.707a1 1 0 00-1.414-1.414L10 9.586 8.707 8.293a1 1 0 00-1.414 0l-2 2a1 1 0 101.414 1.414L8 10.414l1.293 1.293a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
-                        </svg>
-                        <h3 class="text-xl font-black text-gray-400 mb-2">لا توجد بيانات</h3>
-                        <p class="text-sm text-gray-600">لم يلعب أحد بعد!</p>
-                    </div>
-                `;
+            if (b.needsLogin && !myUid) {
+                list.innerHTML = `<div class="lb-empty"><span class="e">🔒</span><p class="font-black">سجّل دخولك لرؤية ترتيب أصدقائك</p><a href="login.html">تسجيل الدخول</a></div>`;
                 return;
             }
 
-            const iconMap = {
-                spy: '<svg class="w-5 h-5 u-cyan" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd"/></svg>',
-                innocent: '<svg class="w-5 h-5 u-lime" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M2.166 4.999A11.954 11.954 0 0010 1.944 11.954 11.954 0 0017.834 5c.11.65.166 1.32.166 2.001 0 5.225-3.34 9.67-8 11.317C5.34 16.67 2 12.225 2 7c0-.682.057-1.35.166-2.001zm11.541 3.708a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/></svg>',
-                total: '<svg class="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 20 20"><path d="M11 17a1 1 0 001.447.894l4-2A1 1 0 0017 15V9.236a1 1 0 00-1.447-.894l-4 2a1 1 0 00-.553.894V17zM15.211 6.276a1 1 0 000-1.788l-4.764-2.382a1 1 0 00-.894 0L4.789 4.488a1 1 0 000 1.788l4.764 2.382a1 1 0 00.894 0l4.764-2.382zM4.447 8.342A1 1 0 003 9.236V15a1 1 0 00.553.894l4 2A1 1 0 009 17v-5.764a1 1 0 00-.553-.894l-4-2z"/></svg>'
-            };
+            const base = allPlayers.filter(p => (b.filter ? b.filter(p) : true));
+            const ranked = base.sort((x, y) => b.sort(y) - b.sort(x) || y.rankPoints - x.rankPoints || x.username.localeCompare(y.username, 'ar'));
+            const top = ranked.slice(0, 50);
 
-            const colorMap = {
-                spy: 'u-cyan',
-                innocent: 'u-lime',
-                total: 'text-white'
-            };
+            if (!ranked.length) {
+                const msg = currentBoard === 'friends'
+                    ? `<p class="font-black">لا يوجد أصدقاء بعد</p><a href="friends.html">إضافة أصدقاء</a>`
+                    : `<p class="font-black">لا يوجد لاعبون في هذه اللوحة بعد</p><p class="text-xs" style="opacity:.6">كن أول من يظهر هنا!</p>`;
+                list.innerHTML = `<div class="lb-empty"><span class="e">${b.emoji}</span>${msg}</div>`;
+                return;
+            }
 
-            container.innerHTML = players.map((player, index) => {
-                const rank = index + 1;
-                const rankClass = rank === 1 ? 'rank-1' : rank === 2 ? 'rank-2' : rank === 3 ? 'rank-3' : '';
-                const medalClass = rank === 1 ? 'medal-gold' : rank === 2 ? 'medal-silver' : rank === 3 ? 'medal-bronze' : '';
-
-                return `
-                    <div class="glass rounded-xl p-4 border-2 ${rankClass} hover:border-[#00f2ff]/50 transition-all group">
-                        <div class="flex items-center justify-between gap-4">
-                            
-                            <!-- Rank -->
-                            <div class="flex-shrink-0">
-                                ${rank <= 3 ? `
-                                    <div class="w-12 h-12 ${medalClass} rounded-full flex items-center justify-center text-black font-black text-xl border-2 border-white/20" style="font-family: 'Orbitron', sans-serif;">
-                                        ${rank}
-                                    </div>
-                                ` : `
-                                    <div class="w-12 h-12 bg-white/5 border-2 border-white/10 rounded-full flex items-center justify-center text-gray-400 font-black text-lg" style="font-family: 'Orbitron', sans-serif;">
-                                        ${rank}
-                                    </div>
-                                `}
-                            </div>
-
-                            <!-- Player Info -->
-                            <div class="flex-1 min-w-0">
-                                <h3 class="text-lg font-black text-white truncate mb-1 group-hover:u-cyan transition-colors">
-                                    ${esc(player.username)}
-                                </h3>
-                                <div class="flex items-center gap-3 text-xs">
-                                    <span class="text-gray-400 font-bold">
-                                        نسبة الفوز: <span class="u-cyan">${player.winRate}%</span>
-                                    </span>
-                                    <span class="w-1 h-1 bg-gray-600 rounded-full"></span>
-                                    <span class="text-gray-400 font-bold">
-                                        مباريات: <span class="text-white">${player.totalGames}</span>
-                                    </span>
-                                </div>
-                            </div>
-
-                            <!-- Stat -->
-                            <div class="flex-shrink-0 text-right">
-                                <div class="flex items-center gap-2 mb-1">
-                                    ${iconMap[type]}
-                                    <span class="text-2xl font-black ${colorMap[type]}" style="font-family: 'Orbitron', sans-serif;">
-                                        ${player[statKey]}
-                                    </span>
-                                </div>
-                                <p class="text-[9px] text-gray-500 font-bold uppercase tracking-wider">
-                                    ${type === 'spy' ? 'SPY WINS' : type === 'innocent' ? 'INNOCENT WINS' : 'TOTAL GAMES'}
-                                </p>
-                            </div>
-                        </div>
-                    </div>
-                `;
+            list.innerHTML = top.map((p, i) => {
+                const pos = i + 1, t = tierOf(p.rankPoints), me = p.uid === myUid;
+                const sub = `مباريات ${p.totalGames} · فوز ${p.winRate}%`;
+                return `<button type="button" class="lb-row${me ? ' me' : ''}" data-uid="${esc(p.uid)}" data-name="${esc(p.username)}">
+                    <span class="lb-pos ${pos <= 3 ? 'p' + pos : ''}">${pos}</span>
+                    <span class="lb-mid"><span class="lb-name" data-i="${i}">${esc(p.username)}</span>${me ? '<span class="lb-you">أنت</span>' : ''}<div class="lb-sub">${esc(sub)}</div></span>
+                    <span class="lb-val"><b>${esc(b.val(p))}</b><small>${esc(b.unit)}</small></span>
+                </button>`;
             }).join('');
+
+            // themed names (name themes + tags) when the helper is available
+            if (window.NameThemes && window.NameThemes.applyPlayerStyle) {
+                list.querySelectorAll('.lb-name').forEach(el => {
+                    const p = top[+el.dataset.i]; if (!p) return;
+                    try { el.innerHTML = ''; window.NameThemes.applyPlayerStyle(el, { username: p.username, nameTheme: p.nameTheme, nameTag: p.nameTag, rankPoints: p.rankPoints }); }
+                    catch (e) { el.textContent = p.username; }
+                });
+            }
+
+            // "my position" chip
+            if (myUid) {
+                const idx = ranked.findIndex(p => p.uid === myUid);
+                if (idx >= 0) { mypos.hidden = false; mypos.textContent = 'مركزك: #' + (idx + 1) + ' من ' + ranked.length; }
+            }
+            if (ranked.length > 50) foot.textContent = 'يُعرض أفضل 50 لاعباً';
         }
 
-        // RANK LEADERBOARD
-        const RANK_ORDER  = {Ace:7,Crown:6,Diamond:5,Platinum:4,Gold:3,Silver:2,Bronze:1};
-        const RANK_COLORS = {Ace:'#ffffff',Crown:'#ffd700',Diamond:'#00f2ff',Platinum:'#e5e4e2',Gold:'#ffd700',Silver:'#c0c0c0',Bronze:'#cd7f32'};
-
-        function loadRankLeaderboard() {
-            const listEl = document.getElementById('rank-leaderboard-list');
-            const tierEl = document.getElementById('rank-tier-counts');
-            const counts = {Bronze:0,Silver:0,Gold:0,Platinum:0,Diamond:0,Crown:0,Ace:0};
-            const now = new Date();
-            document.getElementById('season-name').textContent =
-                'موسم ' + now.toLocaleDateString('ar-SA',{month:'long',year:'numeric'});
-            document.getElementById('season-dates').textContent =
-                'ينتهي: ' + new Date(now.getFullYear(),now.getMonth()+1,0).toLocaleDateString('ar-SA');
-
-            get(ref(db,'players')).then(snap => {
-                if (!snap.exists()) { listEl.innerHTML='<p class="text-gray-400 text-center">لا يوجد لاعبون</p>'; return; }
-                const all = Object.values(snap.val()).filter(p=>p.username).map(p=>({
-                    username:p.username, rank:p.rank||'Bronze',
-                    rankPoints:p.rankPoints||0, totalGames:p.stats&&p.stats.totalGames||0
-                })).sort((a,b)=>(RANK_ORDER[b.rank]||0)-(RANK_ORDER[a.rank]||0)||b.rankPoints-a.rankPoints);
-
-                all.forEach(p=>{if(counts[p.rank]!==undefined)counts[p.rank]++;});
-                tierEl.innerHTML = Object.entries(counts).map(([tier,cnt])=>{
-                    const c=RANK_COLORS[tier]||'#888';
-                    return '<div class="text-center p-2 rounded-xl" style="background:'+c+'22;border:2px solid '+c+'44;">'
-                        +'<p class="text-sm font-black" style="color:'+c+';">'+tier+'</p>'
-                        +'<p class="text-lg font-black" style="color:'+c+';">'+cnt+'</p></div>';
-                }).join('');
-
-                listEl.innerHTML = all.slice(0,50).map((p,i)=>{
-                    const c=RANK_COLORS[p.rank]||'#888';
-                    const progress=Math.min(100,(p.rankPoints%1000)/10);
-                    const medal=i===0?'🥇':i===1?'🥈':i===2?'🥉':'#'+(i+1);
-                    return '<div class="flex items-center gap-3 p-3 rounded-xl hover:bg-white/5 transition-all" style="border:1px solid rgba(255,255,255,.05);">'
-                        +'<span class="text-lg w-8 text-center font-bold">'+medal+'</span>'
-                        +'<div class="flex-1 min-w-0">'
-                        +'<p class="font-black truncate">'+esc(p.username)+'</p>'
-                        +'<div style="height:4px;background:rgba(255,255,255,.1);border-radius:2px;margin-top:4px;overflow:hidden;">'
-                        +'<div style="width:'+progress+'%;height:100%;background:'+c+';border-radius:2px;"></div></div></div>'
-                        +'<div class="text-right flex-shrink-0">'
-                        +'<p class="font-black text-sm" style="color:'+c+';">'+p.rank+'</p>'
-                        +'<p class="text-xs text-gray-500">'+p.rankPoints+' pts</p></div></div>';
-                }).join('');
-            }).catch(error => {
-                console.error('[leaderboard] rank read failed:', error.code, error.message);
-                listEl.innerHTML = `<div class="text-center py-6">
-                    <p class="text-red-400 font-black mb-1">تعذّر تحميل الرتب</p>
-                    <p class="text-xs text-gray-500 mb-3">${esc(`${error.code || ''} ${error.message || ''}`.trim())}</p>
-                    <button onclick="loadRankLeaderboard()" class="px-6 py-2 bg-red-500/15 border-2 border-red-500/40 rounded-xl text-sm font-black text-red-400">إعادة المحاولة</button>
-                </div>`;
-            });
-        }
-        window.loadRankLeaderboard = loadRankLeaderboard;
+        document.getElementById('lbTiers').addEventListener('click', (e) => { const t = e.target.closest('.lb-tier'); if (t) selectBoard(t.dataset.board); });
+        document.getElementById('lbList').addEventListener('click', (e) => {
+            const r = e.target.closest('.lb-row'); if (!r) return;
+            if (window.ProfileViewer && window.ProfileViewer.open) window.ProfileViewer.open(r.dataset.uid, r.dataset.name);
+        });
 
         // Refresh Button
         document.getElementById('refreshBtn').addEventListener('click', () => {
@@ -789,18 +717,26 @@ const firebaseConfig = {
         // before reading the database, because the security rules require
         // auth != null to read players. This page never did either, so
         // reads silently failed and nothing ever replaced the skeletons.
+        (function pickInitial() {
+            let id = (location.hash || '').replace('#', '');
+            if (!BOARD_BY_ID[id]) { try { id = localStorage.getItem('eljasus_lb_board') || ''; } catch (e) { id = ''; } }
+            if (BOARD_BY_ID[id]) currentBoard = id;
+            buildMenu();
+            const b = BOARD_BY_ID[currentBoard];
+            ddCur.textContent = b.emoji + ' ' + b.label;
+        })();
+        window.addEventListener('hashchange', () => { const id = location.hash.replace('#', ''); if (BOARD_BY_ID[id] && id !== currentBoard) selectBoard(id, true); });
+
+        let started = false;
         onAuthStateChanged(auth, (user) => {
+            myUid = user && !user.isAnonymous ? user.uid : null;
             if (user) {
-                fetchLeaderboard();
-                loadRankLeaderboard();
+                if (!started) { started = true; fetchLeaderboard(); }
+                else if (loaded) renderBoard();
             } else {
                 signInAnonymously(auth).catch((err) => {
                     console.warn('[leaderboard] anonymous auth failed:', err && err.code);
-                    // Try anyway — some rule sets allow open reads even
-                    // without auth. If not, the onValue error handler
-                    // above will show a clear error instead of hanging.
-                    fetchLeaderboard();
-                    loadRankLeaderboard();
+                    if (!started) { started = true; fetchLeaderboard(); }
                 });
             }
         });
@@ -811,5 +747,6 @@ const firebaseConfig = {
     window.prompt  = (msg, defaultVal) => UIPrompt ? UIPrompt(msg, { defaultValue: defaultVal }) : prompt(msg, defaultVal);
 </script>
     <script>if('serviceWorker' in navigator){window.addEventListener('load',()=>navigator.serviceWorker.register('../Assets/sw.js').catch(()=>{}));}</script>
+    <script src="../Assets/tutorial.js" defer></script>
 </body>
 </html>

@@ -834,7 +834,9 @@
                 title: document.getElementById('title').value.trim(),
                 description: document.getElementById('description').value.trim(),
                 contact: document.getElementById('contact').value.trim(),
-                timestamp: new Date().toISOString(),
+                timestamp: Date.now(),
+                reportedByUsername: (function(){ try { return localStorage.getItem('eljasus_user_name') || ''; } catch(e) { return ''; } })(),
+                type: 'bug',
                 status: 'pending'
             };
 

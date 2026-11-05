@@ -162,9 +162,6 @@ class PushNotifications {
         });
     }
 
-    achievement(name) {
-        this.notify('إنجاز جديد! 🏆', name, { tag: 'achievement' });
-    }
 
     rankUp(newRank) {
         this.notify('ترقية! 🎉', `أصبحت الآن ${newRank}`, { tag: 'rank-up' });

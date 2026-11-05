@@ -11,6 +11,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <script src="../Assets/dialogs.js"></script>
+    <script src="../Assets/updates-data.js"></script>
     <style>
         /* ═══════════════════════════════════════════════════
            CLASSIC ADMIN DASHBOARD — design system
@@ -319,6 +320,7 @@
                 <div class="nav-item" data-sec="reports" onclick="showSection('reports')"><i class="fas fa-flag"></i><span>البلاغات</span><span class="nav-count" id="nc-reports">0</span></div>
                 <div class="nav-item" data-sec="bans" onclick="showSection('bans')"><i class="fas fa-ban"></i><span>الحظر</span></div>
                 <div class="nav-item" data-sec="announcements" onclick="showSection('announcements')"><i class="fas fa-bullhorn"></i><span>الأخبار والإعلانات</span></div>
+                <div class="nav-item" data-sec="updates" onclick="showSection('updates')"><i class="fas fa-code-branch"></i><span>سجل التحديثات</span></div>
                 <div class="nav-item" data-sec="audit" onclick="showSection('audit')"><i class="fas fa-clipboard-list"></i><span>سجل الإدارة</span></div>
 
                 <div class="nav-section">المحتوى</div>
@@ -596,6 +598,58 @@
                     </div>
                 </section>
 
+                <!-- ═══ UPDATE LOG ═══ -->
+                <section class="admin-section" id="sec-updates">
+                    <div class="section-head">
+                        <div><h2>سجل التحديثات</h2><p>أضف التحديثات القادمة وعدّلها؛ تظهر في صفحة updates.html ويصل إشعار خبر لجميع الحسابات</p></div>
+                        <a class="btn btn-ghost" href="updates.html" target="_blank" rel="noopener"><i class="fas fa-up-right-from-square"></i> فتح الصفحة</a>
+                    </div>
+                    <div class="news-grid">
+                        <div class="card pad" id="upd-composer">
+                            <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:12px;">
+                                <h3 style="font-size:13px;font-weight:900;">تحديث جديد / تعديل</h3>
+                                <span id="upd-edit-flag" class="badge badge-warn" style="display:none;">وضع التعديل</span>
+                            </div>
+                            <div class="f-row">
+                                <div><label class="field-label">رقم الإصدار</label>
+                                    <input id="upd-version" class="admin-input" maxlength="20" placeholder="4.0" style="direction:ltr;text-align:left;"></div>
+                                <div><label class="field-label">الحالة</label>
+                                    <select id="upd-status" class="admin-select">
+                                        <option value="upcoming">🚀 قادم قريباً</option><option value="released">✅ صدر</option>
+                                    </select></div>
+                            </div>
+                            <label class="field-label">عنوان التحديث</label>
+                            <input id="upd-title" class="admin-input" maxlength="140" placeholder="إعادة بناء التنافسية" style="margin-bottom:12px;">
+                            <div class="f-row">
+                                <div><label class="field-label">التاريخ (الصدور أو المتوقع)</label>
+                                    <input id="upd-date" class="admin-input" type="date" style="direction:ltr;"></div>
+                                <div><label class="field-label">نص الموعد المتوقع (اختياري)</label>
+                                    <input id="upd-eta" class="admin-input" maxlength="40" placeholder="ديسمبر 2026"></div>
+                            </div>
+                            <label class="field-label">ملخص قصير</label>
+                            <textarea id="upd-sum" class="admin-input" rows="2" maxlength="1000" style="margin-bottom:12px;"></textarea>
+                            <label class="field-label">✨ جديد (سطر لكل عنصر)</label>
+                            <textarea id="upd-added" class="admin-input" rows="4" style="margin-bottom:12px;"></textarea>
+                            <label class="field-label">🔧 تحسينات (سطر لكل عنصر)</label>
+                            <textarea id="upd-imp" class="admin-input" rows="3" style="margin-bottom:12px;"></textarea>
+                            <label class="field-label">🐞 إصلاح الأخطاء والمشاكل (سطر لكل عنصر)</label>
+                            <textarea id="upd-fix" class="admin-input" rows="3" style="margin-bottom:12px;"></textarea>
+                            <label class="check-row"><input type="checkbox" id="upd-notify" checked> 📢 إرسال إشعار خبر لجميع الحسابات (يظهر في صندوق الوارد)</label>
+                            <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:6px;">
+                                <button class="btn btn-primary" id="upd-save-btn" onclick="saveUpdate()"><i class="fas fa-floppy-disk"></i> حفظ</button>
+                                <button class="btn btn-ghost" onclick="resetUpdateForm()">مسح / إلغاء التعديل</button>
+                            </div>
+                        </div>
+                        <div class="card">
+                            <div style="display:flex;justify-content:space-between;align-items:center;padding:14px 16px;border-bottom:1px solid var(--border);">
+                                <h3 style="font-size:13px;font-weight:900;">كل التحديثات</h3>
+                                <button class="btn btn-ghost btn-sm" onclick="loadUpdates()"><i class="fas fa-rotate"></i></button>
+                            </div>
+                            <div id="upd-list"></div>
+                        </div>
+                    </div>
+                </section>
+
                 <!-- ═══ ADMIN AUDIT LOG ═══ -->
                 <section class="admin-section" id="sec-audit">
                     <div class="section-head">
@@ -606,7 +660,7 @@
                         <select id="audit-filter" class="admin-select" onchange="renderAudit()">
                             <option value="">كل الإجراءات</option><option value="ban">الحظر</option><option value="room">الغرف</option>
                             <option value="admin">الصلاحيات</option><option value="report">البلاغات</option><option value="coins">العملات</option>
-                            <option value="news">الأخبار</option><option value="word">الكلمات</option><option value="db">قاعدة البيانات</option><option value="scan">الفاحص</option><option value="msg">الرسائل</option>
+                            <option value="news">الأخبار</option><option value="update">التحديثات</option><option value="word">الكلمات</option><option value="db">قاعدة البيانات</option><option value="scan">الفاحص</option><option value="msg">الرسائل</option>
                         </select>
                         <input id="audit-q" class="admin-input" placeholder="بحث بالمنفّذ أو الهدف…" oninput="renderAudit()">
                         <button class="btn btn-ghost" onclick="exportAuditCSV()"><i class="fas fa-file-csv"></i> تصدير CSV</button>
@@ -741,6 +795,13 @@
     ".write": "root.child('players').child(auth.uid).child('isAdmin').val() === true"
   }
 },
+"updates": {
+  ".read": "auth != null",
+  "$id": {
+    ".write": "root.child('players').child(auth.uid).child('isAdmin').val() === true",
+    ".validate": "newData.child('hidden').val() === true || (newData.hasChildren(['version','title','status']) && (newData.child('status').val() === 'upcoming' || newData.child('status').val() === 'released'))"
+  }
+},
 "adminLogs": {
   ".read": "root.child('players').child(auth.uid).child('isAdmin').val() === true",
   ".write": "root.child('players').child(auth.uid).child('isAdmin').val() === true"
@@ -865,7 +926,7 @@ window.showSection = function(id) {
     const titles = {
         overview: ['نظرة عامة',''], rooms: ['الغرف النشطة','مراقبة الغرف مباشرة'],
         players: ['اللاعبون','بحث وتعديل وإصلاح'], reports: ['البلاغات','مراجعة بلاغات اللاعبين'],
-        bans: ['الحظر','إدارة الحظر'], announcements: ['الأخبار والإعلانات','صندوق الوارد والشريط العلوي'], audit: ['سجل الإدارة','كل الإجراءات الإدارية'],
+        bans: ['الحظر','إدارة الحظر'], announcements: ['الأخبار والإعلانات','صندوق الوارد والشريط العلوي'], updates: ['سجل التحديثات','التحديثات القادمة والسابقة'], audit: ['سجل الإدارة','كل الإجراءات الإدارية'],
         words: ['الكلمات والفئات','إدارة محتوى اللعبة'], database: ['قاعدة البيانات','تصفح وتعديل مباشر'],
         diagnostics: ['فحص النظام','فحص تلقائي للأخطاء'], settings: ['الإعدادات والأمان','']
     };
@@ -873,6 +934,7 @@ window.showSection = function(id) {
     document.getElementById('page-sub').textContent = titles[id]?.[1] || '';
     if (id === 'announcements') { loadNews(); loadCurrentAnnouncement(); updateNewsPreview(); }
     if (id === 'audit') loadAudit();
+    if (id === 'updates') loadUpdates();
     closeSidebar();
 };
 window.openSidebar  = () => { document.getElementById('admin-sidebar').classList.add('open'); document.getElementById('sidebar-backdrop').classList.add('show'); };
@@ -1145,8 +1207,20 @@ window.filterReports = function() {
 };
 window.searchReports = function(q) { renderReports(q); };
 
+// Reports come from three places (room panel, report-panel.js, bugreport.html) and older builds used other field names.
+// Normalise them so the admin never shows an empty / "unknown" user.
+function normReport(r) {
+    const ts = typeof r.timestamp === 'number' ? r.timestamp : (Date.parse(r.timestamp) || 0);
+    const isBug = !!(r.category && r.title && !r.reportedUid && !r.targetUid);
+    return Object.assign({}, r, {
+        timestamp: ts,
+        reportedUsername: r.reportedUsername || r.targetName || (isBug ? '🐞 ' + r.title : '—'),
+        reportedByUsername: r.reportedByUsername || r.reportedByName || r.contact || '—',
+        reason: r.reason || (isBug ? ('مشكلة: ' + r.category) : '—')
+    });
+}
 function renderReports(searchQ) {
-    let entries = Object.entries(reportsCache);
+    let entries = Object.entries(reportsCache).map(([id, r]) => [id, normReport(r)]);
     if (reportFilterState !== 'all') entries = entries.filter(([,r]) => r.status === reportFilterState);
     if (searchQ) {
         const q = searchQ.trim().toLowerCase();
@@ -1168,7 +1242,7 @@ function renderReports(searchQ) {
 }
 
 window.viewReportDetail = function(id) {
-    const r = reportsCache[id];
+    const r = reportsCache[id] && normReport(reportsCache[id]);
     if (!r) return;
     document.getElementById('report-detail-content').innerHTML = `
         <h3 style="font-size:15px;font-weight:900;margin-bottom:4px;">بلاغ ضد ${esc(r.reportedUsername)}</h3>
@@ -1444,6 +1518,146 @@ window.deleteNews = async function (id) {
         if (cur && cur.newsId === id) await update(ref(db, 'announcements/current'), { active: false });
         logAdmin('news.delete', id, n.title); loadNews(); loadCurrentAnnouncement();
     } catch (e) { UIAlert('خطأ: ' + e.message); }
+};
+
+// ── Update log (updates/{id}) ────────────────────────────────
+let updCache = {}, updNews = {}, updEditId = null;
+const updLines = v => String(v || '').split('\n').map(x => x.trim()).filter(Boolean).slice(0, 40).map(x => x.slice(0, 300));
+const updArr = v => !v ? [] : Array.isArray(v) ? v.filter(Boolean) : Object.values(v).filter(Boolean);
+const updSlug = v => 'v' + String(v).trim().replace(/[^0-9A-Za-z]+/g, '-').replace(/^-+|-+$/g, '');
+function mergedUpdates() {
+    const out = {};
+    (window.EJ_UPDATES_BUILTIN || []).forEach(e => { out[e.id] = { ...e, src: 'builtin' }; });
+    Object.entries(updCache).forEach(([id, r]) => {
+        if (!r || typeof r !== 'object') return;
+        if (r.hidden === true) { out[id] = { ...(out[id] || { id, version: id, title: id, status: 'released', added: [], improved: [], fixed: [] }), hidden: true, src: out[id] ? 'builtin' : 'db' }; return; }
+        out[id] = { ...r, id, added: updArr(r.added), improved: updArr(r.improved), fixed: updArr(r.fixed), src: out[id] ? 'override' : 'db' };
+    });
+    return Object.values(out).sort((a, b) => (a.status === b.status ? 0 : a.status === 'upcoming' ? -1 : 1) || String(b.date || '').localeCompare(String(a.date || '')));
+}
+async function loadUpdates() {
+    const el = nv('upd-list'); if (!el) return;
+    try {
+        const [u, n] = await Promise.all([get(ref(db, 'updates')), get(ref(db, 'news'))]);
+        updCache = u.val() || {}; newsCache = n.val() || newsCache;
+        updNews = {}; Object.keys(newsCache).forEach(k => { if (k.startsWith('upd_')) updNews[k.slice(4)] = newsCache[k]; });
+    } catch (e) {
+        el.innerHTML = `<div style="padding:20px;color:var(--danger);font-size:12px;">تعذرت قراءة updates: ${esc(e.message)} — أضف قواعد updates من تبويب الإعدادات.</div>`;
+        updCache = {};
+    }
+    renderUpdates();
+}
+window.loadUpdates = loadUpdates;
+function renderUpdates() {
+    const SRC = { builtin: 'مدمج', override: 'معدّل', db: 'مخصص' };
+    nv('upd-list').innerHTML = mergedUpdates().map(e => {
+        const upc = e.status === 'upcoming', n = updArr(e.added).length + updArr(e.improved).length + updArr(e.fixed).length;
+        return `<div class="news-row ${e.hidden ? 'off' : ''}">
+            <div class="nr-main"><div class="nr-title">v${esc(e.version)} — ${esc(e.title)}</div>
+            <div class="nr-sub"><span class="badge ${upc ? 'badge-warn' : 'badge-info'}">${upc ? '🚀 قادم' : '✅ صدر'}</span><span>${esc(e.date || e.eta || '')}${e.approx ? ' ≈' : ''}</span><span>${n} بند</span><span class="tag-chip">${SRC[e.src]}</span>
+            ${updNews[e.id] ? '<span class="tag-chip">📢 خبر منشور</span>' : ''}${e.hidden ? '<span class="badge badge-warn">مخفي</span>' : ''}</div></div>
+            <div class="nr-btns">
+                ${e.hidden ? `<button class="btn btn-ghost btn-sm" onclick="unhideUpdate('${esc(e.id)}')">إظهار</button>` : `
+                <button class="btn btn-ghost btn-sm" onclick="editUpdate('${esc(e.id)}')" title="تعديل"><i class="fas fa-pen"></i></button>
+                ${upc ? `<button class="btn btn-ghost btn-sm" onclick="releaseUpdate('${esc(e.id)}')" title="تحويل إلى «صدر»">✅ صدر</button>` : ''}
+                ${e.src === 'override' ? `<button class="btn btn-ghost btn-sm" onclick="restoreUpdate('${esc(e.id)}')" title="استعادة النسخة الأصلية">↺</button>` : ''}
+                <button class="btn btn-danger btn-sm" onclick="deleteUpdate('${esc(e.id)}')" title="${e.src === 'db' ? 'حذف' : 'إخفاء'}"><i class="fas ${e.src === 'db' ? 'fa-trash' : 'fa-eye-slash'}"></i></button>`}
+            </div></div>`;
+    }).join('') || '<div style="padding:30px;text-align:center;color:var(--text-faint);font-size:12.5px;">لا توجد تحديثات.</div>';
+}
+window.resetUpdateForm = function () {
+    updEditId = null;
+    ['upd-version', 'upd-title', 'upd-date', 'upd-eta', 'upd-sum', 'upd-added', 'upd-imp', 'upd-fix'].forEach(i => nv(i).value = '');
+    nv('upd-status').value = 'upcoming'; nv('upd-notify').checked = true;
+    nv('upd-version').disabled = false;
+    nv('upd-edit-flag').style.display = 'none';
+    nv('upd-save-btn').innerHTML = '<i class="fas fa-floppy-disk"></i> حفظ';
+};
+window.editUpdate = function (id) {
+    const e = mergedUpdates().find(x => x.id === id); if (!e) return;
+    updEditId = id;
+    nv('upd-version').value = e.version || ''; nv('upd-version').disabled = true; // the id is derived from the version
+    nv('upd-status').value = e.status === 'upcoming' ? 'upcoming' : 'released';
+    nv('upd-title').value = e.title || ''; nv('upd-date').value = e.date || ''; nv('upd-eta').value = e.eta || '';
+    nv('upd-sum').value = e.summary || '';
+    nv('upd-added').value = updArr(e.added).join('\n'); nv('upd-imp').value = updArr(e.improved).join('\n'); nv('upd-fix').value = updArr(e.fixed).join('\n');
+    nv('upd-notify').checked = !!updNews[id] || e.status === 'upcoming';
+    nv('upd-edit-flag').style.display = ''; nv('upd-save-btn').innerHTML = '<i class="fas fa-floppy-disk"></i> حفظ التعديل';
+    nv('upd-composer').scrollIntoView({ behavior: 'smooth', block: 'start' });
+};
+// Writes / refreshes / removes the matching inbox news item (news/upd_{id}) so every account is notified.
+async function syncUpdateNews(id, rec, notify) {
+    const nid = 'upd_' + id, upc = rec.status === 'upcoming';
+    if (!notify) { if (newsCache[nid]) { await remove(ref(db, `news/${nid}`)); delete newsCache[nid]; } return; }
+    const old = newsCache[nid], now = Date.now();
+    const sec = (t, a) => a.length ? `\n\n## ${t}\n` + a.map(x => '- ' + x).join('\n') : '';
+    const body = ((upc ? `🚀 تحديث قادم${rec.eta ? ' — ' + rec.eta : rec.date ? ' — ' + rec.date : ''}\n\n` : '') + (rec.summary || '') +
+        sec('ما الجديد', updArr(rec.added)) + sec('تحسينات', updArr(rec.improved)) + sec('إصلاح الأخطاء والمشاكل', updArr(rec.fixed))).trim().slice(0, 6000) || rec.title;
+    let exp = null;
+    if (upc) { const d = rec.date ? new Date(rec.date + 'T23:59:59').getTime() : NaN; exp = isNaN(d) || d < now ? now + 14 * 86400000 : d + 3 * 86400000; }
+    else exp = now + 7 * 86400000;
+    const statusChanged = !old || (old.tag === 'قادم') !== upc;
+    const news = {
+        title: (upc ? `تحديث v${rec.version} قادم قريباً: ` : `تحديث v${rec.version} متاح الآن: `).concat(rec.title).slice(0, 140),
+        body, category: 'update', tag: upc ? 'قادم' : ('v' + rec.version).slice(0, 14), pinned: upc, visible: old ? old.visible !== false : true,
+        createdAt: statusChanged ? now : (old.createdAt || now), updatedAt: now, expiresAt: exp,
+        sentBy: currentAdmin?.username || 'الإدارة', actionLabel: 'تفاصيل التحديث', actionUrl: `updates.html#${id}`
+    };
+    await set(ref(db, `news/${nid}`), news); newsCache[nid] = news;
+}
+window.saveUpdate = async function () {
+    const version = nv('upd-version').value.trim(), title = nv('upd-title').value.trim();
+    if (!version) return UIAlert('اكتب رقم الإصدار');
+    if (!title) return UIAlert('اكتب عنوان التحديث');
+    const id = updEditId || updSlug(version);
+    if (!/^v[0-9A-Za-z-]+$/.test(id)) return UIAlert('رقم الإصدار غير صالح');
+    const exists = mergedUpdates().find(x => x.id === id);
+    if (!updEditId && exists && !await UIConfirm(`الإصدار v${exists.version} موجود بالفعل. هل تريد استبداله؟`, { danger: true, confirmText: 'استبدال' })) return;
+    const date = nv('upd-date').value, status = nv('upd-status').value;
+    if (status === 'released' && !date) return UIAlert('اختر تاريخ الصدور للتحديث الذي صدر');
+    const prev = updCache[id] || null;
+    const rec = {
+        version: version.slice(0, 20), title: title.slice(0, 140), status, date: date || null, eta: nv('upd-eta').value.trim().slice(0, 40) || null,
+        summary: nv('upd-sum').value.trim().slice(0, 1000), added: updLines(nv('upd-added').value), improved: updLines(nv('upd-imp').value), fixed: updLines(nv('upd-fix').value),
+        createdAt: prev?.createdAt || Date.now(), updatedAt: Date.now(), updatedBy: currentAdmin?.username || 'الإدارة'
+    };
+    const btn = nv('upd-save-btn'); btn.disabled = true;
+    try {
+        await set(ref(db, `updates/${id}`), rec); updCache[id] = rec;
+        await syncUpdateNews(id, rec, nv('upd-notify').checked);
+        logAdmin(updEditId ? 'update.edit' : 'update.add', id, `${rec.version} ${rec.title}`);
+        UIAlert(nv('upd-notify').checked ? 'تم الحفظ وإرسال إشعار الخبر لجميع الحسابات' : 'تم الحفظ', { type: 'success' });
+        resetUpdateForm(); loadUpdates();
+    } catch (e) { UIAlert('خطأ: ' + e.message + ' — تأكد من إضافة قواعد updates في تبويب الإعدادات', { type: 'error' }); }
+    finally { btn.disabled = false; }
+};
+window.releaseUpdate = async function (id) {
+    const e = mergedUpdates().find(x => x.id === id); if (!e) return;
+    if (!await UIConfirm(`تحويل v${e.version} إلى «صدر» بتاريخ اليوم وتحديث الخبر؟`, { confirmText: 'نعم، صدر' })) return;
+    try {
+        const rec = { version: e.version, title: e.title, status: 'released', date: new Date().toISOString().slice(0, 10), eta: null, summary: e.summary || '',
+            added: updArr(e.added), improved: updArr(e.improved), fixed: updArr(e.fixed), createdAt: e.createdAt || Date.now(), updatedAt: Date.now(), updatedBy: currentAdmin?.username || 'الإدارة' };
+        await set(ref(db, `updates/${id}`), rec); updCache[id] = rec;
+        if (updNews[id]) await syncUpdateNews(id, rec, true);
+        logAdmin('update.release', id, `${rec.version} ${rec.title}`); loadUpdates();
+    } catch (er) { UIAlert('خطأ: ' + er.message, { type: 'error' }); }
+};
+window.deleteUpdate = async function (id) {
+    const e = mergedUpdates().find(x => x.id === id); if (!e) return;
+    const builtin = e.src !== 'db';
+    if (!await UIConfirm(builtin ? `إخفاء v${e.version} من صفحة التحديثات؟ (يمكن إظهاره لاحقاً)` : `حذف v${e.version} «${e.title}» نهائياً؟`, { danger: true, confirmText: builtin ? 'إخفاء' : 'حذف' })) return;
+    try {
+        if (builtin) await set(ref(db, `updates/${id}`), { hidden: true }); else await remove(ref(db, `updates/${id}`));
+        if (newsCache['upd_' + id]) { await remove(ref(db, `news/upd_${id}`)); delete newsCache['upd_' + id]; }
+        logAdmin(builtin ? 'update.hide' : 'update.delete', id, e.title); loadUpdates();
+    } catch (er) { UIAlert('خطأ: ' + er.message, { type: 'error' }); }
+};
+window.unhideUpdate = async function (id) {
+    try { await remove(ref(db, `updates/${id}`)); logAdmin('update.unhide', id, ''); loadUpdates(); } catch (er) { UIAlert('خطأ: ' + er.message, { type: 'error' }); }
+};
+window.restoreUpdate = async function (id) {
+    if (!await UIConfirm('استعادة النسخة الأصلية المدمجة وحذف تعديلاتك؟', { confirmText: 'استعادة' })) return;
+    try { await remove(ref(db, `updates/${id}`)); logAdmin('update.restore', id, ''); loadUpdates(); } catch (er) { UIAlert('خطأ: ' + er.message, { type: 'error' }); }
 };
 
 // ── Top banner (announcements/current) ───────────────────────

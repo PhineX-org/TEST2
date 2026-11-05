@@ -462,7 +462,7 @@
             <form id="registerForm">
                 <div class="form-group">
                     <label>اسم المستخدم (معرف اللعبة)</label>
-                    <input type="text" id="username" placeholder="Agent_007" required>
+                    <input type="text" id="username" placeholder="Agent_007" required minlength="4" maxlength="8">
                 </div>
 
                 <div class="form-group">
@@ -477,12 +477,12 @@
                 
                 <div class="form-group">
                     <label>كلمة المرور</label>
-                    <input type="password" id="regPassword" placeholder="••••••••••••" required>
+                    <input type="password" id="regPassword" placeholder="••••••••" required minlength="6" maxlength="8">
                 </div>
                 
                 <div class="form-group">
                     <label>تأكيد كلمة المرور</label>
-                    <input type="password" id="confirmPassword" placeholder="••••••••••••" required>
+                    <input type="password" id="confirmPassword" placeholder="••••••••" required minlength="6" maxlength="8">
                 </div>
 
                 <label class="checkbox-container" style="margin-top:-8px;margin-bottom:8px;">
@@ -611,6 +611,10 @@ const firebaseConfig = {
                 alert('الرجاء إدخال اسم المستخدم');
                 return;
             }
+            if (usernameValue.length < 4 || usernameValue.length > 8) {
+                alert('اسم المستخدم يجب أن يكون من 4 إلى 8 أحرف');
+                return;
+            }
 
             if (!email) {
                 alert('الرجاء إدخال البريد الإلكتروني');
@@ -630,8 +634,9 @@ const firebaseConfig = {
             }
 
             // Password validation
-            if (password.length < 6) {
-                alert('كلمة المرور يجب أن تكون 6 أحرف على الأقل');
+            // 8 max as requested; 6 min because Firebase Authentication itself rejects shorter passwords
+            if (password.length < 6 || password.length > 8) {
+                alert('كلمة المرور يجب أن تكون من 6 إلى 8 أحرف');
                 return;
             }
 
@@ -675,6 +680,7 @@ const firebaseConfig = {
                                 },
                                 moderationWarnings: 0,
                                 totalBans:          0,
+                                tutorial:    "ns",
                                 createdAt:   Date.now()
                             });
                         console.log('[signup] ✅ Player saved — uid:', user.uid, '| username:', usernameValue);

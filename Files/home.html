@@ -24,6 +24,9 @@
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700;900&display=swap" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <script src="../Assets/presence.js"></script>
+    <script src="../Assets/seasons.js"></script>
+    <script src="../Assets/cosmetics.js"></script>
     <script src="../Assets/dialogs.js"></script>
     <script src="../Assets/moderation.js"></script>
     <script src="../Assets/name-themes.js"></script>
@@ -693,6 +696,8 @@
         /* Glitch Effect for Title — cyan + lime as two separate ghost layers (never blended) */
         .glitch {
             position: relative;
+            display: inline-block;      /* the ghost layers now match the text box exactly (was misaligned on phones) */
+            white-space: nowrap;
         }
 
         .glitch::before,
@@ -703,6 +708,10 @@
             left: 0;
             width: 100%;
             height: 100%;
+            text-align: center;
+            text-transform: inherit;
+            letter-spacing: inherit;
+            white-space: nowrap;
         }
 
         .glitch::before {
@@ -1018,31 +1027,41 @@
         <div class="nav-divider-label">الرئيسية</div>
 
         <a href="../index.html" class="nav-item">
-            <span class="nav-item-icon green"><i class="fas fa-home"></i></span>
+            <span class="nav-item-icon cyan"><i class="fas fa-home"></i></span>
             <span>الرئيسية</span>
         </a>
 
         <a href="leaderboard.html" class="nav-item">
-            <span class="nav-item-icon green"><i class="fas fa-trophy"></i></span>
+            <span class="nav-item-icon gold"><i class="fas fa-trophy"></i></span>
             <span>لوحة المتصدرين</span>
  
         </a>
 
         <a href="howtoplay.html" class="nav-item">
-            <span class="nav-item-icon green"><i class="fas fa-book-open"></i></span>
+            <span class="nav-item-icon blue"><i class="fas fa-book-open"></i></span>
             <span>كيفية اللعب</span>
+        </a>
+
+        <a href="#" class="nav-item" onclick="event.preventDefault(); if(window.EJTutorial){ document.getElementById('closeNav') && document.getElementById('closeNav').click(); EJTutorial.start(); }">
+            <span class="nav-item-icon green"><i class="fas fa-graduation-cap"></i></span>
+            <span>شرح اللعبة (جولة)</span>
+        </a>
+
+        <a href="updates.html" class="nav-item">
+            <span class="nav-item-icon green"><i class="fas fa-code-branch"></i></span>
+            <span>سجل التحديثات</span>
         </a>
 
         <!-- ─ Account ─ -->
         <div class="nav-divider-label">حسابي</div>
 
         <a href="account.html" class="nav-item">
-            <span class="nav-item-icon green"><i class="fas fa-user-circle"></i></span>
+            <span class="nav-item-icon cyan"><i class="fas fa-user-circle"></i></span>
             <span>حسابي</span>
         </a>
 
         <a href="profile.html" class="nav-item">
-            <span class="nav-item-icon green"><i class="fas fa-id-card"></i></span>
+            <span class="nav-item-icon pink"><i class="fas fa-id-card"></i></span>
             <span>ملفي الشخصي</span>
         </a>
 
@@ -1051,9 +1070,9 @@
             <span>الأصدقاء</span>
         </a>
 
-        <a href="chat.html" class="nav-item">
-            <span class="nav-item-icon green"><i class="fas fa-comments"></i></span>
-            <span>الدردشة</span>
+        <a href="analytics.html" class="nav-item">
+            <span class="nav-item-icon purple"><i class="fas fa-chart-line"></i></span>
+            <span>الإحصائيات</span>
         </a>
 
         <!--services-->
@@ -1062,18 +1081,20 @@
         <a href="bugreport.html" class="nav-item">
             <span class="nav-item-icon green"><i class="fas fa-bug"></i></span>
             <span>الإبلاغ عن مشكلة</span>
+            <span class="nav-badge">NEW</span>
         </a>
 
         <a href="JMS.html" class="nav-item">
-        <span class="nav-item-icon green"><i class="fas fa-ban"></i></span>
+        <span class="nav-item-icon blue"><i class="fas fa-ban"></i></span>
         <span>نظام الJMS</span>
+        <span class="nav-badge">NEW</span>
         </a>
 
         <!-- ─ Store ─ -->
         <div class="nav-divider-label">المتجر</div>
 
         <a href="shop.html" class="nav-item">
-            <span class="nav-item-icon green"><i class="fas fa-store"></i></span>
+            <span class="nav-item-icon gold"><i class="fas fa-store"></i></span>
             <span>المتجر</span>
  
         </a>
@@ -1087,7 +1108,7 @@
         </a>
 
         <a href="signup.html" class="nav-item">
-            <span class="nav-item-icon green"><i class="fas fa-user-plus"></i></span>
+            <span class="nav-item-icon purple"><i class="fas fa-user-plus"></i></span>
             <span>إنشاء حساب</span>
         </a>
     
@@ -1096,7 +1117,7 @@
         <div class="nav-divider-label">الإدارة</div>
 
         <a href="admin.html" class="nav-item">
-            <span class="nav-item-icon green"><i class="fas fa-cog"></i></span>
+            <span class="nav-item-icon orange"><i class="fas fa-cog"></i></span>
             <span>لوحة الإدارة</span>
             <span class="nav-badge" style="background:rgba(0,242,255,0.16);color:rgba(0,242,255,1);border:1px solid rgba(0,242,255,0.4);">ADMIN</span>
         </a>
@@ -1198,7 +1219,7 @@
                 <div class="w-2 h-2 rounded-full animate-pulse u-dot-lime"></div>
                 <span>ONLINE</span>
                 <div class="w-1 h-1 rounded-full u-dot-muted"></div>
-                <span>READY TO PLAY</span>
+                <span class="rb-shiny">READY TO PLAY</span>
             </div>
 
             <!-- Mode Toggle -->
@@ -1219,7 +1240,7 @@
         </header>
 
         <!-- Setup Screen -->
-        <div id="setup-screen" class="glass rounded-[2rem] p-6 shadow-2xl animate__animated animate__fadeInUp">
+        <div id="setup-screen" class="rb-spot glass rounded-[2rem] p-6 shadow-2xl animate__animated animate__fadeInUp">
             
             <!-- Category Selection -->
             <div class="mb-6">
@@ -1233,6 +1254,7 @@
                     <option value="jobs">🛠️ مهن ووظائف</option>
                     <option value="companies">🏢 شركات عالمية</option>
                     <option value="football_teams">⚽ أندية ومنتخبات كورة</option>
+                    <option value="famous_players">🌟 لاعبين مشهورين</option>
                     <!-- Admin-added categories will be injected here dynamically -->
                 </select>
             </div>
@@ -1258,11 +1280,19 @@
             <!-- Online Game Fields -->
             <div id="online-fields" class="hidden space-y-4">
                 <input type="text" id="pName" placeholder="اسمك..." class="w-full border-2 p-4 rounded-xl text-center outline-none font-bold">
+                <div class="grid grid-cols-2 gap-2" id="roomVisPick" role="radiogroup" aria-label="نوع الغرفة">
+                    <button type="button" data-vis="public" class="vis-opt active py-3 rounded-xl font-black text-xs" onclick="setRoomVis('public')">🌐 عامة<br><span class="opacity-60 font-bold">تظهر في قائمة الغرف</span></button>
+                    <button type="button" data-vis="private" class="vis-opt py-3 rounded-xl font-black text-xs" onclick="setRoomVis('private')">🔒 خاصة<br><span class="opacity-60 font-bold">بالرابط أو الكود فقط</span></button>
+                </div>
+                <style>
+                    .vis-opt{background:rgba(0,0,0,.6);border:2px solid rgba(255,255,255,.12);color:#fff;transition:all .15s;line-height:1.5}
+                    .vis-opt.active{border-color:#a3e635;color:#a3e635;background:rgba(163,230,53,.1)}
+                </style>
                 <div class="grid grid-cols-2 gap-3">
-                    <button id="createBtn" class="cyber-btn py-4 rounded-xl font-black text-sm uppercase tracking-wider transition-all">
+                    <button id="createBtn" class="rb-magnet cyber-btn py-4 rounded-xl font-black text-sm uppercase tracking-wider transition-all">
                         إنشاء ✨
                     </button>
-                    <button id="joinBtn" class="cyber-btn py-4 rounded-xl font-black text-sm uppercase tracking-wider transition-all">
+                    <button id="joinBtn" class="rb-magnet cyber-btn py-4 rounded-xl font-black text-sm uppercase tracking-wider transition-all">
                         انضمام 🚀
                     </button>
                 </div>
@@ -1365,8 +1395,8 @@
                 </div>
             </div>
 
-            <div class="border-t border-white/5 pt-8 flex flex-col md:flex-row justify-between items-center gap-4 text-[11px] font-bold u-muted-2 uppercase tracking-widest">
-                <p>&copy; 2026 <span class="u-cyan">PhineX</span>. All rights reserved.</p>
+            <div class="border-t border-white/5 pt-8 flex flex-col md:flex-row justify-between items-center gap-4 text-center text-[11px] font-bold u-muted-2 uppercase tracking-widest">
+                <p dir="ltr" class="text-center">&copy; 2026 <span class="u-cyan">PhineX</span>. All rights reserved.</p>
 
                 <!-- Community Standards link -->
                 <a href="community.html"
@@ -1375,7 +1405,7 @@
                     <span>معايير المجتمع</span>
                 </a>
                 
-                <div class="flex items-center gap-2 text-[11px] font-bold u-muted-2 uppercase tracking-widest group">
+                <div dir="ltr" class="flex flex-wrap items-center justify-center gap-x-2 gap-y-1 text-[11px] font-bold u-muted-2 uppercase tracking-widest group">
                     <span>Made with</span>
                     <i class="fas fa-heart u-lime animate-pulse mx-1"></i>
                     <span>By:</span>
@@ -1512,7 +1542,7 @@
         // ── FIREBASE ─────────────────────────────────────────────────
         import { initializeApp } from "https://www.gstatic.com/firebasejs/12.7.0/firebase-app.js";
         import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword, updateProfile, GoogleAuthProvider, signInWithPopup, setPersistence, browserLocalPersistence, browserSessionPersistence } from "https://www.gstatic.com/firebasejs/12.7.0/firebase-auth.js";
-        import { getDatabase, ref, set, onValue, update, get, remove, onDisconnect, push, serverTimestamp, onChildAdded } from "https://www.gstatic.com/firebasejs/12.7.0/firebase-database.js";
+        import { getDatabase, ref, set, onValue, update, get, remove, onDisconnect, push, serverTimestamp, onChildAdded, runTransaction } from "https://www.gstatic.com/firebasejs/12.7.0/firebase-database.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyDnd-pmKEatI3DaFz6xHWB5ucurtHXt9tk",
@@ -1594,7 +1624,46 @@
     }
 
     await loadCustomCategories();
+    if (user && !guestMode) { applySeasonDecay(user); offerRejoin(user); }
 });
+
+// ── SEASON DECAY (every 2 months, by rank) ──
+async function applySeasonDecay(user) {
+    try {
+        if (!window.EJSeasons) return;
+        const r = await EJSeasons.apply({ ref, db, runTransaction }, user.uid);
+        if (r && r.lost > 0) {
+            await UIAlert(`انتهى الموسم 🗓️\nتم خصم ${r.lost} نقطة من رتبتك (من ${r.from} إلى ${r.to}).\nالموسم الجديد بدأ — العبْ لتستعيد رتبتك!`,
+                { title: 'موسم جديد', type: 'warning' });
+        }
+    } catch (e) { console.warn('season decay', e); }
+}
+
+// ── REJOIN: closed the game in the middle of a round? Offer to jump back in (like PUBG). ──
+async function offerRejoin(user) {
+    try {
+        if (sessionStorage.getItem('ej_rejoin_asked') === '1') return;
+        const lr = (await get(ref(db, `players/${user.uid}/lastRoom`))).val();
+        if (!lr || !lr.code) return;
+        const room = (await get(ref(db, `rooms/${lr.code}`))).val();
+        const inIt = room && room.players && room.players[user.uid];
+        if (!inIt || Date.now() - (Number(lr.ts) || 0) > 6 * 3600 * 1000) {
+            await update(ref(db, `players/${user.uid}`), { lastRoom: null }).catch(() => {});
+            return;
+        }
+        if (!room.status || room.status === 'waiting') return;      // only for rounds that already started
+        sessionStorage.setItem('ej_rejoin_asked', '1');
+        const ok = await UIConfirm(`لديك لعبة جارية في الغرفة ${lr.code}. هل تريد العودة إليها؟`,
+            { title: 'العودة للعبة؟', confirmText: 'نعم، انضم', cancelText: 'لاحقاً' });
+        if (ok) {
+            localStorage.setItem('currentRoom', lr.code);
+            localStorage.setItem('isHost', room.hostId === user.uid ? 'true' : 'false');
+            window.location.href = `room.html?room=${lr.code}`;
+        } else {
+            await update(ref(db, `players/${user.uid}`), { lastRoom: null }).catch(() => {});
+        }
+    } catch (e) { console.warn('rejoin check failed', e); }
+}
 
         // ── GAME DATA ────────────────────────────────────────────────
         // Word lists now live in Assets/game-words.js (shared with room.html so online
@@ -1627,7 +1696,7 @@
                 const words = wordsOf(catVal);
 
                 // Skip if it's a built-in category key (already in HTML)
-                const builtIn = ['places','food','jobs','companies','football_teams'];
+                const builtIn = ['places','food','jobs','companies','football_teams','famous_players'];
                 if (builtIn.includes(catId)) {
                     // If admin updated a built-in category's word list, merge the words
                     if (words.length > 0) {
@@ -1795,7 +1864,28 @@
             };
         }
 
+       // ── ROOM CODE: always 4 chars, and never one that already exists ──
+// (the old Math.random().toString(36).substring(2,6) could return fewer than 4 characters and was
+//  written with set() without any check, so a collision silently replaced somebody's running game)
+async function uniqueRoomCode() {
+    const ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // no I / O / 0 / 1 — easy to read aloud
+    for (let attempt = 0; attempt < 12; attempt++) {
+        let code = '';
+        const rnd = new Uint32Array(4);
+        (window.crypto || window.msCrypto).getRandomValues(rnd);
+        for (let i = 0; i < 4; i++) code += ALPHABET[rnd[i] % ALPHABET.length];
+        try { if (!(await get(ref(db, 'rooms/' + code))).exists()) return code; }
+        catch (e) { return code; } // rules/offline: fall back to the random code rather than blocking the player
+    }
+    throw new Error('تعذّر إنشاء كود غرفة فريد، حاول مرة أخرى');
+}
+
        // ── ONLINE: CREATE ROOM ──────────────────────────────────────
+window._roomVis = 'public';
+window.setRoomVis = function (v) {
+    window._roomVis = v === 'private' ? 'private' : 'public';
+    document.querySelectorAll('#roomVisPick .vis-opt').forEach(b => b.classList.toggle('active', b.dataset.vis === window._roomVis));
+};
 async function handleCreateRoom() {
     myName = document.getElementById('pName').value.trim();
     if (!myName) return alert("الاسم مطلوب");
@@ -1808,7 +1898,7 @@ async function handleCreateRoom() {
     }
 
     localStorage.setItem('eljasus_user_name', myName);
-    myRoom = Math.random().toString(36).substring(2, 6).toUpperCase();
+    myRoom = await uniqueRoomCode();
     isHost = true;
 
     const userID = currentUser.uid;
@@ -1817,8 +1907,11 @@ async function handleCreateRoom() {
         const roomData = {
             hostId: userID,
             category: document.getElementById('gameCat').value,
-            visibility: 'public',
+            visibility: (window._roomVis === 'private' ? 'private' : 'public'),
+            maxPlayers: 15,
+            settings: { spyCount: 1, timerOn: false, discussionSec: 180, votingSec: 60 },
             status: 'waiting',
+            stageAt: Date.now(),
             createdAt: serverTimestamp(),
             players: {
                 [userID]: {
@@ -1920,7 +2013,7 @@ document.getElementById('joinBtn').onclick = handleJoinRoom;
             }
 
             localStorage.setItem('eljasus_user_name', myName);
-            myRoom = Math.random().toString(36).substring(2, 6).toUpperCase();
+            myRoom = await uniqueRoomCode();
             isHost = true;
 
             const userID = currentUser.uid;
@@ -2344,5 +2437,7 @@ document.getElementById('joinBtn').onclick = handleJoinRoom;
     window.confirm = (msg)             => UIConfirm(msg);
     window.prompt  = (msg, defaultVal) => UIPrompt(msg, { defaultValue: defaultVal });
 </script>
+    <script src="../Assets/tutorial.js" defer></script>
+    <script src="../Assets/fx.js" defer></script>
 </body>
 </html>

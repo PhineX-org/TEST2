@@ -407,7 +407,7 @@
     }
     if (!code) throw fail('تعذر إنشاء غرفة، حاول مرة أخرى');
     await M.set(M.ref(db, 'rooms/' + code), {
-      hostId: myUidV, status: 'waiting', category: data.category || 'places', visibility: 'private', createdAt: M.serverTimestamp(),
+      hostId: myUidV, status: 'waiting', category: data.category || 'places', visibility: 'private', maxPlayers: 15, settings: { spyCount: 1, timerOn: false, discussionSec: 180, votingSec: 60 }, stageAt: Date.now(), createdAt: M.serverTimestamp(),
       players: { [myUidV]: { username: name, uid: myUidV, joinedAt: M.serverTimestamp(), connected: true, status: 'online', isHost: true } },
     });
     await M.update(M.ref(db, `invites/${myUidV}/${key}`), { status: 'accepted', roomCode: code }).catch(() => {});
@@ -531,6 +531,7 @@
   // presence + user lifecycle
   // ═══════════════════════════════════════════════════════════
   function keepOnline(uid) {
+    if (window.EJPresence) { try { window.EJPresence.start(Object.assign({}, M, { db }), uid); return; } catch (e) {} }
     try {
       const pr = M.ref(db, `players/${uid}/presence`);
       M.onValue(M.ref(db, '.info/connected'), (s) => {

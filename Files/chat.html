@@ -13,6 +13,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700;900&display=swap" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700;900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <script src="../Assets/presence.js"></script>
     <script src="../Assets/dialogs.js"></script>
     <script src="../Assets/moderation.js"></script>
     <script src="../Assets/name-themes.js"></script>
@@ -148,6 +149,7 @@
             <option value="jobs">🛠️ مهن ووظائف</option>
             <option value="companies">🏢 شركات عالمية</option>
             <option value="football_teams">⚽ أندية ومنتخبات كورة</option>
+            <option value="famous_players">🌟 لاعبين مشهورين</option>
         </select>
         <div class="row">
             <button class="btn go" id="sheetGo" type="button">إرسال الدعوة</button>
@@ -211,9 +213,10 @@
     }
 
     const nameOf = (id) => (friends[id] && friends[id].username) || (chats[id] && chats[id].name) || 'صديق';
-    const isOn = (id) => !!(presence[id] && presence[id].online);
+    const isOn = (id) => window.EJPresence ? EJPresence.isOnline(presence[id]) : !!(presence[id] && presence[id].online);
     function statusText(id) {
         const p = presence[id] || {};
+        if (window.EJPresence) { const st = EJPresence.state(p); return st === 'game' ? '🎮 في لعبة' : st === 'room' ? '🚪 في غرفة' : st === 'online' ? 'متصل الآن' : 'غير متصل'; }
         if (p.online && p.inGame) return '🎮 يلعب الآن';
         if (p.online) return 'متصل الآن';
         return 'غير متصل';
@@ -266,7 +269,7 @@
         $('cDot').className = 'dot' + (isOn(current) ? ' on' : '');
         $('cAvatar').firstChild.textContent = nameOf(current).trim().charAt(0).toUpperCase() || '؟';
         const p = presence[current] || {};
-        $('inviteBtn').disabled = !(p.online && !p.inGame) || !!pendingProposal;
+        $('inviteBtn').disabled = !(isOn(current) && !p.inGame) || !!pendingProposal;
         $('inviteBtn').title = p.inGame ? 'صديقك داخل لعبة الآن' : (!p.online ? 'صديقك غير متصل' : '');
     }
 

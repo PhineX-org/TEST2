@@ -184,7 +184,8 @@
                     <input 
                         type="text" 
                         id="newUsername" 
-                        placeholder="أدخل اسم المستخدم الجديد"
+                        minlength="4" maxlength="8"
+                        placeholder="أدخل اسم المستخدم الجديد (4 – 8 أحرف)"
                         class="w-full p-4 rounded-xl outline-none text-sm font-bold text-white"
                         required
                     >
@@ -285,6 +286,11 @@ const firebaseConfig = {
                 return;
             }
 
+            if (newUsername.length < 4 || newUsername.length > 8) {
+                await UIAlert('اسم المستخدم يجب أن يكون من 4 إلى 8 أحرف', { type: 'warning' });
+                return;
+            }
+
             if (!password) {
                 alert('الرجاء إدخال كلمة المرور للتأكيد');
                 return;
@@ -299,7 +305,7 @@ const firebaseConfig = {
                 if (isGoogleUser) {
                     // For Google users, skip password verification
                     // Or you can ask them to re-authenticate with Google
-                    const confirmChange = confirm('هل أنت متأكد من تغيير اسم المستخدم؟');
+                    const confirmChange = await UIConfirm('هل أنت متأكد من تغيير اسم المستخدم؟', { title: 'تغيير الاسم' });
                     if (!confirmChange) return;
                 } else {
                     // Reauthenticate with email/password

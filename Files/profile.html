@@ -14,6 +14,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700;900&display=swap" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="../Assets/mobile.css">
+    <script src="../Assets/presence.js"></script>
     <script src="../Assets/dialogs.js"></script>
     <script src="../Assets/moderation.js"></script>
     <script src="../Assets/name-themes.js"></script>
@@ -273,7 +274,7 @@
                     </div>
 
                     <!-- Quick Stats -->
-                    <div class="grid grid-cols-3 gap-3">
+                    <div class="grid grid-cols-2 gap-3">
                         <div class="bg-gradient-to-br from-cyan-500/20 to-cyan-500/10 border-2 border-cyan-500/30 rounded-xl p-3">
                             <p class="text-[10px] text-gray-400 uppercase mb-1">المستوى</p>
                             <p id="playerLevel" class="text-3xl font-black text-cyan-400" style="font-family: 'Orbitron', sans-serif;">1</p>
@@ -281,10 +282,6 @@
                         <div class="bg-gradient-to-br from-green-500/20 to-green-500/10 border-2 border-green-500/30 rounded-xl p-3">
                             <p class="text-[10px] text-gray-400 uppercase mb-1">سلسلة الانتصارات</p>
                             <p id="winStreak" class="text-3xl font-black text-green-400" style="font-family: 'Orbitron', sans-serif;">0</p>
-                        </div>
-                        <div class="bg-gradient-to-br from-yellow-500/20 to-yellow-500/10 border-2 border-yellow-500/30 rounded-xl p-3">
-                            <p class="text-[10px] text-gray-400 uppercase mb-1">الإنجازات</p>
-                            <p id="achievementCount" class="text-3xl font-black text-yellow-400" style="font-family: 'Orbitron', sans-serif;">0/7</p>
                         </div>
                     </div>
                 </div>
@@ -382,20 +379,6 @@
             </div>
         </div>
 
-        <!-- Achievements Section -->
-        <div class="glass rounded-3xl p-8 mb-6">
-            <h2 class="text-2xl font-black neon-text mb-6 flex items-center gap-3">
-                <svg class="w-7 h-7 text-yellow-400" fill="currentColor" viewBox="0 0 20 20">
-                    <path d="M2 6a2 2 0 012-2h6a2 2 0 012 2v8a2 2 0 01-2 2H4a2 2 0 01-2-2V6zM14.553 7.106A1 1 0 0014 8v4a1 1 0 00.553.894l2 1A1 1 0 0018 13V7a1 1 0 00-1.447-.894l-2 1z"/>
-                </svg>
-                الإنجازات
-            </h2>
-            
-            <div id="achievementsList" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                <!-- Achievements will be loaded here -->
-            </div>
-        </div>
-
         <!-- Category Stats -->
         <div class="glass rounded-3xl p-8">
             <h2 class="text-2xl font-black neon-text mb-6 flex items-center gap-3">
@@ -453,7 +436,6 @@ const firebaseConfig = {
             const data = snapshot.exists() ? snapshot.val() : {};
             const stats = data.stats || {};
             const rankPoints = data.rankPoints || 0;
-            const achievements = data.achievements || {};
             const categoryStats = data.categoryStats || {};
 
             // Display username
@@ -480,9 +462,6 @@ if (usernameElement && window.NameThemes) {
 
             // Display stats
             displayStats(stats);
-
-            // Display achievements
-            displayAchievements(achievements);
 
             // Display category stats
             displayCategoryStats(categoryStats);
@@ -581,49 +560,6 @@ if (usernameElement && window.NameThemes) {
             // Win streak
             document.getElementById('winStreak').innerText = parseInt(stats.currentStreak || 0);
             document.getElementById('longestStreak').innerText = parseInt(stats.longestWinStreak || 0);
-        }
-
-        function displayAchievements(achievements) {
-            const achievementsList = document.getElementById('achievementsList');
-            const allAchievements = {
-                firstWin: { name: 'الفوز الأول', icon: '🎉', desc: 'فز بأول مباراة' },
-                masterDeceiver: { name: 'خبير الخداع', icon: '🕵️', desc: 'افز 10 مباريات كجاسوس' },
-                eagleEye: { name: 'عين الصقر', icon: '🦅', desc: 'اكشف الجاسوس 5 مرات متتالية' },
-                perfectGame: { name: 'مباراة مثالية', icon: '🎯', desc: 'خمن الكلمة كجاسوس' },
-                centuryClub: { name: 'نادي المئة', icon: '💯', desc: 'العب 100 مباراة' },
-                hotStreak: { name: 'سلسلة نارية', icon: '🔥', desc: 'افز 5 مباريات متتالية' },
-                diamondPlayer: { name: 'لاعب ألماسي', icon: '💎', desc: 'وصل لرتبة الألماس' }
-            };
-
-            let unlockedCount = 0;
-            achievementsList.innerHTML = Object.keys(allAchievements).map(key => {
-                const ach = allAchievements[key];
-                const unlocked = achievements[key];
-                if (unlocked) unlockedCount++;
-
-                return `
-                    <div class="glass rounded-xl p-4 ${unlocked ? 'border-yellow-500/50' : 'opacity-50'}">
-                        <div class="flex items-center gap-3">
-                            <span class="text-4xl">${ach.icon}</span>
-                            <div class="flex-1">
-                                <h4 class="font-black text-white">${ach.name}</h4>
-                                <p class="text-xs text-gray-400">${ach.desc}</p>
-                            </div>
-                            ${unlocked ? `
-                                <svg class="w-6 h-6 text-yellow-400" fill="currentColor" viewBox="0 0 20 20">
-                                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
-                                </svg>
-                            ` : `
-                                <svg class="w-6 h-6 text-gray-600" fill="currentColor" viewBox="0 0 20 20">
-                                    <path fill-rule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clip-rule="evenodd"/>
-                                </svg>
-                            `}
-                        </div>
-                    </div>
-                `;
-            }).join('');
-
-            document.getElementById('achievementCount').innerText = `${unlockedCount}/7`;
         }
 
         function displayCategoryStats(categoryStats) {

@@ -9,6 +9,8 @@
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700;900&display=swap" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet">
     <script src="../Assets/name-themes.js"></script>
+    <script src="../Assets/presence.js"></script>
+    <script src="../Assets/cosmetics.js"></script>
     <script src="../Assets/dialogs.js"></script>
     <script src="../Assets/friend-invite-enhanced.js" defer></script>
     <script src="../Assets/profile-viewer.js" defer></script>
@@ -156,6 +158,15 @@
             <button class="tab-btn px-6 py-3 rounded-xl font-black text-sm" data-tab="tags">
                 🏷️ الالقاب
             </button>
+            <button class="tab-btn px-6 py-3 rounded-xl font-black text-sm" data-tab="bgs">
+                🖼️ خلفيات البطاقة
+            </button>
+            <button class="tab-btn px-6 py-3 rounded-xl font-black text-sm" data-tab="frames">
+                🪞 إطارات البطاقة
+            </button>
+            <button class="tab-btn px-6 py-3 rounded-xl font-black text-sm" data-tab="keys">
+                🔑 مفاتيح المواصفات
+            </button>
             <button class="tab-btn px-6 py-3 rounded-xl font-black text-sm" data-tab="ranks">
                 🎖️ الرتب
             </button>
@@ -175,6 +186,36 @@
         <!-- Tags Tab -->
         <div id="tab-tags" class="tab-content hidden">
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4" id="tagsGrid"></div>
+        </div>
+
+        <!-- Card backgrounds -->
+        <div id="tab-bgs" class="tab-content hidden">
+            <p class="text-sm text-gray-400 mb-4">خلفيات تظهر على بطاقة اسمك داخل الغرفة. خلفيات الرتب (Diamond / Crown / Ace) تُفتح تلقائياً بالرتبة ولا تُباع.</p>
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4" id="bgsGrid"></div>
+        </div>
+
+        <!-- Card frames -->
+        <div id="tab-frames" class="tab-content hidden">
+            <p class="text-sm text-gray-400 mb-4">إطارات تحيط ببطاقة اسمك. إطارات الرتب تُفتح تلقائياً بالرتبة ولا تُباع.</p>
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4" id="framesGrid"></div>
+        </div>
+
+        <!-- Spec keys -->
+        <div id="tab-keys" class="tab-content hidden">
+            <div class="glass rounded-2xl p-5 max-w-xl">
+                <div class="flex items-center gap-3 mb-3"><span style="font-size:34px">🔑</span>
+                    <div><h3 class="font-black text-lg">مفتاح كشف المواصفات</h3>
+                        <p class="text-xs text-gray-400">كل مفتاح يكشف لك مواصفة واحدة عن الكلمة السرية عندما تكون جاسوساً.</p></div></div>
+                <ul class="text-xs text-gray-400 mb-4 list-disc pr-5 leading-7">
+                    <li>تقدر تشتري حتى 5 مفاتيح، ولا يمكن حمل أكثر من 5 في نفس الوقت.</li>
+                    <li>في الجولة الواحدة تستخدم مفتاحين فقط (وليس كل المفاتيح).</li>
+                </ul>
+                <div class="flex items-center justify-between mb-4">
+                    <span class="font-black">لديك: <span id="keyCount" style="color:#a3e635">0</span> / 5</span>
+                    <span class="font-black">السعر: <span id="keyPrice" style="color:#a3e635">100</span> 🪙</span>
+                </div>
+                <button id="buyKeyBtn" onclick="window.buySpecKey()" class="w-full py-3 rounded-xl font-black" style="background:#a3e635;color:#000;">شراء مفتاح 🔑</button>
+            </div>
         </div>
 
         <!-- Ranks Tab -->
@@ -210,6 +251,8 @@
         let userCoins = 0;
         let userRankPoints = 0;
         let userInventory = { nameThemes: [], nameTags: [] };
+        let userSpecKeys = 0, userCardBg = null, userCardFrame = null;
+        const SPEC_KEY_PRICE = 100, SPEC_KEY_MAX = 5;
         
         onAuthStateChanged(auth, async (user) => {
     if (user) {
@@ -254,8 +297,13 @@ function hideError() {
             const inv = data.inventory || {};
             userInventory = {
                 nameThemes: Array.isArray(inv.nameThemes) ? inv.nameThemes : ['default'],
-                nameTags: Array.isArray(inv.nameTags) ? inv.nameTags : []
+                nameTags: Array.isArray(inv.nameTags) ? inv.nameTags : [],
+                cardBgs: Array.isArray(inv.cardBgs) ? inv.cardBgs : [],
+                cardFrames: Array.isArray(inv.cardFrames) ? inv.cardFrames : []
             };
+            userSpecKeys = Math.max(0, Math.min(SPEC_KEY_MAX, parseInt(data.specKeys) || 0));
+            userCardBg = data.cardBg || null;
+            userCardFrame = data.cardFrame || null;
         } else {
             userCoins = 0;
             userRankPoints = 0;
@@ -281,6 +329,8 @@ function hideError() {
     renderThemes();
     renderTags();
     renderRanks(userRankPoints);
+    renderCosmetics();
+    renderKeys();
 
 }
         
@@ -649,6 +699,70 @@ window.activateTheme = async function(themeKey) {
             }
         };
         
+        // ── Card backgrounds / frames / spec keys ──────────────────────────────────────
+        const TIER_LABEL = { diamond: 'Diamond', crown: 'Crown', ace: 'Ace' };
+        function cosCard(kind, id, it) {
+            const owned = kind === 'bg' ? (userInventory.cardBgs || []) : (userInventory.cardFrames || []);
+            const usable = it.rank ? window.EJCos.isUsable(id, kind, userRankPoints) : owned.includes(id);
+            const equipped = (kind === 'bg' ? userCardBg : userCardFrame) === id;
+            const preview = `<div class="rounded-xl p-4 mb-3 text-center font-black border-2 border-white/10 ${kind === 'bg' ? 'cos-bg-' + id : 'cos-fr-' + id}" style="${kind === 'frame' ? 'background:#0a0a0a;' : ''}">اسمك</div>`;
+            let action;
+            if (equipped) action = `<button class="w-full py-2 rounded-xl font-black text-sm" style="background:rgba(255,255,255,.1);border:1px solid #a3e635;color:#a3e635" onclick="window.equipCos('${kind}','${id}')">✓ مُفعّل — إزالة</button>`;
+            else if (usable) action = `<button class="w-full py-2 rounded-xl font-black text-sm" style="background:#a3e635;color:#000" onclick="window.equipCos('${kind}','${id}')">تفعيل</button>`;
+            else if (it.rank) action = `<div class="w-full py-2 rounded-xl text-center text-xs font-bold" style="background:rgba(255,255,255,.05);color:#9ca3af">🔒 يُفتح برتبة ${TIER_LABEL[it.rank]}</div>`;
+            else action = `<button class="w-full py-2 rounded-xl font-black text-sm" style="background:#00f2ff;color:#000" onclick="window.buyCos('${kind}','${id}')">شراء ${it.price} 🪙</button>`;
+            return `<div class="glass rounded-2xl p-4">${preview}<div class="flex items-center justify-between mb-3"><span class="font-black">${it.name}</span><span class="text-xs" style="color:#9ca3af">${it.rank ? '🎖️ رتبة' : (it.animated ? '✨ متحرك' : 'ثابت')}</span></div>${action}</div>`;
+        }
+        function renderCosmetics() {
+            if (!window.EJCos) return;
+            const bg = document.getElementById('bgsGrid'), fr = document.getElementById('framesGrid');
+            const sortFn = (cat) => Object.keys(cat).sort((a, b) => (cat[a].rank ? 1 : 0) - (cat[b].rank ? 1 : 0) || (cat[a].price || 0) - (cat[b].price || 0));
+            if (bg) bg.innerHTML = sortFn(EJCos.backgrounds).map(id => cosCard('bg', id, EJCos.backgrounds[id])).join('');
+            if (fr) fr.innerHTML = sortFn(EJCos.frames).map(id => cosCard('frame', id, EJCos.frames[id])).join('');
+        }
+        window.buyCos = async function(kind, id) {
+            try {
+                const it = (kind === 'bg' ? EJCos.backgrounds : EJCos.frames)[id];
+                if (!it || it.rank) return;
+                const field = kind === 'bg' ? 'cardBgs' : 'cardFrames';
+                const owned = userInventory[field] || [];
+                if (owned.includes(id)) { showError('✅ تمتلكه بالفعل'); return; }
+                if (userCoins < it.price) { showError('⚠️ ليس لديك عملات كافية!'); return; }
+                const next = [...owned, id];
+                await update(ref(db, `players/${currentUser.uid}`), { coins: userCoins - it.price, [`inventory/${field}`]: next });
+                userCoins -= it.price; userInventory[field] = next;
+                document.getElementById('coinBalance').textContent = userCoins;
+                renderCosmetics(); hideError();
+                if (window.UIToast) UIToast(`✅ تم شراء «${it.name}»`);
+            } catch (e) { showError('❌ حدث خطأ أثناء الشراء: ' + e.message); }
+        };
+        window.equipCos = async function(kind, id) {
+            try {
+                const cur = kind === 'bg' ? userCardBg : userCardFrame;
+                const next = cur === id ? null : id;
+                if (next && !(EJCos.isUsable(id, kind, userRankPoints) && ((kind === 'bg' ? EJCos.backgrounds : EJCos.frames)[id].rank || (userInventory[kind === 'bg' ? 'cardBgs' : 'cardFrames'] || []).includes(id)))) return;
+                await update(ref(db, `players/${currentUser.uid}`), { [kind === 'bg' ? 'cardBg' : 'cardFrame']: next });
+                if (kind === 'bg') userCardBg = next; else userCardFrame = next;
+                renderCosmetics();
+            } catch (e) { showError('❌ فشل التفعيل: ' + e.message); }
+        };
+        function renderKeys() {
+            const c = document.getElementById('keyCount'); if (c) c.textContent = userSpecKeys;
+            const p = document.getElementById('keyPrice'); if (p) p.textContent = SPEC_KEY_PRICE;
+            const b = document.getElementById('buyKeyBtn'); if (b) { b.disabled = userSpecKeys >= SPEC_KEY_MAX; b.style.opacity = b.disabled ? '.5' : '1'; b.textContent = userSpecKeys >= SPEC_KEY_MAX ? 'وصلت للحد الأقصى (5)' : 'شراء مفتاح 🔑'; }
+        }
+        window.buySpecKey = async function() {
+            try {
+                if (userSpecKeys >= SPEC_KEY_MAX) { showError('⚠️ لا يمكنك حمل أكثر من 5 مفاتيح'); return; }
+                if (userCoins < SPEC_KEY_PRICE) { showError('⚠️ ليس لديك عملات كافية!'); return; }
+                await update(ref(db, `players/${currentUser.uid}`), { coins: userCoins - SPEC_KEY_PRICE, specKeys: userSpecKeys + 1 });
+                userCoins -= SPEC_KEY_PRICE; userSpecKeys += 1;
+                document.getElementById('coinBalance').textContent = userCoins;
+                renderKeys(); hideError();
+                if (window.UIToast) UIToast('🔑 تم شراء مفتاح');
+            } catch (e) { showError('❌ حدث خطأ أثناء الشراء: ' + e.message); }
+        };
+
         // Tab switching
         document.querySelectorAll('.tab-btn').forEach(btn => {
             btn.addEventListener('click', () => {
@@ -663,5 +777,6 @@ window.activateTheme = async function(themeKey) {
         });
     </script>
     
+    <script src="../Assets/tutorial.js" defer></script>
 </body>
 </html>

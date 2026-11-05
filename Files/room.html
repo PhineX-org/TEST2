@@ -10,6 +10,10 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css"/>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
+    <script src="../Assets/presence.js"></script>
+    <script src="../Assets/cosmetics.js"></script>
+    <script src="../Assets/emoji-reactions.js"></script>
+    <script src="../Assets/room-reactions.js"></script>
     <script src="../Assets/dialogs.js"></script>
     <script src="../Assets/name-themes.js"></script>
    <script src="../Assets/game-words.js"></script>
@@ -320,6 +324,7 @@
         }
 
         /* Modal overlay */
+        .modal-overlay.hidden { display: none; }   /* explicit, so panels stay closed whatever order the Tailwind CDN stylesheet lands in */
         .modal-overlay {
             position: fixed;
             inset: 0;
@@ -586,6 +591,41 @@
             margin-left: 8px;
         }
     </style>
+
+    <style id="v4-layout">
+    /* ═══════════ v4 LAYOUT — phone / tablet / laptop / huge screens ═══════════ */
+    /* player cards never overflow: fluid columns, shrinkable children */
+    .player-grid { grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)) !important; }
+    .player-grid > * { min-width: 0; }
+    #playersList { padding-right: 0 !important; }
+
+    /* PHONE: one compact column in the lobby, two for vote / suspect / word cards */
+    @media (max-width: 640px) {
+        #playersList { grid-template-columns: minmax(0, 1fr) !important; max-height: none !important; overflow: visible !important; }
+        #playersList > div { padding: 8px 10px !important; }
+        #voteCards, #suspectsList, #wordChoices { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; }
+        #waitingScreen > .glass { padding: 16px !important; border-radius: 22px; }
+        #roomCodeDisplay { font-size: 2.1rem !important; }
+        #hostControls { padding: 12px !important; }
+        #startBtn { position: sticky; bottom: calc(92px + env(safe-area-inset-bottom)); z-index: 5; box-shadow: 0 10px 30px rgba(0,0,0,.6); }
+        #gameContainer { align-items: flex-start !important; }
+    }
+
+    /* LAPTOP / DESKTOP (≥1100px): two-column lobby — players on one side, settings + start on the other */
+    @media (min-width: 1100px) {
+        #waitingScreen { max-width: 1180px; }
+        #waitingScreen > .glass { display: grid; grid-template-columns: minmax(0, 1.65fr) minmax(320px, 1fr); column-gap: 28px; align-items: start; }
+        #waitingScreen > .glass > * { grid-column: 2; }
+        #waitingScreen > .glass > :nth-child(1) { grid-column: 1 / -1; }
+        #waitingScreen > .glass > :nth-child(5) { grid-column: 1; grid-row: 2 / span 8; }
+        #waitingScreen #playersList { max-height: none !important; overflow: visible; }
+        #discussionScreen, #votingScreen, #spyGuessScreen { max-width: 1080px; }
+    }
+
+    /* HUGE DISPLAYS: scale the whole interface up so it never looks tiny */
+    @media (min-width: 1700px) { html { font-size: 18px; } #waitingScreen { max-width: 1400px; } }
+    @media (min-width: 2300px) { html { font-size: 22px; } #waitingScreen { max-width: 1700px; } }
+    </style>
 </head>
 <body>
 
@@ -600,6 +640,43 @@
                 class="px-6 py-2 rounded-xl bg-white/10 hover:bg-white/20 border-2 border-white/20 transition-all text-sm">
                 <i class="fas fa-arrow-right ml-2"></i>العودة للقائمة الرئيسية
             </button>
+        </div>
+    </div>
+
+    <div id="closingBanner" class="hidden" style="position:fixed;top:12px;left:50%;transform:translateX(-50%);z-index:99999;background:#7f1d1d;color:#fff;border:2px solid #ef4444;border-radius:14px;padding:10px 18px;font-weight:900;font-size:14px;box-shadow:0 8px 30px rgba(0,0,0,.6);max-width:92vw;text-align:center;"></div>
+
+    <div id="roomSettingsModal" style="display:none;position:fixed;inset:0;z-index:99990;background:rgba(0,0,0,.75);align-items:flex-end;justify-content:center;padding:12px;" onclick="if(event.target===this)closeRoomSettings()">
+        <div style="width:100%;max-width:440px;background:#000;border:2px solid rgba(163,230,53,.5);border-radius:20px;padding:20px;box-shadow:0 0 40px rgba(163,230,53,.15);">
+            <h3 class="font-black text-lg mb-4" style="color:#a3e635;"><i class="fas fa-gear ml-2"></i>إعدادات اللعبة</h3>
+            <div id="rsSpyRow" class="mb-4">
+                <label class="text-xs opacity-60 block mb-2">عدد الجواسيس</label>
+                <select id="rsSpies" class="w-full p-3 rounded-xl font-bold text-sm" style="background:rgba(0,0,0,.7);border:2px solid rgba(163,230,53,.3);"></select>
+                <p class="text-xs opacity-50 mt-1">جاسوس واحد حتى 4 لاعبين · جاسوسان من 5 · ثلاثة من 7</p>
+            </div>
+            <label class="flex items-center justify-between mb-3 cursor-pointer">
+                <span class="font-bold text-sm">⏱️ مؤقت النقاش والتصويت</span>
+                <input id="rsTimerOn" type="checkbox" onchange="rsToggleTimer()" style="width:22px;height:22px;accent-color:#a3e635;">
+            </label>
+            <div id="rsTimerRows" class="grid grid-cols-2 gap-3 mb-4">
+                <div>
+                    <label class="text-xs opacity-60 block mb-2">وقت النقاش</label>
+                    <select id="rsDisc" class="w-full p-3 rounded-xl font-bold text-sm" style="background:rgba(0,0,0,.7);border:2px solid rgba(163,230,53,.3);">
+                        <option value="60">دقيقة</option><option value="120">دقيقتان</option><option value="180">3 دقائق</option>
+                        <option value="300">5 دقائق</option><option value="600">10 دقائق</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="text-xs opacity-60 block mb-2">وقت التصويت</label>
+                    <select id="rsVote" class="w-full p-3 rounded-xl font-bold text-sm" style="background:rgba(0,0,0,.7);border:2px solid rgba(163,230,53,.3);">
+                        <option value="30">30 ثانية</option><option value="45">45 ثانية</option><option value="60">دقيقة</option>
+                        <option value="90">90 ثانية</option><option value="120">دقيقتان</option>
+                    </select>
+                </div>
+            </div>
+            <div class="flex gap-3">
+                <button onclick="closeRoomSettings()" class="flex-1 py-3 rounded-xl font-bold text-sm bg-white/10 border border-white/20">إلغاء</button>
+                <button onclick="saveRoomSettings()" class="flex-1 py-3 rounded-xl font-black text-sm" style="background:#a3e635;color:#000;">حفظ</button>
+            </div>
         </div>
     </div>
 
@@ -651,6 +728,7 @@
                                 <option value="jobs">🛠️ مهن ووظائف</option>
                                 <option value="companies">🏢 شركات عالمية</option>
                                 <option value="football_teams">⚽ أندية كرة قدم</option>
+                                <option value="famous_players">🌟 لاعبين مشهورين</option>
                             </select>
                         </div>
 
@@ -662,6 +740,14 @@
                             </button>
                         </div>
                     </div>
+                </div>
+
+                <div class="mb-6">
+                    <p id="roomSettingsSummary" class="text-xs opacity-70 text-center mb-3"></p>
+                    <button id="openSettingsBtn" onclick="openRoomSettings()" class="hidden w-full px-4 py-3 rounded-xl font-black text-sm"
+                        style="background:rgba(163,230,53,.12);border:2px solid rgba(163,230,53,.45);color:#a3e635;">
+                        <i class="fas fa-gear ml-2"></i>إعدادات اللعبة (الجواسيس · المؤقت)
+                    </button>
                 </div>
 
                 <!-- AI Host Controls (AI rooms only) -->
@@ -778,7 +864,7 @@
                             <div>
                                 <p class="text-xs font-black" style="color:#a3e635;">تلميح للجاسوس فقط</p>
                                 <p class="text-xs text-gray-400">
-                                    تلميحات متبقية: <span id="hintBalance" class="font-black" style="color:#a3e635;">3</span> / 3
+                                    تلميحات متبقية: <span id="hintBalance" class="font-black" style="color:#a3e635;">2</span> / 2
                                 </p>
                             </div>
                         </div>
@@ -788,6 +874,16 @@
                             اكشف تلميحاً 🔍
                         </button>
                     </div>
+                    <div id="specKeySection" class="mb-3 rounded-xl p-3" style="background:rgba(0,0,0,.3);border:1px solid rgba(0,242,255,.3);">
+                        <div class="flex flex-wrap items-center justify-between gap-2">
+                            <p class="text-xs font-black" style="color:#00f2ff;">🔑 مفاتيح المواصفات: <span id="specKeyBal">0</span>
+                                <span class="opacity-60 font-bold"> · متبقي لك <span id="specUsesLeft">2</span> من 2 في هذه الجولة</span></p>
+                            <button id="useSpecKeyBtn" onclick="useSpecKey()" class="px-3 py-2 rounded-xl font-black text-xs"
+                                style="background:rgba(0,242,255,.18);border:2px solid rgba(0,242,255,.55);color:#00f2ff;">اكشف مواصفة 🔑</button>
+                        </div>
+                        <div id="specList" class="flex flex-col gap-1 mt-2"></div>
+                        <p class="text-[10px] opacity-50 mt-2">المفاتيح تُشترى من المتجر (حتى 5). كل مفتاح يكشف مواصفة عن الكلمة السرية.</p>
+                    </div>
                     <div id="hintDisplay" class="hidden rounded-xl p-3" 
                          style="background:rgba(0,0,0,.3);border:1px solid rgba(163,230,53,.2);">
                         <p class="text-xs font-bold mb-2" style="color:rgba(255,255,255,.55);">تلميحات مكشوفة:</p>
@@ -795,6 +891,7 @@
                     </div>
                 </div>
 
+                <!-- placeholder so spec-key block can be injected inside the spy section -->
                 <!-- Move to Voting Button -->
                 <button id="moveToVotingBtn" onclick="readyForVoting()"
                     class="w-full bg-gradient-to-r from-purple-600 to-pink-600 py-4 rounded-2xl font-black text-sm shadow-xl hover:scale-102 transition-all uppercase tracking-wider border-2 border-purple-400/50">
@@ -812,7 +909,13 @@
                 <h2 class="text-2xl font-black mb-4 text-center neon-text">
                     <i class="fas fa-vote-yea ml-2"></i>التصويت
                 </h2>
-                <p class="text-sm opacity-70 mb-6 text-center">اختر اللاعب الذي تشك أنه الجاسوس</p>
+                <p class="text-sm opacity-70 mb-3 text-center">اختر اللاعب الذي تشك أنه الجاسوس</p>
+                <div class="text-center mb-5">
+                    <span class="inline-flex items-center gap-2 px-5 py-2 rounded-full glass border border-primary/30">
+                        <i class="fas fa-clock text-warning"></i>
+                        <span id="votingTimer" class="font-black text-xl neon-text">∞</span>
+                    </span>
+                </div>
 
                 <div id="voteCards" class="grid player-grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 mb-6 max-h-96 overflow-y-auto custom-scrollbar pr-2">
                     <!-- Voting cards -->
@@ -979,7 +1082,7 @@
             </div>
 
             <div class="flex gap-2">
-                <input id="chatInput" type="text" placeholder="اكتب رسالة..." maxlength="200"
+                <input id="chatInput" type="text" placeholder="اكتب رسالة... (100 حرف)" maxlength="100"
                     class="flex-1 bg-black/40 border-2 border-primary/20 focus:border-primary rounded-xl px-4 py-3 outline-none"
                     onkeypress="if(event.key==='Enter')sendChatMessage()">
                 <button onclick="sendChatMessage()" class="btn-gradient px-6 py-3 rounded-xl">
@@ -1227,7 +1330,7 @@
         
         if (!roomCode || roomCode.trim() === '') {
             console.error('No room code in URL');
-            alert('لم يتم توفير كود الغرفة');
+            await UIAlert('لم يتم توفير كود الغرفة', { type: 'error' });
             window.location.href = 'home.html';
         }
 
@@ -1327,6 +1430,11 @@
                 setupRoomListener();
                 setupChatListener();
                 setupFriendsListener();
+                setupReactions();
+                setupEntryFx();
+                refreshSpecKeyBalance();
+                // remember the room so the home page can offer "Rejoin game?" if the tab is closed mid-game
+                update(ref(db, `players/${myUid}`), { lastRoom: { code: window.gameState.roomCode, ts: Date.now() } }).catch(() => {});
             } catch (error) {
                 console.error('Error in auth state change:', error);
                 alert('حدث خطأ: ' + error.message);
@@ -1338,6 +1446,47 @@
         // ROOM MANAGEMENT
         // ═══════════════════════════════════════════════════════════
 
+// ═══════════════════════════════════════════════════════════
+// REMAKE: shared room helpers (15 players, settings, spies, timers)
+// ═══════════════════════════════════════════════════════════
+const MAX_PLAYERS = 15;
+const STAGE_LIMIT_MS = 20 * 60 * 1000;      // a room is closed after 20 minutes in the same stage
+const CLOSING_MS = 10 * 1000;               // ...preceded by a 10 second countdown
+let _srvOffset = 0;
+onValue(ref(db, '.info/serverTimeOffset'), s => { _srvOffset = Number(s.val()) || 0; });
+const nowMs = () => Date.now() + _srvOffset;
+const roomMax = r => Number(r && r.maxPlayers) || MAX_PLAYERS;
+function spyLimitFor(n) { return n >= 7 ? 3 : n >= 5 ? 2 : 1; }   // 1 spy up to 4 players, 2 at 5+, 3 at 7+
+function roomSettings(r) {
+    const s = (r && r.settings) || {};
+    return {
+        spyCount: Math.max(1, Number(s.spyCount) || 1),
+        timerOn: !!s.timerOn,
+        discussionSec: Number(s.discussionSec) || 180,
+        votingSec: Number(s.votingSec) || 60
+    };
+}
+function aliveIds(r) {
+    const el = (r && r.eliminated) || {};
+    return Object.keys((r && r.players) || {}).filter(u => !el[u]);
+}
+function isEliminated(uid) { return !!(window.gameState.roomData?.eliminated?.[uid]); }
+function phaseDeadline(r, which) {
+    const rs = roomSettings(r);
+    if (!rs.timerOn) return null;
+    return nowMs() + (which === 'voting' ? rs.votingSec : rs.discussionSec) * 1000;
+}
+// everything a finished / abandoned round leaves behind (used by "play again" and by ghost-room recycling)
+function roomResetFields() {
+    return {
+        status: 'waiting', roles: null, secretWord: null, spyId: null, spyIds: null, spyCount: null,
+        eliminated: null, round: null, phaseEndsAt: null, closingAt: null, noVotes: null, reactions: null, specUses: null, specRevealed: null, aiMemory: null,
+        currentRevealIndex: null, revealOrder: null, suspects: null, votingReady: null, votes: null,
+        tiedPlayers: null, votedOutSpy: null, votedOutInnocent: null, winner: null,
+        spyGuessedCorrectly: null, spyGuessedWrong: null, aiTurn: null, stageAt: nowMs()
+    };
+}
+
 async function joinRoom(uid, username) {
     try {
         const roomRef = ref(db, `rooms/${window.gameState.roomCode}`);
@@ -1345,7 +1494,7 @@ async function joinRoom(uid, username) {
         
         if (!roomSnap.exists()) {
             console.error('Room does not exist');
-            alert('الغرفة غير موجودة');
+            await UIAlert('الغرفة غير موجودة', { type: 'error' });
             window.location.href = 'home.html';
             return;
         }
@@ -1357,14 +1506,24 @@ async function joinRoom(uid, username) {
         // creation time, in home.html) — never a one-time client flag. Recomputing it
         // here means it's correct for the creator, every joiner, and on every refresh
         // or rejoin.
-        const amHost = !!roomData.hostId && roomData.hostId === uid;
+        let amHost = !!roomData.hostId && roomData.hostId === uid;
+        // Ghost room: every human left, the room stayed. The first person to come back becomes its host
+        // and the stale round (if any) is cleared so they land in a clean waiting screen.
+        {
+            const humansIn = Object.values(roomData.players || {}).filter(p => !p.isAI).length;
+            const alreadyIn = !!(roomData.players && roomData.players[uid]);
+            if (!amHost && !alreadyIn && humansIn === 0) {
+                amHost = true;
+                await update(roomRef, { hostId: uid, ...(roomData.status && roomData.status !== 'waiting' ? roomResetFields() : { stageAt: nowMs() }) });
+            }
+        }
         window.gameState.isHost = amHost;
         localStorage.setItem('isHost', amHost ? 'true' : 'false');
         
         // Check if banned
         const banSnap = await get(ref(db, `banned_users/${uid}`));
         if (banSnap.exists()) {
-            alert('لقد تم حظرك من اللعبة');
+            await UIAlert('لقد تم حظرك من اللعبة', { type: 'error' });
             window.location.href = 'home.html';
             return;
         }
@@ -1373,8 +1532,8 @@ async function joinRoom(uid, username) {
         const playerCount = roomData.players ? Object.keys(roomData.players).length : 0;
         const isPlayerInRoom = roomData.players && roomData.players[uid];
         
-        if (playerCount >= 10 && !isPlayerInRoom) {
-            alert('الغرفة ممتلئة (10/10)');
+        if (playerCount >= roomMax(roomData) && !isPlayerInRoom) {
+            await UIAlert(`الغرفة ممتلئة (${roomMax(roomData)}/${roomMax(roomData)})`, { type: 'error' });
             window.location.href = 'home.html';
             return;
         }
@@ -1393,7 +1552,9 @@ async function joinRoom(uid, username) {
             isHost: amHost,
             nameTheme: playerProfile.activeTheme || playerProfile.nameTheme || 'default',
             nameTag: playerProfile.activeTitle || playerProfile.nameTag || null,
-            rankPoints: playerProfile.rankPoints || 0
+            rankPoints: playerProfile.rankPoints || 0,
+            cardBg: playerProfile.cardBg || null,
+            cardFrame: playerProfile.cardFrame || null
         });
 
         // Setup disconnect handler
@@ -1442,21 +1603,38 @@ async function joinRoom(uid, username) {
         function setupRoomListener() {
             const roomRef = ref(db, `rooms/${window.gameState.roomCode}`);
             
-            onValue(roomRef, (snapshot) => {
+            onValue(roomRef, async (snapshot) => {
                 const roomData = snapshot.val();
                 if (!roomData) {
                     console.error('Room deleted');
-                    alert('تم حذف الغرفة');
+                    if (window.gameState._sawClosing) await UIAlert('تم إغلاق الغرفة بسبب عدم النشاط', { type: 'warning' });
+                    else await UIAlert('تم حذف الغرفة', { type: 'warning' });
                     window.location.href = 'home.html';
                     return;
                 }
 
                 console.log('Room data updated:', roomData);
 
+                window.gameState.roomData = roomData;
                 window.gameState.players = roomData.players || {};
+                window.gameState.maxPlayers = roomMax(roomData);
+                {   // host is whoever the room says it is (it can change when the host leaves)
+                    const _u = window.gameState.currentUser?.uid;
+                    if (_u) window.gameState.isHost = !!roomData.hostId && roomData.hostId === _u;
+                }
                 window.gameState.currentStatus = roomData.status || 'waiting';
                 window.gameState.category = roomData.category || 'places';
                 window.gameState.secretWord = roomData.secretWord;
+
+                // Keep my role in sync with the room on EVERY update — before the screen is chosen. It used to be set
+                // only when my own reveal card was shown, so reloading during discussion lost the spy UI / hints / result data.
+                {
+                    const _me = window.gameState.currentUser?.uid;
+                    if (_me) {
+                        if (roomData.status === 'waiting') window.gameState.myRole = null;
+                        else if (roomData.roles && roomData.roles[_me]) window.gameState.myRole = roomData.roles[_me];
+                    }
+                }
                 
                 // Update UI based on status
                 updateGameScreen(roomData.status || 'waiting');
@@ -1475,6 +1653,7 @@ async function joinRoom(uid, username) {
                 if (myUid && roomData.status && roomData.status !== _lastSyncedPhase) {
                     _lastSyncedPhase = roomData.status;
                     update(ref(db, `players/${myUid}/presence`), { phase: roomData.status }).catch(() => {});
+                    if (window.EJPresence) EJPresence.setRoom({ code: window.gameState.roomCode, phase: roomData.status });
                 }
                 
                 // Host-only controls: show/hide + populate for whichever role this
@@ -1493,6 +1672,8 @@ async function joinRoom(uid, username) {
                     startBtnEl?.classList.add('hidden');
                     waitingMsgEl?.classList.remove('hidden');
                 }
+
+                remakeOnRoomUpdate(roomData);
 
                 // phase re-entry guards (see handleDiscussionStatus / handleVotingStatus)
                 if (roomData.status !== 'discussion') window.gameState._discInit = false;
@@ -1578,7 +1759,7 @@ async function joinRoom(uid, username) {
             const players = window.gameState.players;
             const playerCount = Object.keys(players).length;
             
-            document.getElementById('playerCount').textContent = `${playerCount}/10`;
+            document.getElementById('playerCount').textContent = `${playerCount}/${window.gameState.maxPlayers || MAX_PLAYERS}`;
             
             container.innerHTML = '';
             
@@ -1635,6 +1816,7 @@ async function joinRoom(uid, username) {
                     </div>
                 `;
                 container.appendChild(playerCard);
+                if (window.EJCos) EJCos.decorate(playerCard, player);
                 const nameEl_w = playerCard.querySelector(`[data-uid="${uid}"]`);
                 if (nameEl_w && window.NameThemes) {
                     window.NameThemes.applyPlayerStyle(nameEl_w, {
@@ -1694,15 +1876,28 @@ async function joinRoom(uid, username) {
 
         window.kickPlayer = async function(uid) {
             if (!window.gameState.isHost) return;
-            if (!confirm('هل تريد طرد هذا اللاعب؟')) return;
+            if (!(await UIConfirm('هل تريد طرد هذا اللاعب؟', { title: 'طرد لاعب', danger: true, confirmText: 'طرد' }))) return;
             await remove(ref(db, `rooms/${window.gameState.roomCode}/players/${uid}`));
         };
 
         window.leaveRoom = async function() {
-            if (!confirm('هل تريد مغادرة الغرفة؟')) return;
-            await remove(ref(db, `rooms/${window.gameState.roomCode}/players/${window.gameState.currentUser.uid}`));
-            if (window.gameState.isHost) {
-                await remove(ref(db, `rooms/${window.gameState.roomCode}`));
+            if (!(await UIConfirm('هل تريد مغادرة الغرفة؟', { title: 'مغادرة الغرفة', confirmText: 'مغادرة' }))) return;
+            const _rRef = ref(db, `rooms/${window.gameState.roomCode}`);
+            const _me = window.gameState.currentUser.uid;
+            await remove(ref(db, `rooms/${window.gameState.roomCode}/players/${_me}`));
+            if (window.gameState.mode === 'ai') {
+                // practice rooms have nothing to come back to
+                if (window.gameState.isHost) await remove(_rRef);
+            } else {
+                // online rooms survive: the host role moves to the longest-waiting human, and if nobody is left the room
+                // stays as an empty "ghost" that the next visitor can bring back to life (clean up happens by stage timeout only)
+                const left = Object.entries(window.gameState.players || {}).filter(([u, p]) => u !== _me && !p.isAI);
+                if (window.gameState.isHost && left.length) {
+                    left.sort((a, b) => (Number(a[1].joinedAt) || 0) - (Number(b[1].joinedAt) || 0));
+                    await update(_rRef, { hostId: left[0][0] }).catch(() => {});
+                } else if (!left.length) {
+                    await update(_rRef, { ...roomResetFields(), hostId: _me }).catch(() => {});
+                }
             }
             // Clear presence (so "ask to join" stops offering this room to
             // friends) and the stale currentRoom/isHost bookkeeping — none of
@@ -1710,6 +1905,8 @@ async function joinRoom(uid, username) {
             await update(ref(db, `players/${window.gameState.currentUser.uid}/presence`), {
                 inGame: false, phase: null, room: null
             }).catch(() => {});
+            await update(ref(db, `players/${window.gameState.currentUser.uid}`), { lastRoom: null }).catch(() => {});
+            if (window.EJPresence) EJPresence.setRoom(null);
             localStorage.removeItem('currentRoom');
             localStorage.setItem('isHost', 'false');
             window.location.href = 'home.html';
@@ -1730,8 +1927,12 @@ async function joinRoom(uid, username) {
 
             // Assign roles
             const playerIds = Object.keys(window.gameState.players);
-            const spyIndex = Math.floor(Math.random() * playerIds.length);
-            const spyId = playerIds[spyIndex];
+            const _rs = roomSettings(window.gameState.roomData);
+            const _maxSpies = window.gameState.mode === 'ai' ? 1 : spyLimitFor(playerIds.length);
+            const spyTotal = Math.max(1, Math.min(_rs.spyCount, _maxSpies));
+            const _shuffled = playerIds.slice().sort(() => Math.random() - 0.5);
+            const spyIds = _shuffled.slice(0, spyTotal);
+            const spyId = spyIds[0];
             
             // Select secret word (merge admin-added lists first)
             await ensureWordLists();
@@ -1741,7 +1942,7 @@ async function joinRoom(uid, username) {
             // Create roles
             const roles = {};
             playerIds.forEach(uid => {
-                roles[uid] = uid === spyId ? 'spy' : 'innocent';
+                roles[uid] = spyIds.includes(uid) ? 'spy' : 'innocent';
             });
 
             // AI bots never flip a card — only humans go through the reveal
@@ -1755,6 +1956,12 @@ async function joinRoom(uid, username) {
                 roles,
                 secretWord,
                 spyId,
+                spyIds,
+                spyCount: spyTotal,
+                eliminated: null,
+                round: 1,
+                phaseEndsAt: null,
+                closingAt: null,
                 currentRevealIndex: 0,
                 revealOrder: revealIds,
                 aiTurn: null,
@@ -1897,7 +2104,8 @@ async function joinRoom(uid, username) {
                 if (currentIndex >= revealOrder.length - 1) {
                     await update(roomRef, {
                         status: 'discussion',
-                        discussionStartedAt: serverTimestamp()
+                        discussionStartedAt: serverTimestamp(),
+                        phaseEndsAt: phaseDeadline(roomData, 'discussion')
                     });
                 } else {
                     await update(roomRef, {
@@ -1922,6 +2130,9 @@ async function joinRoom(uid, username) {
         // ═══════════════════════════════════════════════════════════
 
         async function handleDiscussionStatus() {
+            // role-dependent UI must follow myRole even when the one-time init below already ran (e.g. after a reload)
+            const _hs = document.getElementById('spyHintSection');
+            if (_hs) _hs.classList.toggle('hidden', window.gameState.myRole !== 'spy');
             if (window.gameState._discInit) return;
             window.gameState._discInit = true;
             window.gameState.spyHintsUsed = 0;
@@ -2047,15 +2258,17 @@ async function joinRoom(uid, username) {
                 return;
             }
 
-            const roomRef = ref(db, `rooms/${window.gameState.roomCode}`);
-            const snap = await get(roomRef);
-            const secretWord = snap.val()?.secretWord;
+            const MAX_HINTS = 2;
+            const snap = await get(ref(db, `rooms/${window.gameState.roomCode}/secretWord`));
+            const secretWord = snap.val();
             
             if (!secretWord) return;
 
+            // (the 2nd hint used an undefined variable `secretWordSpec` → ReferenceError; counters also disagreed 2 vs 3)
+            const letters = [...String(secretWord)].filter(c => c.trim());
             const hints = [
-                `عدد الحروف: ${secretWord.length}`,
-                `${secretWordSpec}`
+                `عدد الحروف: ${letters.length}`,
+                `تبدأ الكلمة بحرف: ${letters[0] || '؟'}`
             ];
             
             const hint = hints[window.gameState.spyHintsUsed];
@@ -2071,9 +2284,9 @@ async function joinRoom(uid, username) {
             hintItem.textContent = `${window.gameState.spyHintsUsed}. ${hint}`;
             hintList.appendChild(hintItem);
             
-            document.getElementById('hintBalance').textContent = 3 - window.gameState.spyHintsUsed;
+            document.getElementById('hintBalance').textContent = MAX_HINTS - window.gameState.spyHintsUsed;
             
-            if (window.gameState.spyHintsUsed >= 3) {
+            if (window.gameState.spyHintsUsed >= MAX_HINTS) {
                 document.getElementById('useHintBtn').disabled = true;
                 document.getElementById('useHintBtn').style.opacity = '0.5';
             }
@@ -2081,8 +2294,10 @@ async function joinRoom(uid, username) {
 
         function updateVotingReadyStatus() {
             const ready = window.gameState.votingReady;
-            const total = Object.values(window.gameState.players).filter(p => !p.isAI).length;
-            const readyCount = Object.keys(ready).length;
+            const _rd = window.gameState.roomData;
+            const _alive = new Set(aliveIds(_rd));
+            const total = Object.entries(window.gameState.players).filter(([u, p]) => !p.isAI && _alive.has(u)).length;
+            const readyCount = Object.keys(ready).filter(u => _alive.has(u)).length;
             
             document.getElementById('readyCount').textContent = readyCount;
             document.getElementById('totalPlayers').textContent = total;
@@ -2090,7 +2305,8 @@ async function joinRoom(uid, username) {
             if (readyCount >= Math.ceil(total / 2)) {
                 if (window.gameState.isHost) {
                     update(ref(db, `rooms/${window.gameState.roomCode}`), {
-                        status: 'voting'
+                        status: 'voting',
+                        phaseEndsAt: phaseDeadline(window.gameState.roomData, 'voting')
                     });
                 }
             }
@@ -2098,6 +2314,7 @@ async function joinRoom(uid, username) {
 
         window.readyForVoting = async function() {
             const myUid = window.gameState.currentUser.uid;
+            if (isEliminated(myUid)) return;
             await set(ref(db, `rooms/${window.gameState.roomCode}/votingReady/${myUid}`), true);
             document.getElementById('moveToVotingBtn').disabled = true;
             document.getElementById('moveToVotingBtn').textContent = '✓ جاهز';
@@ -2105,6 +2322,7 @@ async function joinRoom(uid, username) {
 
         function startDiscussionTimer() {
             document.getElementById('discussionTimer').textContent = '∞';
+            remakeTick();
         }
 
         // ═══════════════════════════════════════════════════════════
@@ -2120,8 +2338,9 @@ async function joinRoom(uid, username) {
                 window.gameState.votes = snapshot.val() || {};
                 updateVotingCards();
                 
-                const totalPlayers = Object.keys(window.gameState.players).length;
-                const votedCount = Object.keys(window.gameState.votes).length;
+                const _alv = new Set(aliveIds(window.gameState.roomData));
+                const totalPlayers = _alv.size;
+                const votedCount = Object.keys(window.gameState.votes).filter(u => _alv.has(u)).length;
                 
                 document.getElementById('votedCount').textContent = votedCount;
                 document.getElementById('totalVoters').textContent = totalPlayers;
@@ -2147,7 +2366,9 @@ async function joinRoom(uid, username) {
             
             const maxVotes = Math.max(...Object.values(voteCounts), 0);
             
+            const _aliveSet = new Set(aliveIds(window.gameState.roomData));
             Object.entries(players).forEach(([uid, player]) => {
+                if (!_aliveSet.has(uid)) return;   // caught spies are out of the round
                 const voteCount = voteCounts[uid] || 0;
                 const isMe = uid === window.gameState.currentUser.uid;
                 const iVoted = myVote === uid;
@@ -2158,7 +2379,7 @@ async function joinRoom(uid, username) {
                     iVoted ? 'voted' : isMostVoted ? 'most-voted' : 'border-white/10'
                 }`;
                 
-                if (!myVote && !isMe) {
+                if (!myVote && !isMe && !isEliminated(window.gameState.currentUser.uid)) {
                     card.onclick = () => castVote(uid);
                 }
                 
@@ -2178,6 +2399,7 @@ async function joinRoom(uid, username) {
                     </div>
                 `;
                 container.appendChild(card);
+                if (window.EJCos) EJCos.decorate(card, player);
                 const nameEl_v = card.querySelector(`[data-uid="${uid}"]`);
                 if (nameEl_v && window.NameThemes) {
                     window.NameThemes.applyPlayerStyle(nameEl_v, {
@@ -2192,6 +2414,7 @@ async function joinRoom(uid, username) {
 
         window.castVote = async function(targetUid) {
             const myUid = window.gameState.currentUser.uid;
+            if (isEliminated(myUid) || isEliminated(targetUid)) return;
             
             if (window.gameState.votes[myUid]) {
                 alert('لقد صوّت بالفعل');
@@ -2207,13 +2430,21 @@ async function joinRoom(uid, username) {
         };
 
         async function calculateVotingResults() {
-            const votes = window.gameState.votes;
+            const _alv2 = new Set(aliveIds(window.gameState.roomData));
+            const votes = {};
+            Object.entries(window.gameState.votes || {}).forEach(([voter, target]) => { if (_alv2.has(voter) && _alv2.has(target)) votes[voter] = target; });
             const voteCounts = {};
             
             Object.values(votes).forEach(targetUid => {
                 voteCounts[targetUid] = (voteCounts[targetUid] || 0) + 1;
             });
-            
+
+            if (!Object.keys(voteCounts).length) {   // timer ran out and nobody voted: nobody was caught
+                await update(ref(db, `rooms/${window.gameState.roomCode}`), {
+                    status: 'result', winner: 'spy', noVotes: true, resultId: Date.now(), phaseEndsAt: null
+                });
+                return;
+            }
             const maxVotes = Math.max(...Object.values(voteCounts));
             const mostVoted = Object.entries(voteCounts)
                 .filter(([_, count]) => count === maxVotes)
@@ -2240,7 +2471,8 @@ async function joinRoom(uid, username) {
             if (isSpy) {
                 await update(roomRef, {
                     status: 'spyGuess',
-                    votedOutSpy: votedUid
+                    votedOutSpy: votedUid,
+                    phaseEndsAt: null
                 });
             } else {
                 await update(roomRef, {
@@ -2347,16 +2579,34 @@ async function joinRoom(uid, username) {
                     });
                 }, 2000);
             } else {
-                result.textContent = '✗ تخمين خاطئ! الأبرياء يفوزون!';
-                result.style.color = '#22c55e';
-                setTimeout(async () => {
-                    await update(roomRef, {
-                        status: 'result',
-                        winner: 'innocent',
-                        spyGuessedWrong: true,
-                        resultId: Date.now()
-                    });
-                }, 2000);
+                const _rd = snap.val() || {};
+                const _caught = _rd.votedOutSpy;
+                const _left = (_rd.spyIds || []).filter(u => u !== _caught && !(_rd.eliminated || {})[u] && _rd.players && _rd.players[u]);
+                if (_left.length) {
+                    result.textContent = `✗ تخمين خاطئ! تم كشف جاسوس وبقي ${_left.length} — تبدأ جولة جديدة`;
+                    result.style.color = '#f59e0b';
+                    setTimeout(async () => {
+                        await update(roomRef, {
+                            status: 'discussion',
+                            [`eliminated/${_caught}`]: true,
+                            votes: null, votingReady: null, suspects: null, tiedPlayers: null, votedOutSpy: null,
+                            round: (Number(_rd.round) || 1) + 1,
+                            discussionStartedAt: serverTimestamp(),
+                            phaseEndsAt: phaseDeadline(_rd, 'discussion')
+                        });
+                    }, 2500);
+                } else {
+                    result.textContent = '✗ تخمين خاطئ! الأبرياء يفوزون!';
+                    result.style.color = '#22c55e';
+                    setTimeout(async () => {
+                        await update(roomRef, {
+                            status: 'result',
+                            winner: 'innocent',
+                            spyGuessedWrong: true,
+                            resultId: Date.now()
+                        });
+                    }, 2000);
+                }
             }
         };
 
@@ -2600,22 +2850,7 @@ async function joinRoom(uid, username) {
             window.gameState.spyHintsUsed = 0;
             
             const roomRef = ref(db, `rooms/${window.gameState.roomCode}`);
-            const resetFields = {
-                status: 'waiting',
-                roles: null,
-                secretWord: null,
-                spyId: null,
-                currentRevealIndex: null,
-                revealOrder: null,
-                suspects: null,
-                votingReady: null,
-                votes: null,
-                tiedPlayers: null,
-                votedOutSpy: null,
-                votedOutInnocent: null,
-                winner: null,
-                aiTurn: null
-            };
+            const resetFields = roomResetFields();
             // (update() throws on `undefined` values, so only add the field for AI rooms)
             if (window.gameState.mode === 'ai') resetFields.chat = null;
             await update(roomRef, resetFields);
@@ -2700,6 +2935,25 @@ async function joinRoom(uid, username) {
         // CHAT SYSTEM WITH MODERATION
         // ═══════════════════════════════════════════════════════════
 
+        // ── quick reactions (emoji + sound, floating with the sender's name) ──
+        function setupReactions() {
+            if (!window.RoomReactions) return;
+            const code = window.gameState.roomCode;
+            RoomReactions.init({
+                send: async (rx) => {
+                    const me = window.gameState.currentUser;
+                    const rRef = push(ref(db, `rooms/${code}/reactions`));
+                    await set(rRef, { uid: me.uid, name: window.gameState.players[me.uid]?.username || me.username || '', kind: rx.kind, v: rx.v, ts: Date.now() });
+                    setTimeout(() => remove(rRef).catch(() => {}), 6000);
+                }
+            });
+            onChildAdded(ref(db, `rooms/${code}/reactions`), (snap) => {
+                const r = snap.val();
+                if (!r || Date.now() - (Number(r.ts) || 0) > 5000) return;   // ignore old ones present when we joined
+                RoomReactions.show(r);
+            });
+        }
+
         function setupChatListener() {
             const chatRef = ref(db, `rooms/${window.gameState.roomCode}/chat`);
             
@@ -2711,6 +2965,7 @@ async function joinRoom(uid, username) {
                 }
                 displayChatMessage(message);
                 if (window.aiSpeakIfVoice) window.aiSpeakIfVoice(message);
+                try { aiRemember(message); } catch (e) {}
             });
         }
 
@@ -2745,7 +3000,7 @@ async function joinRoom(uid, username) {
 
         window.sendChatMessage = async function() {
             const input = document.getElementById('chatInput');
-            const text = input.value.trim();
+            const text = Array.from(input.value.trim()).slice(0, 100).join('');
             
             if (!text) return;
             
@@ -2784,7 +3039,11 @@ async function joinRoom(uid, username) {
             
             if (!panel.classList.contains('hidden')) {
                 document.getElementById('chatBtn').classList.remove('active');
-                document.getElementById('chatInput').focus();
+                const _ci = document.getElementById('chatInput');
+                if (!window._chatEmoji && window.EmojiPicker) {
+                    try { window._chatEmoji = new EmojiPicker(_ci, _ci.nextElementSibling); } catch (e) { console.warn('emoji picker', e); }
+                }
+                _ci.focus();
             }
         };
 
@@ -3173,17 +3432,25 @@ async function joinRoom(uid, username) {
                 return;
             }
             
-            const reportRef = ref(db, `reports/${Date.now()}`);
-            
+            const reportRef = push(ref(db, 'reports'));
+            const _me = window.gameState.currentUser;
+            const _myName = window.gameState.players[_me.uid]?.username || _me.username || localStorage.getItem('eljasus_user_name') || 'لاعب';
+            const _tName = window.gameState.players[targetUid]?.username || 'لاعب';
             await set(reportRef, {
-                reportedBy: window.gameState.currentUser.uid,
-                reportedByName: window.gameState.players[window.gameState.currentUser.uid]?.username,
+                // fields the admin panel reads
+                reportedUid: targetUid,
+                reportedUsername: _tName,
+                reportedByUid: _me.uid,
+                reportedByUsername: _myName,
+                // legacy names kept for older tools
+                reportedBy: _me.uid,
+                reportedByName: _myName,
                 targetUid,
-                targetName: window.gameState.players[targetUid]?.username,
+                targetName: _tName,
                 reason,
                 description,
                 roomCode: window.gameState.roomCode,
-                timestamp: serverTimestamp(),
+                timestamp: Date.now(),
                 status: 'pending'
             });
             
@@ -3261,6 +3528,209 @@ async function joinRoom(uid, username) {
         const botName = (uid) => window.gameState.players[uid]?.username || '؟';
         const aiRoomRef = () => ref(db, `rooms/${window.gameState.roomCode}`);
 
+// ═══════════════════════════════════════════════════════════
+// REMAKE: settings panel, timers, stage watchdog, host failover
+// ═══════════════════════════════════════════════════════════
+window.openRoomSettings = function () {
+    if (!window.gameState.isHost) return;
+    const r = window.gameState.roomData || {};
+    const rs = roomSettings(r);
+    const n = Object.keys(window.gameState.players || {}).length;
+    const lim = window.gameState.mode === 'ai' ? 1 : spyLimitFor(Math.max(n, 3));
+    const sel = document.getElementById('rsSpies');
+    sel.innerHTML = '';
+    for (let i = 1; i <= 3; i++) {
+        const o = document.createElement('option');
+        o.value = i; o.textContent = i === 1 ? 'جاسوس واحد' : `${i} جواسيس`;
+        if (i > lim) { o.disabled = true; o.textContent += i === 2 ? ' (يحتاج 5 لاعبين)' : ' (يحتاج 7 لاعبين)'; }
+        sel.appendChild(o);
+    }
+    sel.value = Math.min(rs.spyCount, lim);
+    document.getElementById('rsTimerOn').checked = rs.timerOn;
+    document.getElementById('rsDisc').value = String(rs.discussionSec);
+    document.getElementById('rsVote').value = String(rs.votingSec);
+    document.getElementById('rsTimerRows').style.display = rs.timerOn ? '' : 'none';
+    document.getElementById('rsSpyRow').style.display = window.gameState.mode === 'ai' ? 'none' : '';
+    document.getElementById('roomSettingsModal').style.display = 'flex';
+};
+window.closeRoomSettings = function () { document.getElementById('roomSettingsModal').style.display = 'none'; };
+window.rsToggleTimer = function () {
+    document.getElementById('rsTimerRows').style.display = document.getElementById('rsTimerOn').checked ? '' : 'none';
+};
+window.saveRoomSettings = async function () {
+    if (!window.gameState.isHost) return;
+    const settings = {
+        spyCount: Number(document.getElementById('rsSpies').value) || 1,
+        timerOn: document.getElementById('rsTimerOn').checked,
+        discussionSec: Number(document.getElementById('rsDisc').value) || 180,
+        votingSec: Number(document.getElementById('rsVote').value) || 60
+    };
+    await update(ref(db, `rooms/${window.gameState.roomCode}`), { settings });
+    closeRoomSettings();
+    if (window.showToast) showToast('✅ تم حفظ الإعدادات');
+};
+// ── spec keys (spy only): each key reveals one spec of the secret word, max 2 keys per game ──
+const SPEC_USES_MAX = 2;
+async function refreshSpecKeyBalance() {
+    try {
+        const uid = window.gameState.currentUser.uid;
+        const n = (await get(ref(db, `players/${uid}/specKeys`))).val();
+        window.gameState._specKeys = Math.max(0, parseInt(n) || 0);
+    } catch (e) { window.gameState._specKeys = window.gameState._specKeys || 0; }
+    renderSpecs(window.gameState.roomData);
+}
+function renderSpecs(r) {
+    const sec = document.getElementById('specKeySection');
+    if (!sec || !r) return;
+    const uid = window.gameState.currentUser?.uid;
+    const isSpy = window.gameState.myRole === 'spy';
+    sec.classList.toggle('hidden', !isSpy);
+    if (!isSpy) return;
+    const revealed = (r.specRevealed && r.specRevealed[uid]) || [];
+    const list = Array.isArray(revealed) ? revealed : Object.values(revealed);
+    const specs = (window.EJ_WORDS && r.secretWord) ? EJ_WORDS.specs(r.secretWord, r.category) : [];
+    const used = Number(r.specUses && r.specUses[uid]) || list.length;
+    document.getElementById('specKeyBal').textContent = window.gameState._specKeys ?? 0;
+    document.getElementById('specUsesLeft').textContent = Math.max(0, SPEC_USES_MAX - used);
+    document.getElementById('specList').innerHTML = list.map((i, n) =>
+        `<div class="text-sm p-2 rounded bg-black/20 border" style="border-color:rgba(0,242,255,.25)">${n + 1}. ${escHtml(specs[i] || '')}</div>`).join('');
+    const btn = document.getElementById('useSpecKeyBtn');
+    if (btn) { const off = used >= SPEC_USES_MAX; btn.disabled = off; btn.style.opacity = off ? '.5' : '1'; }
+}
+window.useSpecKey = async function () {
+    const g = window.gameState, r = g.roomData, uid = g.currentUser?.uid;
+    if (!r || g.myRole !== 'spy' || !r.secretWord || g._specBusy) return;
+    const used = Number(r.specUses && r.specUses[uid]) || 0;
+    if (used >= SPEC_USES_MAX) { showToast('استخدمت مفتاحين في هذه الجولة'); return; }
+    const specs = EJ_WORDS.specs(r.secretWord, r.category);
+    const have = (r.specRevealed && r.specRevealed[uid]) || [];
+    const taken = Array.isArray(have) ? have : Object.values(have);
+    const free = specs.map((_, i) => i).filter(i => !taken.includes(i));
+    if (!free.length) { showToast('لا توجد مواصفات أخرى'); return; }
+    g._specBusy = true;
+    try {
+        let ok = false;
+        await runTransaction(ref(db, `players/${uid}/specKeys`), (n) => { n = parseInt(n) || 0; if (n < 1) return; ok = true; return n - 1; });
+        if (!ok) { showToast('🔑 ما عندكش مفاتيح — اشترِ من المتجر'); return; }
+        g._specKeys = Math.max(0, (g._specKeys || 1) - 1);
+        const pick = free[Math.floor(Math.random() * free.length)];
+        await update(ref(db, `rooms/${g.roomCode}`), { [`specRevealed/${uid}`]: [...taken, pick], [`specUses/${uid}`]: used + 1 });
+    } catch (e) { console.error('useSpecKey', e); showToast('⛔ حدث خطأ، حاول مرة أخرى'); }
+    finally { g._specBusy = false; }
+};
+
+// ── legacy join animation (Crown / Ace) ──
+const _entrySeen = {};
+function setupEntryFx() {
+    if (!window.EJCos) return;
+    onChildAdded(ref(db, `rooms/${window.gameState.roomCode}/players`), (snap) => {
+        const p = snap.val(); if (!p || p.isAI) return;
+        const at = Number(p.joinedAt) || 0, key = snap.key + '|' + at;
+        if (_entrySeen[key] || !at || nowMs() - at > 6000) return;     // only fresh joins, never the people already inside
+        _entrySeen[key] = true;
+        EJCos.playEntry({ username: p.username, rankPoints: p.rankPoints });
+    });
+}
+
+function fmtClock(ms) {
+    const t = Math.max(0, Math.ceil(ms / 1000));
+    return String(Math.floor(t / 60)).padStart(2, '0') + ':' + String(t % 60).padStart(2, '0');
+}
+function renderSettingsSummary(r) {
+    const el = document.getElementById('roomSettingsSummary');
+    if (!el) return;
+    const rs = roomSettings(r);
+    const n = Object.keys(r.players || {}).length;
+    const lim = window.gameState.mode === 'ai' ? 1 : spyLimitFor(Math.max(n, 3));
+    const spies = Math.min(rs.spyCount, lim);
+    const parts = [`🕵️ ${spies} ${spies === 1 ? 'جاسوس' : 'جواسيس'}`];
+    parts.push(rs.timerOn ? `⏱️ نقاش ${Math.round(rs.discussionSec / 60 * 10) / 10}د · تصويت ${rs.votingSec}ث` : '⏱️ بدون مؤقت');
+    parts.push(r.visibility === 'private' ? '🔒 خاصة' : '🌐 عامة');
+    el.textContent = parts.join('   •   ');
+    document.getElementById('openSettingsBtn')?.classList.toggle('hidden', !window.gameState.isHost);
+}
+let _lastStageKey = null;
+function remakeOnRoomUpdate(r) {
+    renderSettingsSummary(r);
+    renderSpecs(r);
+    if (window.RoomReactions) RoomReactions.setVisible(['discussion', 'voting', 'tie', 'spyGuess', 'result'].includes(r.status));
+    // closing countdown banner is driven by closingAt (written by the host's watchdog)
+    if (r.closingAt) window.gameState._sawClosing = true;
+    const key = [r.status, r.round || 0, Object.keys(r.eliminated || {}).length].join('|');
+    if (key !== _lastStageKey) {
+        _lastStageKey = key;
+        window.gameState._timerFired = null;
+        if (window.gameState.isHost) {
+            // new stage: restart the 20-minute clock (host only, so there is one writer)
+            update(ref(db, `rooms/${window.gameState.roomCode}`), { stageAt: nowMs(), closingAt: null }).catch(() => {});
+        }
+    } else if (window.gameState.isHost && !r.stageAt) {
+        update(ref(db, `rooms/${window.gameState.roomCode}`), { stageAt: nowMs() }).catch(() => {});
+    }
+    ensureHost(r);
+}
+// If the host record is gone (left / kicked / crashed for good) the longest-waiting connected human takes over.
+let _hostCheckTimer = null;
+function ensureHost(r) {
+    const me = window.gameState.currentUser?.uid;
+    if (!me || window.gameState.mode === 'ai') return;
+    const players = r.players || {};
+    const host = players[r.hostId];
+    const hostGone = !host || host.connected === false;
+    if (!hostGone) { clearTimeout(_hostCheckTimer); _hostCheckTimer = null; return; }
+    if (_hostCheckTimer) return;
+    _hostCheckTimer = setTimeout(async () => {
+        _hostCheckTimer = null;
+        const cur = (await get(ref(db, `rooms/${window.gameState.roomCode}`))).val();
+        if (!cur) return;
+        const hp = (cur.players || {})[cur.hostId];
+        if (hp && hp.connected !== false) return;
+        const cands = Object.entries(cur.players || {}).filter(([, p]) => !p.isAI && p.connected !== false)
+            .sort((a, b) => (Number(a[1].joinedAt) || 0) - (Number(b[1].joinedAt) || 0));
+        if (cands.length && cands[0][0] === me) await update(ref(db, `rooms/${window.gameState.roomCode}`), { hostId: me }).catch(() => {});
+    }, host ? 20000 : 1500);
+}
+function remakeTick() {
+    const r = window.gameState.roomData;
+    if (!r) return;
+    const now = nowMs();
+    // phase timers (discussion / voting)
+    const dEl = document.getElementById('discussionTimer');
+    const vEl = document.getElementById('votingTimer');
+    if (r.phaseEndsAt && (r.status === 'discussion' || r.status === 'voting')) {
+        const left = r.phaseEndsAt - now;
+        const txt = fmtClock(left);
+        const el = r.status === 'discussion' ? dEl : vEl;
+        if (el) { el.textContent = txt; el.style.color = left < 10000 ? '#ef4444' : ''; }
+        const fireKey = r.status + '|' + r.phaseEndsAt;
+        if (left <= 0 && window.gameState.isHost && window.gameState._timerFired !== fireKey) {
+            window.gameState._timerFired = fireKey;
+            if (r.status === 'discussion') {
+                update(ref(db, `rooms/${window.gameState.roomCode}`), { status: 'voting', phaseEndsAt: phaseDeadline(r, 'voting') }).catch(() => {});
+            } else {
+                get(ref(db, `rooms/${window.gameState.roomCode}/votes`)).then(s => { window.gameState.votes = s.val() || {}; calculateVotingResults(); });
+            }
+        }
+    } else {
+        if (dEl && r.status === 'discussion') { dEl.textContent = '∞'; dEl.style.color = ''; }
+        if (vEl && r.status === 'voting') { vEl.textContent = '∞'; vEl.style.color = ''; }
+    }
+    // 20-minute stage watchdog + closing countdown
+    const banner = document.getElementById('closingBanner');
+    if (r.closingAt) {
+        const left = r.closingAt - now;
+        if (banner) { banner.classList.remove('hidden'); banner.textContent = `⚠️ ستُغلق الغرفة خلال ${Math.max(0, Math.ceil(left / 1000))} ثواني بسبب عدم النشاط`; }
+        if (left <= 0 && window.gameState.isHost) remove(ref(db, `rooms/${window.gameState.roomCode}`)).catch(() => {});
+    } else {
+        if (banner) banner.classList.add('hidden');
+        const hasPlayers = Object.keys(r.players || {}).length > 0;
+        if (window.gameState.isHost && hasPlayers && r.stageAt && now - r.stageAt >= STAGE_LIMIT_MS - CLOSING_MS) {
+            update(ref(db, `rooms/${window.gameState.roomCode}`), { closingAt: now + CLOSING_MS }).catch(() => {});
+        }
+    }
+}
+setInterval(remakeTick, 500);
+
         function escHtml(s) {
             return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]));
         }
@@ -3273,6 +3743,7 @@ async function joinRoom(uid, username) {
             companies:      'بتبيع منتجات ولا خدمات، بتتستخدم كل يوم ولا نادراً، أصلها (أمريكية/آسيوية/أوروبية)، أسعارها، لوجو وألوان، إيه اللي بتشتهر بيه',
             football_teams: 'بلده ودوريه، ألوان الفريق، نجومه، تاريخه وبطولاته، ملعبه، مين المنافس التقليدي، ناد ولا منتخب'
         };
+        AI_ANGLES.famous_players = 'جنسيته، مركزه في الملعب، الأندية اللي لعب فيها، بطولاته وجوايزه، رقمه، لقبه، مصري ولا عربي ولا أجنبي، لسه بيلعب ولا اعتزل، شكله وطريقة احتفاله';
         const AI_BANK = {
             places: {
                 q: ['المكان ده بتروحه كتير ولا نادراً؟', 'هو مكان مقفول ولا مفتوح؟', 'بتحتاج تحجز أو تدفع علشان تدخله؟', 'بيبقى زحمة ولا هادي؟', 'بتروحه لوحدك ولا مع ناس؟', 'فيه صوت عالي هناك ولا هدوء؟', 'ممكن أقعد فيه ساعات ولا بمشي بسرعة؟', 'بتروحه الصبح ولا بالليل أكتر؟', 'الأطفال بيحبوا المكان ده؟', 'لابس إيه لما بتروحه؟'],
@@ -3293,6 +3764,10 @@ async function joinRoom(uid, username) {
             football_teams: {
                 q: ['الفريق ده من أوروبا ولا من الوطن العربي؟', 'ألوانه إيه تقريباً؟', 'فيه نجم معروف بيلعب فيه؟', 'نادي ولا منتخب؟', 'كسب بطولات كتير؟', 'جماهيره كتير ولا قليلة؟', 'بيلعب في دوري قوي؟', 'له منافس تقليدي مشهور؟', 'ملعبه كبير؟', 'بتتابع ماتشاته؟'],
                 a: ['فريق كبير ومعروف.', 'بتابعه من وقت للتاني.', 'ليه جمهور كبير فعلاً.', 'تاريخه حلو بصراحة.', 'ماتشاته دايماً فيها حماس.', 'فيه ناس بتحبه وناس بتكرهه 😄']
+            },
+            famous_players: {
+                q: ['اللاعب ده مصري ولا أجنبي؟', 'بيلعب في أنهي مركز تقريباً؟', 'لعب في أندية كبيرة؟', 'كسب بطولات كبيرة؟', 'لسه بيلعب ولا اعتزل؟', 'مشهور بحاجة معينة في الملعب؟'],
+                a: ['لاعب معروف جداً.', 'كل الناس تعرفه.', 'ليه جمهور ضخم.', 'اسمه بيتقال كتير في الماتشات.', 'مهاراته مميزة بصراحة.']
             },
             generic: {
                 q: ['ده بيتعرف في مصر ولا برا بس؟', 'بتشوفه كل يوم ولا نادراً؟', 'الناس كلها بتعرفه ولا ناس معينة؟', 'ده حاجة قديمة ولا جديدة؟', 'بيبقى غالي ولا رخيص؟', 'الأطفال بيعرفوه؟', 'بتحبه ولا عادي بالنسبالك؟', 'بيرتبط بمناسبة معينة؟', 'ممكن تقول لي كلمة تلخصه؟'],
@@ -3344,7 +3819,7 @@ async function joinRoom(uid, username) {
             if (code === 'config_origins') return '⚠️ ALLOWED_ORIGINS غير مضبوط في الـ Worker';
             if (code === 'config_firebase') return '⚠️ FIREBASE_WEB_API_KEY غير مضبوط في الـ Worker';
             if (code === 'config_gemini') return '⚠️ GEMINI_API_KEY غير مضبوط في الـ Worker';
-            if (code === 'bad_token' || status === 401) return '⚠️ الـ Worker لم يقبل جلسة الدخول: ' + String(body?.error || '').replace(/^Invalid or expired session\s*/, '').slice(0, 140);
+            if (code === 'bad_token' || status === 401) return '⚠️ الـ Worker لم يقبل جلسة الدخول — تأكد أن FIREBASE_WEB_API_KEY في الـ Worker هو نفس مفتاح الويب للّعبة';
             if (code === 'gemini' || status === 502) return '⚠️ Gemini رفض الطلب: ' + String(body?.error || '').replace(/^Gemini API error:\s*/, '').slice(0, 120);
             if (status === 500 || status === 0) {
                 // Unknown: ask /health (worker v2) to name the missing setting
@@ -3419,6 +3894,93 @@ async function joinRoom(uid, username) {
         }
 
         // ── Prompts (kept under the worker's 2000-char system limit) ──
+        // ═══════════════════════════════════════════════════════════
+        // REMAKE: AI MEMORY — the bots store and classify everything said in the game
+        // (questions / answers), build knowledge from it and keep a suspect list.
+        //  • AI = spy      → collects the words players keep repeating about the secret word and uses them
+        //                    to answer in character and to guess the word when caught
+        //  • AI = innocent → answers/asks built on the secret word's specs; the player whose answers are the
+        //                    furthest from everybody else's (and from the word's specs) goes on its suspect list
+        // ═══════════════════════════════════════════════════════════
+        const _normAr = (t) => String(t || '').toLowerCase().replace(/[ً-ْـ]/g, '').replace(/[أإآ]/g, 'ا').replace(/ة/g, 'ه').replace(/ى/g, 'ي');
+        const AI_STOP = new Set(('في من على عن مع ده دي دا هو هي هم مش لا اه ايه يعني بس كل ان او ما لو كده كدا ليه فيه هل انت انا احنا اللي الي هذا هذه ذلك ' +
+            'تقريبا جدا كتير شويه حاجه بتاع زي لسه خالص طب يا اي ايوه اكيد طبعا حاجات بيكون بتكون هيكون كان كانت').split(' ').map(_normAr));
+        function aiTokens(text) {
+            return Array.from(new Set(_normAr(text).split(/[^\p{L}\p{N}]+/u).filter(w => w.length >= 3 && !AI_STOP.has(w))));
+        }
+        function aiIsQuestion(text) {
+            const t = _normAr(text).trim();
+            return /[?؟]/.test(t) || /^(هل|ايه|ليه|مين|فين|امتي|كام|ازاي|بتحب|بيكون|يتاكل|بتروح)\b/.test(t);
+        }
+        // everything the players ANSWERED/said (not asked), per player
+        function aiKnowledge() {
+            const by = {};
+            (window.gameState.chatLog || []).forEach(m => {
+                if (!m || !m.uid || aiIsQuestion(m.text)) return;
+                const e = by[m.uid] = by[m.uid] || { name: m.username, tokens: new Set(), n: 0 };
+                aiTokens(m.text).forEach(t => e.tokens.add(t)); e.n++;
+            });
+            return by;
+        }
+        // words several different players keep using = probably about the secret word
+        function aiGatheredSpecs(botUid, limit = 8) {
+            const by = aiKnowledge(), speakers = {}, freq = {};
+            Object.entries(by).forEach(([uid, e]) => { if (uid === botUid) return; e.tokens.forEach(t => { (speakers[t] = speakers[t] || new Set()).add(uid); freq[t] = (freq[t] || 0) + 1; }); });
+            return Object.keys(speakers).sort((a, b) => speakers[b].size - speakers[a].size || freq[b] - freq[a]).slice(0, limit);
+        }
+        function aiWordSpecTokens(word, cat) {
+            const specs = window.EJ_WORDS ? EJ_WORDS.specs(word, cat) : [];
+            return new Set(aiTokens(specs.join(' ') + ' ' + word));
+        }
+        // suspicion per player, from this bot's point of view (higher = more suspicious)
+        function aiSuspicion(botUid, r) {
+            const by = aiKnowledge(), uids = Object.keys(r.players || {}).filter(u => u !== botUid);
+            const specTok = (r.roles?.[botUid] !== 'spy' && r.secretWord) ? aiWordSpecTokens(r.secretWord, r.category) : new Set();
+            return uids.map(uid => {
+                const mine = by[uid]?.tokens;
+                if (!mine || !mine.size) return { uid, score: 0.45, answered: false };
+                const others = new Set(); uids.forEach(o => { if (o !== uid && by[o]) by[o].tokens.forEach(t => others.add(t)); });
+                let inter = 0; mine.forEach(t => { if (others.has(t)) inter++; });
+                const jac = inter / Math.max(1, mine.size + others.size - inter);
+                let sp = 0; mine.forEach(t => { if (specTok.has(t)) sp++; });
+                const specFit = specTok.size ? Math.min(1, (sp / mine.size) * 3) : 0.5;
+                return { uid, score: 0.6 * (1 - Math.min(1, jac * 3)) + 0.4 * (1 - specFit), answered: true };
+            }).sort((a, b) => b.score - a.score);
+        }
+        let _aiSuspJson = {}, _aiSuspTimer = null;
+        async function aiUpdateSuspects() {
+            const g = window.gameState, r = g.roomData;
+            if (!g.isHost || g.mode !== 'ai' || !r || r.status !== 'discussion') return;
+            const bots = Object.keys(r.players || {}).filter(u => r.players[u].isAI && r.roles?.[u] === 'innocent');
+            for (const b of bots) {
+                const s = aiSuspicion(b, r).filter(x => x.answered && x.score >= 0.5);
+                const list = s.length ? [s[0].uid] : [];
+                const j = JSON.stringify(list);
+                if (_aiSuspJson[b] === j) continue;
+                _aiSuspJson[b] = j;
+                await set(ref(db, `rooms/${g.roomCode}/suspects/${b}`), list.length ? list : null).catch(() => {});
+            }
+        }
+        // store + classify one message (host only, AI rooms)
+        function aiRemember(m) {
+            const g = window.gameState;
+            if (!g.isHost || g.mode !== 'ai' || g.currentStatus !== 'discussion' || !m || !m.uid) return;
+            push(ref(db, `rooms/${g.roomCode}/aiMemory`), { uid: m.uid, name: m.username || '', kind: aiIsQuestion(m.text) ? 'question' : 'answer', tokens: aiTokens(m.text).join(' ') }).catch(() => {});
+            clearTimeout(_aiSuspTimer); _aiSuspTimer = setTimeout(aiUpdateSuspects, 700);
+        }
+        // spy bot caught: pick the candidate word whose specs best match what the others said
+        function aiBestCandidate(botUid, words, r) {
+            const gathered = aiGatheredSpecs(botUid, 14); if (!gathered.length) return null;
+            let best = [], top = 0;
+            words.forEach(w => {
+                const tok = aiWordSpecTokens(w, r.category); let sc = 0;
+                gathered.forEach(t => { if (tok.has(t)) sc++; });
+                if (sc > top) { top = sc; best = [w]; } else if (sc === top && sc > 0) best.push(w);
+            });
+            return top > 0 ? best[Math.floor(Math.random() * best.length)] : null;
+        }
+        window.AIK = { aiTokens, aiIsQuestion, aiGatheredSpecs, aiSuspicion, aiBestCandidate, aiKnowledge };
+
         function aiSystemPrompt(botUid, roomData) {
             const bot = window.gameState.players[botUid];
             const role = roomData.roles?.[botUid];
@@ -3426,9 +3988,14 @@ async function joinRoom(uid, username) {
             const cat = aiCat(roomData);
             const names = Object.values(window.gameState.players).map(p => p.username).join('، ');
             const catLine = `الفئة: «${cat.name}» = ${cat.about}. الكلمة السرية دايماً ${cat.kind} واحد من الفئة دي، وكل أسئلتك وإجاباتك لازم تفضل جوه الفئة دي بس (متتكلمش عن أماكن لو الفئة أكل، ولا عن أكل لو الفئة شركات... إلخ).`;
+            const _gathered = role === 'spy' ? aiGatheredSpecs(botUid, 8) : [];
+            const _specs = role !== 'spy' && window.EJ_WORDS ? EJ_WORDS.specs(roomData.secretWord, roomData.category).filter(s => !String(s).includes(roomData.secretWord)).slice(0, 6) : [];
             const roleTxt = role === 'spy'
-                ? `أنت الجاسوس: مش عارف الكلمة. اتصرف بثقة، خمّن من كلام الباقيين، وجاوب إجابات عامة تنفع مع أي ${cat.kind} في الفئة.`
-                : `أنت بريء. الكلمة السرية: «${roomData.secretWord}». ممنوع تقولها أو ترادفها الصريح، لمّح بس. هدفك تكشف الجاسوس.`;
+                ? `أنت الجاسوس: مش عارف الكلمة. اتصرف بثقة، خمّن من كلام الباقيين، وجاوب إجابات عامة تنفع مع أي ${cat.kind} في الفئة.` +
+                  (_gathered.length ? ` الكلمات اللي الباقيين بيكرروها لحد دلوقتي (دي بتلمّح للكلمة السرية): ${_gathered.join('، ')} — ابني إجاباتك عليها.` : '')
+                : `أنت بريء. الكلمة السرية: «${roomData.secretWord}». ممنوع تقولها أو ترادفها الصريح، لمّح بس. هدفك تكشف الجاسوس.` +
+                  (_specs.length ? ` مواصفات الكلمة (ابني أسئلتك وإجاباتك عليها): ${_specs.join('، ')}.` : '') +
+                  ` الجاسوس غالباً هو اللي إجاباته بعيدة عن إجابات الباقيين.`;
             return [
                 `أنت "${bot.username}"، لاعب في لعبة الجاسوس باللهجة المصرية. اللاعبين: ${names}.`,
                 catLine,
@@ -3475,7 +4042,11 @@ async function joinRoom(uid, username) {
 
         const aiPick = (a) => a[Math.floor(Math.random() * a.length)];
         let _aiUsedAns = [];
-        function aiFallbackAnswer(roomData) {
+        function aiFallbackAnswer(roomData, botUid) {
+            if (botUid && roomData.roles?.[botUid] !== 'spy' && roomData.secretWord && window.EJ_WORDS) {
+                const sp = EJ_WORDS.specs(roomData.secretWord, roomData.category).filter(s => !String(s).includes(roomData.secretWord) && !_aiUsedAns.includes(s));
+                if (sp.length) { const p = aiPick(sp); _aiUsedAns.push(p); if (_aiUsedAns.length > 12) _aiUsedAns.shift(); return p; }
+            }
             const pool = aiBank(roomData).a.filter(x => !_aiUsedAns.includes(x));
             const pick = aiPick(pool.length ? pool : aiBank(roomData).a);
             _aiUsedAns.push(pick); if (_aiUsedAns.length > 12) _aiUsedAns.shift();
@@ -3497,7 +4068,7 @@ async function joinRoom(uid, username) {
         async function aiGenerate(botUid, roomData, task, fallbackFn) {
             const sys = aiSystemPrompt(botUid, roomData);
             const raw = await callGemini(sys, `آخر الكلام في الشات:\n${aiTranscript()}\n\nالمطلوب منك الآن: ${task}`, { temperature: 0.95, maxOutputTokens: 90 });
-            return aiCleanReply(raw, botUid, roomData) || fallbackFn(roomData);
+            return aiCleanReply(raw, botUid, roomData) || fallbackFn(roomData, botUid);
         }
 
         // A NEW question every time: never the same (or nearly the same) as one already asked in this game
@@ -3702,7 +4273,12 @@ async function joinRoom(uid, username) {
                 let target = null;
                 const isSpy = cur.roles?.[b] === 'spy';
                 const randomChance = diff === 'easy' ? 0.45 : diff === 'medium' ? 0.15 : 0;
-                if (!isSpy && Math.random() >= randomChance) {
+                if (!isSpy) {   // innocent bot: trust its own suspect list first (the answers furthest from everybody else's)
+                    const sus = aiSuspicion(b, cur).filter(x => x.answered && x.score >= 0.5);
+                    const trust = diff === 'hard' ? 0.95 : diff === 'medium' ? 0.75 : 0.4;
+                    if (sus.length && Math.random() < trust) target = sus[0].uid;
+                }
+                if (!target && !isSpy && Math.random() >= randomChance) {
                     const list = others.map((u, i) => `${i + 1}) ${cur.players[u].username}`).join('\n');
                     const raw = await callGemini(aiSystemPrompt(b, cur),
                         `ده الشات:\n${aiTranscript(10)}\n\nمين أكتر واحد مشتبه إنه الجاسوس؟ اختار رقم واحد من القائمة وردّ بالرقم بس:\n${list}`,
@@ -3726,6 +4302,11 @@ async function joinRoom(uid, username) {
             await aiSleep(3000);
             const diff = r.aiConfig?.difficulty || 'medium';
             let pick = null;
+            {   // first: the word whose specs match what the other players said
+                const guess = aiBestCandidate(r.votedOutSpy, words, r);
+                const trust = diff === 'hard' ? 1 : diff === 'medium' ? 0.7 : 0.35;
+                if (guess && Math.random() < trust) { window.guessWord(guess); return; }
+            }
             const list = words.map((w, i) => `${i + 1}) ${w}`).join('\n');
             const raw = await callGemini(aiSystemPrompt(r.votedOutSpy, r),
                 `انكشفت! خمّن الكلمة السرية (${cat.kind} من فئة «${cat.name}») من كلام الباقيين.\nالشات:\n${aiTranscript(12)}\nاختار رقم واحد وردّ بالرقم بس:\n${list}`,
@@ -3931,6 +4512,7 @@ async function joinRoom(uid, username) {
     </script>
 
     <!-- Load voice chat script -->
+    <script src="../Assets/voice-config.js"></script>
     <script src="../Assets/voice-chat.js"></script>
     
     <!-- Load screenshot system -->

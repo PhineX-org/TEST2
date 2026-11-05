@@ -16,6 +16,7 @@
     <script src="../Assets/name-themes.js"></script>
    <script src="../Assets/friend-invite-enhanced.js" defer></script>
    <script src="../Assets/profile-viewer.js" defer></script>
+   <script src="../Assets/presence.js"></script>
    <script src="../Assets/dialogs.js"></script>
    <script src="../Assets/inbox.js"></script>
     <style>
@@ -369,7 +370,7 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/12.7.0/firebase-app.js";
-        import { getAuth, onAuthStateChanged, signOut, GoogleAuthProvider, reauthenticateWithPopup, deleteUser } from "https://www.gstatic.com/firebasejs/12.7.0/firebase-auth.js";
+        import { getAuth, onAuthStateChanged, signOut, GoogleAuthProvider, EmailAuthProvider, reauthenticateWithCredential, reauthenticateWithPopup, deleteUser } from "https://www.gstatic.com/firebasejs/12.7.0/firebase-auth.js";
         import { getDatabase, ref, get, remove } from "https://www.gstatic.com/firebasejs/12.7.0/firebase-database.js";
 
         
@@ -472,15 +473,25 @@ onAuthStateChanged(auth, async (user) => {
 
         // Delete Account
         document.getElementById('deleteAccountBtn').addEventListener('click', async () => {
-            const confirmed = confirm('هل أنت متأكد من حذف حسابك؟ هذا الإجراء لا يمكن التراجع عنه!');
-            
+            // These dialogs are asynchronous — they MUST be awaited (a bare confirm() returned a Promise, i.e. always "yes").
+            const confirmed = await UIConfirm('هل أنت متأكد من حذف حسابك؟ هذا الإجراء لا يمكن التراجع عنه!', { title: 'حذف الحساب', danger: true, confirmText: 'نعم، احذف' });
             if (!confirmed) return;
 
-            const doubleConfirm = confirm('تحذير أخير! سيتم حذف جميع بياناتك بشكل نهائي. هل تريد الاستمرار؟');
-            
+            const doubleConfirm = await UIConfirm('تحذير أخير! سيتم حذف جميع بياناتك بشكل نهائي. هل تريد الاستمرار؟', { title: 'تأكيد أخير', danger: true, confirmText: 'حذف نهائياً' });
             if (!doubleConfirm) return;
 
             try {
+                // Re-authenticate FIRST. deleteUser() needs a recent login, and the old order wiped the
+                // database record before it, leaving a half-deleted account whenever that check failed.
+                const isGoogle = (currentUser.providerData || []).some(p => p.providerId === 'google.com');
+                if (isGoogle) {
+                    await reauthenticateWithPopup(currentUser, new GoogleAuthProvider());
+                } else {
+                    const pw = await UIPrompt('أدخل كلمة المرور للتأكيد:', { title: 'تأكيد الهوية', inputType: 'password', required: true, confirmText: 'متابعة' });
+                    if (pw === null) return;
+                    await reauthenticateWithCredential(currentUser, EmailAuthProvider.credential(currentUser.email, pw));
+                }
+
                 // Delete user data from database
                 await remove(ref(db, `players/${currentUser.uid}`));
 
@@ -491,15 +502,19 @@ onAuthStateChanged(auth, async (user) => {
                 localStorage.removeItem('eljasus_user_name');
                 localStorage.removeItem('eljasus_user_email');
 
-                alert('تم حذف الحساب بنجاح');
+                await UIAlert('تم حذف الحساب بنجاح', { type: 'success' });
                 window.location.href = 'home.html';
             } catch (error) {
                 console.error('Delete error:', error);
                 
                 if (error.code === 'auth/requires-recent-login') {
-                    alert('يجب إعادة تسجيل الدخول قبل حذف الحساب. الرجاء تسجيل الخروج ثم الدخول مرة أخرى.');
+                    UIAlert('يجب إعادة تسجيل الدخول قبل حذف الحساب. الرجاء تسجيل الخروج ثم الدخول مرة أخرى.', { type: 'error' });
+                } else if (error.code === 'auth/wrong-password' || error.code === 'auth/invalid-credential') {
+                    UIAlert('كلمة المرور غير صحيحة', { type: 'error' });
+                } else if (error.code === 'auth/popup-closed-by-user') {
+                    /* cancelled — nothing was deleted */
                 } else {
-                    alert('فشل حذف الحساب: ' + error.message);
+                    UIAlert('فشل حذف الحساب: ' + error.message, { type: 'error' });
                 }
             }
         });

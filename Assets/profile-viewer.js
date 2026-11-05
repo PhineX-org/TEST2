@@ -1,7 +1,7 @@
 // ============================================================
 // EL JASUS — PROFILE VIEWER v2.0  (Classic Edition)
 // A full player card: rank + progress, live status, stats, role
-// performance, favourite categories, recent games, achievements,
+// performance, favourite categories, recent games,
 // inventory, mutual friends — and actions (chat, invite, add, remove).
 //
 // API (unchanged):  ProfileViewer.open(uid, username) / close() / init()
@@ -32,19 +32,9 @@
 
   const CAT_NAMES = {
     places: '🌍 أماكن سياحية', food: '🍕 أكلات مصرية', jobs: '🛠️ مهن ووظائف',
-    companies: '🏢 شركات عالمية', football_teams: '⚽ أندية ومنتخبات', animals: '🐾 حيوانات',
+    companies: '🏢 شركات عالمية', football_teams: '⚽ أندية ومنتخبات', famous_players: '🌟 لاعبين مشهورين', animals: '🐾 حيوانات',
   };
   const catName = (k) => CAT_NAMES[k] || k;
-
-  const ACHIEVEMENTS = {
-    firstWin: { name: 'الفوز الأول', icon: '🎉', desc: 'فز بأول مباراة' },
-    masterDeceiver: { name: 'خبير الخداع', icon: '🕵️', desc: 'افز 10 مباريات كجاسوس' },
-    eagleEye: { name: 'عين الصقر', icon: '🦅', desc: 'اكشف الجاسوس 5 مرات' },
-    perfectGame: { name: 'مباراة مثالية', icon: '🎯', desc: 'خمن الكلمة كجاسوس' },
-    centuryClub: { name: 'نادي المئة', icon: '💯', desc: 'العب 100 مباراة' },
-    hotStreak: { name: 'سلسلة نارية', icon: '🔥', desc: 'افز 5 مباريات متتالية' },
-    diamondPlayer: { name: 'لاعب ألماسي', icon: '💎', desc: 'وصل لرتبة الألماس' },
-  };
 
   // ── Firebase (late-bound) ──────────────────────────────────
   let db = null, M = null, auth = null, dbPromise = null;
@@ -122,11 +112,6 @@
 .pv2-res{padding:2px 10px;border-radius:99px;font-weight:900;font-size:11px}
 .pv2-res.w{background:rgba(163,230,53,.15);color:#a3e635;border:1px solid rgba(163,230,53,.4)}
 .pv2-res.l{background:rgba(255,107,125,.12);color:#ff6b7d;border:1px solid rgba(255,107,125,.35)}
-.pv2-ach{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}
-.pv2-a{display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:12px;border:1px solid rgba(255,255,255,.08);background:rgba(255,255,255,.03)}
-.pv2-a.on{border-color:rgba(163,230,53,.45);background:rgba(163,230,53,.08)}
-.pv2-a:not(.on){opacity:.38;filter:grayscale(.8)}
-.pv2-a .ic{font-size:22px}.pv2-a b{display:block;font-size:12px}.pv2-a small{display:block;font-size:9px;color:rgba(255,255,255,.5);line-height:1.3}
 .pv2-inv{display:flex;flex-wrap:wrap;gap:8px}
 .pv2-item{padding:6px 11px;border-radius:12px;border:1px solid rgba(0,242,255,.25);background:rgba(0,242,255,.05);font-size:12px;font-weight:700;display:inline-flex;gap:6px;align-items:center}
 .pv2-item small{color:rgba(255,255,255,.45);font-weight:400;font-size:10px}
@@ -150,7 +135,6 @@
   .pv2-body{padding:14px 14px 18px}
   .pv2-grid{grid-template-columns:repeat(3,1fr);gap:8px}
   .pv2-stat b{font-size:17px}
-  .pv2-ach{grid-template-columns:1fr}
   .pv2-btn{flex:1 1 110px;min-width:0;padding:11px 8px}.pv2-btn.red{flex:0 0 auto}
 }`;
     document.head.appendChild(s);
@@ -194,7 +178,6 @@
       username: d.username || 'لاعب',
       rankPoints: num(d.rankPoints),
       stats: d.stats || {},
-      achievements: d.achievements || {},
       inventory: { nameThemes: Object.values(inv.nameThemes || {}), nameTags: Object.values(inv.nameTags || {}) },
       nameTheme: d.nameTheme || 'default',
       nameTag: d.nameTag || null,
@@ -287,9 +270,6 @@
         </section>
         <section><h4 class="pv2-h">🕒 آخر المباريات</h4>
           ${recent.length ? `<div class="pv2-games">${recent.map((g) => `<div class="pv2-game"><span class="ic">${g.role === 'spy' ? '🕵️' : '🛡️'}</span><span class="nm">${esc(catName(g.category || 'عام'))}</span><span class="dt">${esc(fmtShort(g.timestamp))}</span><span class="pv2-res ${g.won ? 'w' : 'l'}">${g.won ? 'فوز' : 'خسارة'}</span></div>`).join('')}</div>` : '<div class="pv2-empty">لا توجد مباريات مسجلة</div>'}
-        </section>
-        <section><h4 class="pv2-h">🏆 الإنجازات (${Object.keys(ACHIEVEMENTS).filter((k) => p.achievements[k]).length}/${Object.keys(ACHIEVEMENTS).length})</h4>
-          <div class="pv2-ach">${Object.keys(ACHIEVEMENTS).map((k) => { const a = ACHIEVEMENTS[k]; return `<div class="pv2-a${p.achievements[k] ? ' on' : ''}"><span class="ic">${a.icon}</span><div><b>${a.name}</b><small>${a.desc}</small></div></div>`; }).join('')}</div>
         </section>
         <section><h4 class="pv2-h">🎒 المخزون</h4>
           ${items.length ? `<div class="pv2-inv">${items.map((i) => `<span class="pv2-item">${esc(i.i)} ${esc(i.n)} <small>${esc(i.t)}</small></span>`).join('')}</div>` : '<div class="pv2-empty">لا توجد عناصر في المخزون</div>'}

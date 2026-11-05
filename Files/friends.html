@@ -15,6 +15,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700;900&display=swap" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <script src="../Assets/presence.js"></script>
     <script src="../Assets/dialogs.js"></script>
     <script src="../Assets/moderation.js"></script>
     <script src="../Assets/name-themes.js"></script>
@@ -341,6 +342,7 @@
                 <option value="jobs">🛠️ مهن ووظائف</option>
                 <option value="companies">🏢 شركات عالمية</option>
                 <option value="football_teams">⚽ أندية ومنتخبات كورة</option>
+                <option value="famous_players">🌟 لاعبين مشهورين</option>
             </select>
 
             <div style="display:flex;gap:12px;">
@@ -595,7 +597,7 @@
                     const d = s.val() || {};
                     presenceByUid[id] = {
                         uid: id, username: d.username || (friends[id] && friends[id].username) || 'مجهول',
-                        online: !!(d.presence && d.presence.online), inGame: !!(d.presence && d.presence.inGame),
+                        online: window.EJPresence ? EJPresence.isOnline(d.presence) : !!(d.presence && d.presence.online), inGame: !!(d.presence && d.presence.inGame && (!window.EJPresence || EJPresence.isOnline(d.presence))), pstate: window.EJPresence ? EJPresence.state(d.presence) : (d.presence && d.presence.online ? 'online' : 'offline'),
                         phase: (d.presence && d.presence.phase) || null, room: (d.presence && d.presence.room) || null,
                         nameTheme: d.nameTheme || 'default', nameTag: d.nameTag || null, rankPoints: parseInt(d.rankPoints) || 0, loaded: true
                     };
@@ -632,7 +634,9 @@
 
         function createFriendCard(f) {
             const dot = f.online ? '<div class="online-indicator absolute bottom-0 right-0"></div>' : '<div class="offline-indicator absolute bottom-0 right-0"></div>';
-            const gameStatus = f.inGame ? '<span style="font-size:10px;color:#00f2ff;font-weight:700;background:rgba(0,242,255,.1);padding:2px 6px;border-radius:4px;">🎮 يلعب</span>' : '';
+            const gameStatus = f.inGame ? (f.pstate === 'game'
+                ? '<span style="font-size:10px;color:#f59e0b;font-weight:700;background:rgba(245,158,11,.12);padding:2px 6px;border-radius:4px;">🎮 في لعبة</span>'
+                : '<span style="font-size:10px;color:#00f2ff;font-weight:700;background:rgba(0,242,255,.1);padding:2px 6px;border-radius:4px;">🚪 في غرفة</span>') : '';
             const canAsk = f.inGame && f.phase === 'waiting' && f.room;
             const canInvite = f.online && !f.inGame;
             const unread = unreadByFriend[f.uid] || 0;
@@ -782,5 +786,6 @@
         window.prompt  = (msg, defaultVal) => UIPrompt(msg, { defaultValue: defaultVal });
     </script>
     <script>if('serviceWorker' in navigator){window.addEventListener('load',()=>navigator.serviceWorker.register('../Assets/sw.js').catch(()=>{}));}</script>
+    <script src="../Assets/tutorial.js" defer></script>
 </body>
 </html>

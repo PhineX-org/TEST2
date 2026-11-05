@@ -7,1960 +7,420 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="الجاسوس">
     <meta name="theme-color" content="#000000">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>الجاسوس | El Jasus</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>الجاسوس | El Jasus — The Classic Edition</title>
     <meta name="description" content="لعبة الجاسوس - العب مع أصدقائك واكتشف من هو الجاسوس بينكم في أجواء من التحدي والذكاء!">
-    <meta name="keywords" content="الجاسوس, لعبة الجاسوس, ألعاب جماعية, PhineX">
+    <meta name="keywords" content="الجاسوس, لعبة الجاسوس, ألعاب جماعية, ألعاب حفلات, ألعاب أونلاين, PhineX">
     <meta name="author" content="PhineX">
+    <meta property="og:type" content="website">
+    <meta property="og:title" content="الجاسوس | El Jasus">
+    <meta property="og:description" content="اكتشف من هو الجاسوس بينكم! لعبة جماعية ممتعة للأصدقاء والعائلة، متوفرة أونلاين ومحلياً.">
+    <meta property="og:site_name" content="El Jasus">
+    <meta property="og:locale" content="ar_EG">
     <link rel="icon" type="image/png" href="Assets/ElJasus.jpg">
-    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&display=swap" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700;900&family=Rajdhani:wght@300;400;500;600;700;800&family=Exo+2:wght@300;400;600;700;800;900&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    
+    <script src="Assets/dialogs.js"></script>
+    <script src="Assets/updates-data.js"></script>
     <style>
+        /* ═══════════════════════════════════════════════════════════
+           EL JASUS — THE CLASSIC EDITION · landing page
+           pure black · cyan (structure) · lime (accent)
+           ═══════════════════════════════════════════════════════════ */
         :root {
-            /* Palette rule: black + cyan (structure/brand) + lime (accent) — rgba only.
-               Every legacy variable name below is kept (so nothing downstream breaks)
-               but now aliases into just these three hues, and the two accents are
-               never blended into one gradient stop-to-stop. */
-            --neon-blue: rgba(0, 242, 255, 1);
-            --electric-blue: rgba(0, 242, 255, 1);
-            --sky-blue: rgba(0, 242, 255, 1);
-            --cyber-purple: rgba(163, 230, 53, 1);
-            --deep-purple: rgba(163, 230, 53, 1);
-            --neon-green: rgba(163, 230, 53, 1);
-            --lime-green: rgba(163, 230, 53, 1);
-            --dark-bg: rgba(0, 0, 0, 1);
-            --dark-surface: rgba(0, 0, 0, 1);
-            --dark-surface-2: rgba(0, 0, 0, 1);
-            --dark-surface-3: rgba(0, 0, 0, 1);
+            --c: 0, 242, 255;
+            --l: 163, 230, 53;
+            --w: 255, 255, 255;
+            --muted: rgba(255, 255, 255, .58);
+            --line: rgba(var(--c), .22);
         }
-
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
+        * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        html { scroll-behavior: smooth; -webkit-text-size-adjust: 100%; }
         body {
-            font-family: 'Cairo', sans-serif;
-            background: var(--dark-bg);
-            color: rgba(255, 255, 255, 1);
-            overflow-x: hidden;
-            position: relative;
-        }
-
-        /* ============================================
-           LOADING SCREEN SYSTEM (PRESERVED)
-           ============================================ */
-
-        .loading-container {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100vh;
-            z-index: 10000;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .loading-screen {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 1);
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            opacity: 0;
-            visibility: hidden;
-            transition: opacity 0.8s ease, visibility 0.8s ease;
-        }
-
-        .loading-screen.active {
-            opacity: 1;
-            visibility: visible;
-        }
-
-        /* Screen 1: Presented By */
-        #presentedByScreen {
-            background: radial-gradient(circle at center, rgba(0, 0, 0, 1) 0%, rgba(0, 0, 0, 1) 100%);
-        }
-
-        .presented-text {
-            font-family: 'Rajdhani', sans-serif;
-            font-size: 1.8rem;
-            font-weight: 300;
-            letter-spacing: 0.3em;
-            text-transform: uppercase;
-            color: rgba(255, 255, 255, 0.6);
-            opacity: 0;
-            animation: fadeInText 1.5s ease forwards;
-            margin-bottom: 3rem;
-        }
-
-        .phinex-logo {
-            width: 280px;
-            height: auto;
-            opacity: 0;
-            animation: fadeInLogo 2s ease 1.5s forwards;
-            filter: drop-shadow(0 0 30px var(--neon-green));
-        }
-
-        @keyframes fadeInText {
-            to {
-                opacity: 1;
-            }
-        }
-
-        @keyframes fadeInLogo {
-            0% {
-                opacity: 0;
-                transform: scale(0.8);
-            }
-            100% {
-                opacity: 1;
-                transform: scale(1);
-            }
-        }
-
-        /* Screen 2: Credits */
-        #creditsScreen {
-            background: radial-gradient(circle at center, rgba(0, 0, 0, 1) 0%, rgba(0, 0, 0, 1) 100%);
-        }
-
-        .credits-content {
-            text-align: center;
-        }
-
-        .made-by-text {
-            font-family: 'Rajdhani', sans-serif;
-            font-size: 1.5rem;
-            font-weight: 300;
-            letter-spacing: 0.2em;
-            text-transform: uppercase;
-            color: rgba(255, 255, 255, 0.5);
-            opacity: 0;
-            animation: fadeInMadeBy 2s ease forwards;
-            margin-bottom: 3rem;
-        }
-
-        @keyframes fadeInMadeBy {
-            0% {
-                opacity: 0;
-            }
-            100% {
-                opacity: 1;
-            }
-        }
-
-        .amg-container {
-            position: relative;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            gap: 1rem;
-            min-height: 100px;
-        }
-
-        .amg-brackets {
-            font-family: 'Orbitron', sans-serif;
-            font-size: 4rem;
-            font-weight: 900;
-            background: rgba(0, 242, 255, 1);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-            opacity: 0;
-            animation: fadeInBrackets 0.8s ease 2s forwards;
-        }
-
-        @keyframes fadeInBrackets {
-            to {
-                opacity: 1;
-            }
-        }
-
-        .name-wrapper {
-            display: inline-flex;
-            align-items: center;
-            font-family: 'Orbitron', sans-serif;
-            font-size: 4rem;
-            font-weight: 900;
-            background: rgba(0, 242, 255, 1);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: white;
-            background-clip: text;
-        }
-
-        .letter-initial {
-            display: inline-block;
-            opacity: 0;
-        }
-
-        .letter-initial.a {
-            animation: fadeIn 0.6s ease 3s forwards;
-        }
-
-        .letter-initial.m {
-            animation: fadeIn 0.6s ease 3.3s forwards;
-        }
-
-        .letter-initial.e {
-            animation: fadeIn 0.6s ease 3.6s forwards;
-        }
-
-        @keyframes fadeIn {
-            to {
-                opacity: 1;
-            }
-        }
-
-        .letter-expand {
-            display: inline-block;
-            font-family: 'Rajdhani', sans-serif;
-            font-size: 2.2rem;
-            font-weight: 500;
-            max-width: 0;
-            overflow: hidden;
-            white-space: nowrap;
-            opacity: 0;
-        }
-
-        .letter-expand.ahmed {
-            animation: expandText 1s ease 4s forwards;
-        }
-
-        .letter-expand.mohamed {
-            animation: expandText 1s ease 4.4s forwards;
-        }
-
-        .letter-expand.elgohary {
-            animation: expandText 1s ease 4.8s forwards;
-        }
-
-        @keyframes expandText {
-            0% {
-                max-width: 0;
-                opacity: 0;
-            }
-            1% {
-                opacity: 1;
-            }
-            100% {
-                max-width: 300px;
-                opacity: 1;
-            }
-        }
-
-        /* Screen 3: Main Loading */
-        #mainLoadingScreen {
-            background: radial-gradient(circle at 50% 50%, rgba(0, 0, 0, 1) 0%, rgba(0, 0, 0, 1) 100%);
-            overflow: hidden;
-        }
-
-        /* Animated grid background */
-        .grid-bg {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background-image: 
-                linear-gradient(rgba(0,242,255,0.1) 1px, transparent 1px),
-                linear-gradient(90deg, rgba(0,242,255,0.1) 1px, transparent 1px);
-            background-size: 50px 50px;
-            animation: gridPulse 20s linear infinite, gridMove 30s linear infinite;
-            opacity: 0.3;
-        }
-
-        @keyframes gridPulse {
-            0%, 100% {
-                opacity: 0.3;
-            }
-            50% {
-                opacity: 0.6;
-            }
-        }
-
-        @keyframes gridMove {
-            0% {
-                transform: perspective(500px) rotateX(60deg) translateY(0);
-            }
-            100% {
-                transform: perspective(500px) rotateX(60deg) translateY(50px);
-            }
-        }
-
-        /* Particle system */
-        .particles {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            overflow: hidden;
-        }
-
-        .particle {
-            position: absolute;
-            width: 2px;
-            height: 2px;
-            background: var(--neon-blue);
-            border-radius: 50%;
-            animation: particleFloat 15s linear infinite;
-            box-shadow: 0 0 10px var(--neon-blue);
-        }
-
-        @keyframes particleFloat {
-            0% {
-                transform: translateY(100vh) translateX(0);
-                opacity: 0;
-            }
-            10% {
-                opacity: 1;
-            }
-            90% {
-                opacity: 1;
-            }
-            100% {
-                transform: translateY(-100px) translateX(var(--drift));
-                opacity: 0;
-            }
-        }
-
-        /* Circuit lines */
-        .circuit-lines {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            opacity: 0.2;
-        }
-
-        .circuit-line {
-            position: absolute;
-            background: linear-gradient(90deg, transparent, var(--neon-blue), transparent);
-            height: 1px;
-            animation: circuitFlow 8s linear infinite;
-        }
-
-        @keyframes circuitFlow {
-            0% {
-                transform: translateX(-100%);
-                opacity: 0;
-            }
-            50% {
-                opacity: 1;
-            }
-            100% {
-                transform: translateX(200%);
-                opacity: 0;
-            }
-        }
-
-        /* Video container */
-        .video-sphere {
-            position: relative;
-            width: 300px;
-            height: 300px;
-            margin-bottom: 2rem;
-            z-index: 10;
-        }
-
-        .sphere-border {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            width: 100%;
-            height: 100%;
-            transform: translate(-50%, -50%);
-            border: 3px solid transparent;
-            border-radius: 50%;
-            background: linear-gradient(rgba(0, 0, 0, 1), rgba(0, 0, 0, 1)) padding-box,
-                        linear-gradient(135deg, rgba(0, 242, 255, 1) 0%, rgba(0, 242, 255, 1) 50%, rgba(163, 230, 53, 1) 50%, rgba(163, 230, 53, 1) 100%) border-box;
-            animation: sphereRotate 8s linear infinite, spherePulse 3s ease-in-out infinite;
-            box-shadow: 
-                0 0 40px rgba(0, 242, 255, 0.5),
-                inset 0 0 40px rgba(0, 242, 255, 0.2);
-        }
-
-        @keyframes sphereRotate {
-            to {
-                transform: translate(-50%, -50%) rotate(360deg);
-            }
-        }
-
-        @keyframes spherePulse {
-            0%, 100% {
-                box-shadow: 
-                    0 0 40px rgba(0, 242, 255, 0.5),
-                    inset 0 0 40px rgba(0, 242, 255, 0.2);
-            }
-            50% {
-                box-shadow: 
-                    0 0 80px rgba(0, 242, 255, 0.8),
-                    inset 0 0 60px rgba(0, 242, 255, 0.4);
-            }
-        }
-
-        .video-container {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            width: 280px;
-            height: 280px;
-            border-radius: 50%;
-            overflow: hidden;
-            z-index: 2;
-        }
-
-        .video-container video {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-        }
-
-        .eljasus-text {
-            font-family: 'Orbitron', sans-serif;
-            font-size: 4rem;
-            font-weight: 900;
-            text-transform: uppercase;
-            background: rgba(0, 242, 255, 1);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-            position: relative;
-            z-index: 10;
-            text-shadow: 0 0 30px rgba(0, 242, 255, 0.5);
-            animation: textGlow 2s ease-in-out infinite;
-            letter-spacing: 0.1em;
-        }
-
-        @keyframes textGlow {
-            0%, 100% {
-                filter: drop-shadow(0 0 20px var(--neon-blue));
-            }
-            50% {
-                filter: drop-shadow(0 0 40px var(--neon-blue));
-            }
-        }
-
-        .subtitle-text {
-            font-family: 'Rajdhani', sans-serif;
-            font-size: 1.5rem;
-            font-weight: 300;
-            letter-spacing: 0.5em;
-            color: rgba(255, 255, 255, 0.6);
-            margin-top: 1rem;
-            text-transform: uppercase;
-        }
-
-        .loading-bar-container {
-            width: 400px;
-            height: 4px;
-            background: rgba(255, 255, 255, 0.1);
-            border-radius: 10px;
-            overflow: hidden;
-            margin-top: 3rem;
-            position: relative;
-        }
-
-        .loading-bar {
-            height: 100%;
-            /* hard stop at 50% (not a blend) — starts cyan, "arrives" at lime as it completes */
-            background: linear-gradient(90deg, rgba(0, 242, 255, 1) 0%, rgba(0, 242, 255, 1) 50%, rgba(163, 230, 53, 1) 50%, rgba(163, 230, 53, 1) 100%);
-            width: 0%;
-            animation: loadingProgress 4s ease-out forwards;
-            box-shadow: 0 0 20px rgba(0, 242, 255, 0.8);
-        }
-
-        @keyframes loadingProgress {
-            to {
-                width: 100%;
-            }
-        }
-
-        /* Scanlines effect */
-        .scanlines {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: repeating-linear-gradient(
-                0deg,
-                rgba(0, 0, 0, 0.15),
-                rgba(0, 0, 0, 0.15) 1px,
-                transparent 1px,
-                transparent 2px
-            );
-            pointer-events: none;
-            z-index: 9999;
-            animation: scanlineMove 8s linear infinite;
-        }
-
-        @keyframes scanlineMove {
-            0% {
-                transform: translateY(0);
-            }
-            100% {
-                transform: translateY(100px);
-            }
-        }
-
-        /* Glitch effect */
-        .glitch {
-            position: relative;
-        }
-
-        .glitch::before,
-        .glitch::after {
-            content: attr(data-text);
-            position: absolute;
-            top: 0;
-            left: 0;
-            opacity: 0.8;
-        }
-
-        .glitch::before {
-            animation: glitchBefore 3s infinite;
-            color: var(--neon-blue);
-            z-index: -1;
-        }
-
-        .glitch::after {
-            animation: glitchAfter 3s infinite;
-            color: var(--cyber-purple);
-            z-index: -2;
-        }
-
-        @keyframes glitchBefore {
-            0%, 90%, 100% {
-                transform: translate(0);
-            }
-            92% {
-                transform: translate(-2px, -2px);
-            }
-            94% {
-                transform: translate(2px, 2px);
-            }
-        }
-
-        @keyframes glitchAfter {
-            0%, 90%, 100% {
-                transform: translate(0);
-            }
-            92% {
-                transform: translate(2px, 2px);
-            }
-            94% {
-                transform: translate(-2px, -2px);
-            }
-        }
-
-        /* ============================================
-           MAIN CONTENT STYLES - REDESIGNED
-           ============================================ */
-
-        #mainContent {
-            opacity: 0;
-            visibility: hidden;
-            transition: opacity 1s ease, visibility 1s ease;
-        }
-
-        #mainContent.active {
-            opacity: 1;
-            visibility: visible;
-        }
-
-        /* Advanced Background System */
-        .cosmic-bg {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            z-index: -1;
-            background: 
-                radial-gradient(circle at 20% 50%, rgba(0, 242, 255, 0.15) 0%, transparent 50%),
-                radial-gradient(circle at 80% 80%, rgba(163, 230, 53, 0.15) 0%, transparent 50%),
-                radial-gradient(circle at 50% 30%, rgba(163, 230, 53, 0.1) 0%, transparent 50%),
-                linear-gradient(180deg, rgba(0, 0, 0, 1) 0%, rgba(0, 0, 0, 1) 50%, rgba(0, 0, 0, 1) 100%);
-        }
-
-        /* Floating Energy Orbs */
-        .energy-orbs {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            pointer-events: none;
-            z-index: 1;
-            overflow: hidden;
-        }
-
-        .orb {
-            position: absolute;
-            border-radius: 50%;
-            filter: blur(80px);
-            animation: orbFloat 20s ease-in-out infinite;
-            opacity: 0.3;
-        }
-
-        .orb-1 {
-            width: 400px;
-            height: 400px;
-            background: radial-gradient(circle, var(--neon-blue) 0%, transparent 70%);
-            top: 20%;
-            left: 10%;
-            animation-delay: 0s;
-        }
-
-        .orb-2 {
-            width: 350px;
-            height: 350px;
-            background: radial-gradient(circle, var(--cyber-purple) 0%, transparent 70%);
-            top: 60%;
-            right: 15%;
-            animation-delay: -5s;
-        }
-
-        .orb-3 {
-            width: 300px;
-            height: 300px;
-            background: radial-gradient(circle, var(--neon-green) 0%, transparent 70%);
-            bottom: 10%;
-            left: 50%;
-            animation-delay: -10s;
-        }
-
-        @keyframes orbFloat {
-            0%, 100% {
-                transform: translate(0, 0) scale(1);
-            }
-            33% {
-                transform: translate(50px, -80px) scale(1.1);
-            }
-            66% {
-                transform: translate(-30px, 50px) scale(0.9);
-            }
-        }
-
-        /* 3D Geometric Grid */
-        .geometric-grid {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            pointer-events: none;
-            z-index: 0;
-            perspective: 1000px;
-        }
-
-        .grid-layer {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background-image: 
-                linear-gradient(rgba(0, 242, 255, 0.03) 1px, transparent 1px),
-                linear-gradient(90deg, rgba(0, 242, 255, 0.03) 1px, transparent 1px);
-            background-size: 60px 60px;
-            transform-style: preserve-3d;
-            animation: gridRotate 40s linear infinite;
-        }
-
-        @keyframes gridRotate {
-            0% {
-                transform: perspective(1000px) rotateX(60deg) rotateZ(0deg) translateZ(-200px);
-            }
-            100% {
-                transform: perspective(1000px) rotateX(60deg) rotateZ(360deg) translateZ(-200px);
-            }
-        }
-
-        /* Hero Section - Redesigned */
-        .hero-section {
-            min-height: 100vh;
-            position: relative;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            overflow: hidden;
-            padding: 2rem;
-        }
-
-        .hero-content {
-            position: relative;
-            z-index: 10;
-            text-align: center;
-            max-width: 1200px;
-            animation: fadeInUp 1s ease 0.5s both;
-        }
-
-        @keyframes fadeInUp {
-            from {
-                opacity: 0;
-                transform: translateY(40px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-
-        /* 3D Rotating Logo Container */
-        .logo-container-3d {
-            width: 250px;
-            height: 250px;
-            margin: 0 auto 2rem;
-            perspective: 1000px;
-            position: relative;
-        }
-
-        .logo-wrapper {
-            width: 100%;
-            height: 100%;
-            position: relative;
-            transform-style: preserve-3d;
-        }
-
-        .hero-logo {
-            width: 100%;
-            height: auto;
-            filter: drop-shadow(0 0 50px var(--neon-blue));
-            position: relative;
-            z-index: 2;
-            animation: logoGlow 3s ease-in-out infinite;
-            border-radius: 50%;
-        }
-
-        @keyframes logoGlow {
-            0%, 100% {
-                filter: drop-shadow(0 0 30px var(--neon-blue)) drop-shadow(0 0 60px var(--electric-blue));
-            }
-            50% {
-                filter: drop-shadow(0 0 50px var(--cyber-purple)) drop-shadow(0 0 100px var(--deep-purple));
-            }
-        }
-
-        /* Holographic Ring Around Logo */
-        .holo-ring {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            width: 120%;
-            height: 120%;
-            border: 2px solid transparent;
-            border-radius: 50%;
-            transform: translate(-50%, -50%);
-            background: linear-gradient(rgba(0, 0, 0, 1), rgba(0, 0, 0, 1)) padding-box,
-                        linear-gradient(45deg, rgba(0, 242, 255, 1) 0%, rgba(0, 242, 255, 1) 50%, rgba(163, 230, 53, 1) 50%, rgba(163, 230, 53, 1) 100%) border-box;
-            animation: holoRotate 8s linear infinite;
-            opacity: 0.6;
-        }
-
-        @keyframes holoRotate {
-            0% {
-                transform: translate(-50%, -50%) rotate(0deg);
-            }
-            100% {
-                transform: translate(-50%, -50%) rotate(360deg);
-            }
-        }
-
-        .hero-title {
-            font-family: 'Exo 2', sans-serif;
-            font-size: clamp(3.5rem, 10vw, 7rem);
-            font-weight: 900;
-            background: rgba(0, 242, 255, 1);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-            margin-bottom: 1rem;
-            letter-spacing: 0.02em;
-            position: relative;
-            text-transform: uppercase;
-            filter: drop-shadow(0 0 40px rgba(0, 242, 255, 0.5));
-            animation: titleFloat 6s ease-in-out infinite;
-        }
-
-        @keyframes titleFloat {
-            0%, 100% {
-                transform: translateY(0) scale(1);
-            }
-            50% {
-                transform: translateY(-10px) scale(1.02);
-            }
-        }
-
-        .hero-subtitle {
-            font-family: 'Rajdhani', sans-serif;
-            font-size: clamp(1.3rem, 3.5vw, 2.2rem);
-            font-weight: 600;
-            letter-spacing: 0.4em;
-            color: var(--neon-blue);
-            margin-bottom: 2rem;
-            text-transform: uppercase;
-            text-shadow: 0 0 20px rgba(0, 242, 255, 0.8);
-            animation: subtitlePulse 4s ease-in-out infinite;
-        }
-
-        @keyframes subtitlePulse {
-            0%, 100% {
-                opacity: 0.8;
-            }
-            50% {
-                opacity: 1;
-            }
-        }
-
-        .hero-description {
-            font-family: 'Cairo', sans-serif;
-            font-size: clamp(1.1rem, 2vw, 1.4rem);
-            color: rgba(255, 255, 255, 0.85);
-            max-width: 700px;
-            margin: 0 auto 3rem;
-            line-height: 2;
-            font-weight: 400;
-        }
-
-        /* Advanced 3D Button System */
-        .button-container {
-            display: flex;
-            gap: 1.5rem;
-            justify-content: center;
-            flex-wrap: wrap;
-            margin-top: 2rem;
-        }
-
-        .game-btn {
-            position: relative;
-            font-family: 'Exo 2', sans-serif;
-            font-size: 1.1rem;
-            font-weight: 700;
-            padding: 1.3rem 3rem;
-            border: none;
-            cursor: pointer;
-            overflow: hidden;
-            text-transform: uppercase;
-            letter-spacing: 0.15em;
-            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-            transform-style: preserve-3d;
-            perspective: 1000px;
-        }
-
-        .game-btn::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            z-index: -1;
-            transition: transform 0.4s ease;
-        }
-
-        .game-btn::after {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: -100%;
-            width: 100%;
-            height: 100%;
-            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.4), transparent);
-            transition: left 0.5s ease;
-        }
-
-        .game-btn:hover::after {
-            left: 100%;
-        }
-
-        /* Primary Button — lime fill (matches the primary-action color used across home.html) */
-        .btn-primary {
-            background: linear-gradient(135deg, rgba(163, 230, 53, 0.95), rgba(163, 230, 53, 0.85));
-            color: rgba(0, 0, 0, 0.92);
-            box-shadow: 
-                0 0 30px rgba(163, 230, 53, 0.5),
-                0 10px 30px rgba(163, 230, 53, 0.3),
-                inset 0 0 20px rgba(255, 255, 255, 0.25);
-            clip-path: polygon(15px 0, 100% 0, 100% calc(100% - 15px), calc(100% - 15px) 100%, 0 100%, 0 15px);
-        }
-
-        .btn-primary:hover {
-            transform: translateY(-5px) scale(1.05);
-            box-shadow: 
-                0 0 50px rgba(163, 230, 53, 0.8),
-                0 15px 40px rgba(163, 230, 53, 0.45),
-                inset 0 0 30px rgba(255, 255, 255, 0.3);
-        }
-
-        /* Secondary Button — cyan ghost (matches the secondary/structural color used across home.html) */
-        .btn-secondary {
-            background: linear-gradient(135deg, rgba(0, 242, 255, 0.12), rgba(0, 242, 255, 0.08));
-            color: rgba(255, 255, 255, 1);
-            border: 2px solid rgba(0, 242, 255, 0.85);
-            box-shadow: 
-                0 0 30px rgba(0, 242, 255, 0.35),
-                inset 0 0 20px rgba(0, 242, 255, 0.08);
-            clip-path: polygon(15px 0, 100% 0, 100% calc(100% - 15px), calc(100% - 15px) 100%, 0 100%, 0 15px);
-            backdrop-filter: blur(10px);
-        }
-
-        .btn-secondary:hover {
-            transform: translateY(-5px) scale(1.05);
-            background: linear-gradient(135deg, rgba(0, 242, 255, 0.22), rgba(0, 242, 255, 0.16));
-            box-shadow: 
-                0 0 50px rgba(0, 242, 255, 0.6),
-                0 15px 40px rgba(0, 242, 255, 0.35),
-                inset 0 0 30px rgba(0, 242, 255, 0.2);
-        }
-
-        /* Button Icon Styling */
-        .btn-icon {
-            margin-left: 0.6rem;
-            transition: transform 0.3s ease;
-            display: inline-block;
-        }
-
-        .game-btn:hover .btn-icon {
-            transform: translateX(5px) scale(1.1);
-        }
-
-        /* Floating Hexagon Decorations */
-        .floating-hex-container {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            pointer-events: none;
-            z-index: 5;
-        }
-
-        .hex-shape {
-            position: absolute;
-            width: 80px;
-            height: 80px;
-            opacity: 0.15;
-            animation: hexDrift 25s ease-in-out infinite;
-        }
-
-        @keyframes hexDrift {
-            0%, 100% {
-                transform: translate(0, 0) rotate(0deg);
-            }
-            25% {
-                transform: translate(100px, -50px) rotate(90deg);
-            }
-            50% {
-                transform: translate(50px, 100px) rotate(180deg);
-            }
-            75% {
-                transform: translate(-100px, 50px) rotate(270deg);
-            }
-        }
-
-        /* Features Section - Redesigned with 3D Cards */
-        .features-section {
-            padding: 8rem 2rem;
-            position: relative;
-            background: linear-gradient(180deg, transparent 0%, rgba(0, 0, 0, 0.5) 50%, transparent 100%);
-        }
-
-        .section-title {
-            font-family: 'Exo 2', sans-serif;
-            font-size: clamp(2.8rem, 6vw, 4.5rem);
-            font-weight: 900;
-            text-align: center;
-            background: rgba(0, 242, 255, 1);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-            margin-bottom: 5rem;
-            letter-spacing: 0.02em;
-            text-transform: uppercase;
-            filter: drop-shadow(0 0 30px rgba(0, 242, 255, 0.6));
-            position: relative;
-        }
-
-        .section-title::after {
-            content: '';
-            position: absolute;
-            bottom: -20px;
-            left: 50%;
-            transform: translateX(-50%);
-            width: 200px;
-            height: 4px;
-            background: linear-gradient(90deg, transparent, var(--neon-blue), transparent);
-            box-shadow: 0 0 20px var(--neon-blue);
-        }
-
-        .features-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
-            gap: 3rem;
-            max-width: 1400px;
-            margin: 0 auto;
-        }
-
-        /* 3D Holographic Cards */
-        .feature-card-3d {
-            position: relative;
-            padding: 3rem 2rem;
-            background: rgba(0, 0, 0, 0.6);
-            backdrop-filter: blur(20px);
-            border: 1px solid rgba(0, 242, 255, 0.2);
-            border-radius: 20px;
-            transition: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-            overflow: hidden;
-            transform-style: preserve-3d;
-            perspective: 1000px;
-        }
-
-        .feature-card-3d::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: linear-gradient(135deg, rgba(0, 242, 255, 0.1), rgba(163, 230, 53, 0.1));
-            opacity: 0;
-            transition: opacity 0.5s ease;
-            z-index: 0;
-        }
-
-        .feature-card-3d:hover::before {
-            opacity: 1;
-        }
-
-        .feature-card-3d::after {
-            content: '';
-            position: absolute;
-            top: -50%;
-            left: -50%;
-            width: 200%;
-            height: 200%;
-            background: linear-gradient(
-                0deg,
-                transparent,
-                rgba(0, 242, 255, 0.1),
-                transparent
-            );
-            transform: rotate(45deg);
-            animation: shimmer 3s linear infinite;
-            opacity: 0;
-            transition: opacity 0.5s ease;
-        }
-
-        .feature-card-3d:hover::after {
-            opacity: 1;
-        }
-
-        @keyframes shimmer {
-            0% {
-                transform: translateY(-100%) rotate(45deg);
-            }
-            100% {
-                transform: translateY(100%) rotate(45deg);
-            }
-        }
-
-        .feature-card-3d:hover {
-            transform: translateY(-15px) rotateX(5deg);
-            border-color: var(--neon-blue);
-            box-shadow: 
-                0 30px 60px rgba(0, 242, 255, 0.4),
-                0 0 50px rgba(0, 242, 255, 0.3),
-                inset 0 0 30px rgba(0, 242, 255, 0.1);
-        }
-
-        .card-content {
-            position: relative;
-            z-index: 1;
-        }
-
-        /* Icon Container with 3D Effect */
-        .icon-container-3d {
-            width: 90px;
-            height: 90px;
-            margin: 0 auto 2rem;
-            position: relative;
-            transform-style: preserve-3d;
-        }
-
-        .icon-bg {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 242, 255, 1);
-            border-radius: 50%;
-            opacity: 0.2;
-            animation: iconPulse 3s ease-in-out infinite;
-        }
-
-        @keyframes iconPulse {
-            0%, 100% {
-                transform: scale(1);
-                opacity: 0.2;
-            }
-            50% {
-                transform: scale(1.2);
-                opacity: 0.4;
-            }
-        }
-
-        .feature-icon-3d {
-            position: relative;
-            font-size: 3rem;
-            background: rgba(0, 242, 255, 1);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            height: 100%;
-            filter: drop-shadow(0 0 20px var(--neon-blue));
-            transition: transform 0.5s ease;
-        }
-
-        .feature-card-3d:hover .feature-icon-3d {
-            transform: scale(1.2) rotateY(360deg);
-        }
-
-        .feature-title {
-            font-family: 'Exo 2', sans-serif;
-            font-size: 1.6rem;
-            font-weight: 700;
-            color: var(--neon-blue);
-            margin-bottom: 1rem;
-            letter-spacing: 0.05em;
-            text-align: center;
-        }
-
-        .feature-description {
-            font-family: 'Cairo', sans-serif;
-            font-size: 1.05rem;
-            color: rgba(255, 255, 255, 0.75);
-            line-height: 1.8;
-            text-align: center;
-        }
-
-        /* CTA Section - Redesigned */
-        .cta-section {
-            padding: 8rem 2rem;
-            position: relative;
-            background: radial-gradient(circle at center, rgba(0, 0, 0, 0.8) 0%, transparent 100%);
-            overflow: hidden;
-        }
-
-        .cta-content {
-            max-width: 900px;
-            margin: 0 auto;
-            text-align: center;
-            position: relative;
-            z-index: 10;
-        }
-
-        .cta-title {
-            font-family: 'Exo 2', sans-serif;
-            font-size: clamp(2.5rem, 6vw, 4rem);
-            font-weight: 900;
-            background: rgba(0, 242, 255, 1);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-            margin-bottom: 2rem;
-            letter-spacing: 0.02em;
-            filter: drop-shadow(0 0 30px rgba(0, 242, 255, 0.5));
-        }
-
-        .cta-description {
-            font-family: 'Cairo', sans-serif;
-            font-size: 1.3rem;
-            color: rgba(255, 255, 255, 0.8);
-            margin-bottom: 3rem;
-            line-height: 2;
-        }
-
-        :root {
-    --discord: rgba(0, 242, 255, 1);
-    --github: rgba(0, 242, 255, 1);
-    --youtube: rgba(0, 242, 255, 1);
-    --facebook: rgba(0, 242, 255, 1);
-    --sky-blue: rgba(0, 242, 255, 1);
-}
-
-.social-links {
-    display: flex;
-    gap: 1.5rem;
-    justify-content: center;
-    align-items: center;
-    flex-wrap: wrap;
-    margin: 2rem 0;
-}
-
-.social-link {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: 48px;
-    height: 48px;
-    background: rgba(255, 255, 255, 0.05);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    border-radius: 50%;
-    transition: all 0.3s ease;
-    text-decoration: none;
-    color: rgba(255, 255, 255, 0.55);
-}
-
-.social-link i {
-    font-size: 1.5rem;
-    transition: transform 0.2s ease;
-}
-
-/* Hover effects — unified cyan (own brand color, not each platform's) */
-.social-link-discord:hover,
-.social-link-github:hover,
-.social-link-youtube:hover,
-.social-link-facebook:hover {
-    color: rgba(0, 242, 255, 1);
-    border-color: rgba(0, 242, 255, 0.6);
-    box-shadow: 0 0 15px rgba(0, 242, 255, 0.35);
-    transform: translateY(-3px);
-}
-
-/* Optional: slight icon scaling on hover */
-.social-link:hover i {
-    transform: scale(1.1);
-}
-
-.center-wrapper {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    min-height: 100vh; /* or height: auto; depending on your layout */
-}
-
-        /* Footer - Redesigned with PhineX Watermark */
-        .footer {
-            padding: 5rem 2rem 2rem;
-            background: linear-gradient(180deg, transparent 0%, rgba(0, 0, 0, 0.95) 100%);
-            border-top: 1px solid rgba(0, 242, 255, 0.2);
-            position: relative;
-            overflow: hidden;
-        }
-
-        /* PhineX Logo Watermark */
-        .footer::before {
-            content: '';
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            width: 100%;
-            max-width: 800px;
-            height: 400px;
-            background-image: url('PhineX (2).png');
-            background-size: contain;
-            background-position: center;
-            background-repeat: no-repeat;
-            opacity: 0.08;
-            pointer-events: none;
-            z-index: 0;
-            filter: blur(1px);
-        }
-
-        .footer-content {
-            max-width: 1400px;
-            margin: 0 auto;
-            position: relative;
-            z-index: 10;
-        }
-
-        .footer-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-            gap: 4rem;
-            margin-bottom: 3rem;
-        }
-
-        .footer-section h3 {
-            font-family: 'Exo 2', sans-serif;
-            font-size: 1.4rem;
-            color: var(--neon-blue);
-            margin-bottom: 1.5rem;
-            letter-spacing: 0.1em;
-            font-weight: 700;
-            text-shadow: 0 0 20px rgba(0, 242, 255, 0.6);
-        }
-
-        .footer-section ul {
-            list-style: none;
-        }
-
-        .footer-section ul li {
-            margin-bottom: 1rem;
-        }
-
-        .footer-section a {
-            color: rgba(255, 255, 255, 0.7);
-            text-decoration: none;
-            transition: all 0.3s ease;
-            font-family: 'Cairo', sans-serif;
-            font-size: 1.05rem;
-            display: inline-block;
-        }
-
-        .footer-section a:hover {
-            color: var(--neon-blue);
-            transform: translateX(-5px);
-            text-shadow: 0 0 15px rgba(0, 242, 255, 0.8);
-        }
-
-        .footer-logo {
-            width: 80px;
-            height: auto;
-            margin-bottom: 1.5rem;
-            filter: drop-shadow(0 0 30px var(--neon-green));
-            animation: footerLogoFloat 4s ease-in-out infinite;
-            border-radius: 40%;
-        }
-
-        @keyframes footerLogoFloat {
-            0%, 100% {
-                transform: translateY(0);
-            }
-            50% {
-                transform: translateY(-10px);
-            }
-        }
-
-        .footer-description {
-            color: rgba(255, 255, 255, 0.7);
-            font-size: 1rem;
-            line-height: 1.8;
-            margin-bottom: 1.5rem;
-        }
-
-        .footer-bottom {
-            padding-top: 2.5rem;
-            border-top: 1px solid rgba(0, 242, 255, 0.2);
-            text-align: center;
-            color: rgba(255, 255, 255, 0.6);
-            font-size: 1rem;
-        }
-
-        .footer-bottom p {
-            margin-bottom: 0.8rem;
-        }
-
-        .footer-bottom a {
-            color: var(--neon-blue);
-            text-decoration: none;
-            transition: all 0.3s ease;
-            font-weight: 600;
-        }
-
-        .footer-bottom a:hover {
-            color: var(--cyber-purple);
-            text-shadow: 0 0 15px rgba(163, 230, 53, 0.8);
-        }
-
-        /* Responsive */
-        @media (max-width: 768px) {
-            .video-sphere {
-                width: 250px;
-                height: 250px;
-            }
-
-            .video-container {
-                width: 230px;
-                height: 230px;
-            }
-
-            .eljasus-text {
-                font-size: 2.5rem;
-            }
-
-            .loading-bar-container {
-                width: 300px;
-            }
-
-            .phinex-logo {
-                width: 200px;
-            }
-
-            .button-container {
-                flex-direction: column;
-                align-items: center;
-            }
-
-            .game-btn {
-                width: 100%;
-                max-width: 350px;
-            }
-
-            .features-grid {
-                grid-template-columns: 1fr;
-                gap: 2rem;
-            }
-
-            .logo-container-3d {
-                width: 200px;
-                height: 200px;
-            }
-
-            .orb {
-                filter: blur(60px);
-            }
-        }
-
-        /* Scroll Reveal Animations */
-        .scroll-reveal {
-            opacity: 0;
-            transform: translateY(50px);
-            transition: all 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-        }
-
-        .scroll-reveal.revealed {
-            opacity: 1;
-            transform: translateY(0);
-        }
-
-        /* Energy Particles Around Buttons */
-        .btn-particles {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            pointer-events: none;
-            overflow: hidden;
-        }
-
-        .btn-particle {
-            position: absolute;
-            width: 3px;
-            height: 3px;
-            background: var(--neon-blue);
-            border-radius: 50%;
-            animation: btnParticleFloat 2s ease-out infinite;
-            opacity: 0;
-        }
-
-        @keyframes btnParticleFloat {
-            0% {
-                opacity: 0;
-                transform: translateY(0) scale(0);
-            }
-            50% {
-                opacity: 1;
-            }
-            100% {
-                opacity: 0;
-                transform: translateY(-50px) scale(1);
-            }
+            font-family: 'Cairo', system-ui, sans-serif; background: #000; color: rgb(var(--w)); line-height: 1.6;
+            overflow-x: hidden; min-height: 100vh; min-height: 100dvh;
+        }
+        body.locked { overflow: hidden; }
+        a { color: inherit; text-decoration: none; }
+        button { font-family: inherit; }
+        img { max-width: 100%; display: block; }
+        :focus-visible { outline: 2px solid rgb(var(--l)); outline-offset: 3px; }
+
+        /* faint structural grid + soft colour wash (fixed, cheap) */
+        .bg { position: fixed; inset: 0; z-index: 0; pointer-events: none;
+            background:
+                radial-gradient(ellipse 110% 60% at 50% -8%, rgba(var(--c), .14), transparent 62%),
+                radial-gradient(ellipse 80% 50% at 100% 100%, rgba(var(--l), .08), transparent 62%),
+                linear-gradient(rgba(var(--c), .035) 1px, transparent 1px) 0 0 / 48px 48px,
+                linear-gradient(90deg, rgba(var(--c), .035) 1px, transparent 1px) 0 0 / 48px 48px; }
+        main, header.nav, footer { position: relative; z-index: 1; }
+        .wrap { width: min(1180px, 100% - 32px); margin-inline: auto; }
+
+        /* ───────── intro ───────── */
+        #intro { position: fixed; inset: 0; z-index: 1000; background: #000; display: grid; place-items: center; transition: opacity .6s ease, visibility .6s ease; }
+        #intro.done { opacity: 0; visibility: hidden; }
+        .stage { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 22px; opacity: 0; visibility: hidden; transition: opacity .6s ease, visibility .6s ease; padding: 24px; text-align: center; }
+        .stage.on { opacity: 1; visibility: visible; }
+        .kicker { font: 400 clamp(13px, 3.4vw, 20px) 'Orbitron', sans-serif; letter-spacing: .38em; color: var(--muted); text-transform: uppercase; }
+        .stage img.px { width: min(240px, 60vw); filter: drop-shadow(0 0 26px rgba(var(--l), .55)); }
+        .credit { font: 900 clamp(26px, 7vw, 54px) 'Orbitron', sans-serif; letter-spacing: .06em; color: rgb(var(--c)); text-shadow: 0 0 22px rgba(var(--c), .6); display: flex; gap: .45em; flex-wrap: wrap; justify-content: center; }
+        .credit span { opacity: 0; transform: translateY(10px); }
+        .stage.on .credit span { animation: rise .6s ease forwards; }
+        .stage.on .credit span:nth-child(2) { animation-delay: .25s; }
+        .stage.on .credit span:nth-child(3) { animation-delay: .5s; }
+        @keyframes rise { to { opacity: 1; transform: none; } }
+        .sphere { position: relative; width: min(240px, 58vw); aspect-ratio: 1; border-radius: 50%; overflow: hidden; border: 2px solid rgb(var(--c)); box-shadow: 0 0 40px rgba(var(--c), .5), inset 0 0 30px rgba(var(--c), .25); }
+        .sphere video { width: 100%; height: 100%; object-fit: cover; }
+        .intro-title { font: 900 clamp(30px, 9vw, 64px) 'Orbitron', sans-serif; letter-spacing: .08em; color: #fff; text-shadow: 0 0 24px rgba(var(--c), .7); }
+        .intro-sub { font: 400 clamp(11px, 3vw, 16px) 'Orbitron', sans-serif; letter-spacing: .5em; color: rgb(var(--l)); }
+        .bar { width: min(260px, 60vw); height: 3px; background: rgba(var(--w), .1); border-radius: 3px; overflow: hidden; }
+        .bar i { display: block; height: 100%; width: 0; background: rgb(var(--c)); box-shadow: 0 0 10px rgb(var(--c)); }
+        .stage.on .bar i { animation: load 2.6s linear forwards; }
+        @keyframes load { to { width: 100%; } }
+        #skip { position: absolute; z-index: 2; top: calc(14px + env(safe-area-inset-top, 0px)); left: 14px; min-height: 44px; padding: 0 16px; border-radius: 12px; cursor: pointer; background: rgba(0, 0, 0, .6); color: var(--muted); border: 1px solid rgba(var(--w), .2); font-weight: 700; font-size: 13px; }
+        #skip:hover { color: rgb(var(--c)); border-color: rgba(var(--c), .6); }
+
+        /* ───────── top bar ───────── */
+        header.nav { position: sticky; top: 0; z-index: 50; background: rgba(0, 0, 0, .82); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); border-bottom: 1px solid var(--line); padding-top: env(safe-area-inset-top, 0px); }
+        .nav-in { display: flex; align-items: center; gap: 14px; min-height: 62px; }
+        .brand { display: flex; align-items: center; gap: 10px; font: 900 15px 'Orbitron', sans-serif; letter-spacing: .1em; }
+        .brand img { width: 38px; height: 38px; border-radius: 10px; border: 1px solid rgba(var(--c), .6); object-fit: cover; }
+        .brand small { display: block; font: 400 8px 'Orbitron', sans-serif; letter-spacing: .3em; color: rgb(var(--l)); margin-top: 1px; }
+        .links { display: flex; gap: 4px; margin-inline-start: 18px; }
+        .links a { padding: 10px 12px; border-radius: 10px; font-weight: 700; font-size: 14px; color: var(--muted); }
+        .links a:hover { color: rgb(var(--c)); background: rgba(var(--c), .08); }
+        .nav-cta { margin-inline-start: auto; display: flex; gap: 8px; }
+
+        .btn { display: inline-flex; align-items: center; justify-content: center; gap: 10px; min-height: 48px; padding: 0 24px; border-radius: 12px; font-weight: 900; font-size: 15px; cursor: pointer; border: 1px solid transparent; transition: transform .12s, box-shadow .2s, background .2s; white-space: nowrap; }
+        .btn:active { transform: scale(.97); }
+        .btn-p { background: rgb(var(--c)); color: #000; box-shadow: 0 0 22px rgba(var(--c), .4); }
+        .btn-p:hover { box-shadow: 0 0 34px rgba(var(--c), .65); }
+        .btn-g { background: transparent; color: rgb(var(--w)); border-color: rgba(var(--w), .28); }
+        .btn-g:hover { border-color: rgb(var(--l)); color: rgb(var(--l)); }
+        .btn-s { min-height: 42px; padding: 0 16px; font-size: 14px; }
+
+        /* ───────── hero ───────── */
+        .hero { padding: clamp(36px, 7vw, 84px) 0 clamp(36px, 6vw, 70px); }
+        .hero-grid { display: grid; grid-template-columns: 1.15fr .85fr; gap: clamp(24px, 5vw, 64px); align-items: center; }
+        .chip { display: inline-flex; align-items: center; gap: 8px; max-width: 100%; padding: 7px 14px; border-radius: 999px; font-size: 12.5px; font-weight: 700; border: 1px solid rgba(var(--l), .5); background: rgba(var(--l), .08); color: rgb(var(--l)); margin-bottom: 18px; }
+        .chip span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .chip:hover { background: rgba(var(--l), .15); }
+        h1.title { font: 900 clamp(38px, 8.4vw, 78px) 'Cairo', sans-serif; line-height: 1.1; }
+        h1.title em { font-style: normal; color: rgb(var(--c)); text-shadow: 0 0 28px rgba(var(--c), .55); }
+        .edition { display: block; margin: 10px 0 18px; font: 400 clamp(11px, 2.6vw, 15px) 'Orbitron', sans-serif; letter-spacing: .5em; color: rgb(var(--l)); }
+        .lead { font-size: clamp(15px, 2.4vw, 18px); color: var(--muted); max-width: 560px; margin-bottom: 28px; }
+        .cta { display: flex; gap: 12px; flex-wrap: wrap; }
+        .mini { display: flex; gap: 22px; flex-wrap: wrap; margin-top: 30px; }
+        .mini div { font-size: 12px; color: var(--muted); font-weight: 600; }
+        .mini b { display: block; font: 900 22px 'Orbitron', sans-serif; color: rgb(var(--c)); }
+
+        .frame { position: relative; justify-self: center; width: min(380px, 78vw); aspect-ratio: 1; padding: 14px; }
+        .frame img { width: 100%; height: 100%; object-fit: cover; border-radius: 14px; border: 1px solid var(--line); }
+        .frame::before, .frame::after { content: ''; position: absolute; width: 56px; height: 56px; border: 3px solid rgb(var(--c)); filter: drop-shadow(0 0 8px rgba(var(--c), .7)); }
+        .frame::before { top: 0; right: 0; border-left: 0; border-bottom: 0; border-top-right-radius: 14px; }
+        .frame::after { bottom: 0; left: 0; border-right: 0; border-top: 0; border-bottom-left-radius: 14px; }
+        .scan { position: absolute; inset: 14px; border-radius: 14px; overflow: hidden; pointer-events: none; }
+        .scan::after { content: ''; position: absolute; left: 0; right: 0; height: 28%; top: -30%; background: linear-gradient(180deg, transparent, rgba(var(--c), .14), transparent); animation: scan 5s linear infinite; }
+        @keyframes scan { to { top: 110%; } }
+
+        /* ───────── sections ───────── */
+        section.s { padding: clamp(34px, 6vw, 70px) 0; }
+        .s-head { text-align: center; margin-bottom: clamp(22px, 4vw, 40px); }
+        .s-head small { display: block; font: 400 11px 'Orbitron', sans-serif; letter-spacing: .4em; color: rgb(var(--l)); margin-bottom: 8px; }
+        .s-head h2 { font-size: clamp(24px, 5vw, 38px); font-weight: 900; }
+        .s-head p { color: var(--muted); margin-top: 8px; font-size: 15px; }
+
+        .steps { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; counter-reset: st; }
+        .step { position: relative; padding: 22px 20px 20px; border: 1px solid var(--line); border-radius: 16px; background: rgba(0, 0, 0, .7); counter-increment: st; }
+        .step::before { content: counter(st, decimal-leading-zero); position: absolute; top: 14px; left: 16px; font: 900 28px 'Orbitron', sans-serif; color: rgba(var(--c), .25); }
+        .step h3 { font-size: 18px; font-weight: 900; margin-bottom: 6px; color: rgb(var(--c)); }
+        .step p { color: var(--muted); font-size: 14.5px; }
+
+        .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+        .card { position: relative; display: block; padding: 24px 22px; border-radius: 16px; background: rgba(0, 0, 0, .75); border: 1px solid var(--line); transition: border-color .2s, transform .2s, box-shadow .2s; }
+        a.card:hover { border-color: rgb(var(--c)); transform: translateY(-4px); box-shadow: 0 10px 34px rgba(var(--c), .12); }
+        .card .ic { width: 50px; height: 50px; border-radius: 12px; display: grid; place-items: center; font-size: 22px; color: rgb(var(--c)); background: rgba(var(--c), .1); border: 1px solid rgba(var(--c), .4); margin-bottom: 14px; }
+        .card.lime .ic { color: rgb(var(--l)); background: rgba(var(--l), .1); border-color: rgba(var(--l), .4); }
+        .card h3 { font-size: 18px; font-weight: 900; margin-bottom: 6px; }
+        .card p { color: var(--muted); font-size: 14.5px; }
+        .card .go { display: inline-block; margin-top: 12px; font-size: 13px; font-weight: 900; color: rgb(var(--l)); }
+
+        .ranks { display: grid; grid-template-columns: repeat(7, 1fr); gap: 10px; }
+        .rk { text-align: center; padding: 14px 6px 12px; border-radius: 14px; border: 1px solid color-mix(in srgb, var(--rc) 40%, transparent); background: color-mix(in srgb, var(--rc) 7%, #000); }
+        .rk img { width: 56px; height: 56px; object-fit: contain; margin: 0 auto 8px; filter: drop-shadow(0 0 10px color-mix(in srgb, var(--rc) 55%, transparent)); }
+        .rk b { display: block; font: 900 11px 'Orbitron', sans-serif; color: var(--rc); letter-spacing: .04em; }
+        .rk span { display: block; font-size: 11px; color: var(--muted); margin-top: 2px; }
+
+        .final { text-align: center; padding: clamp(28px, 5vw, 54px) 20px; border-radius: 22px; border: 1px solid rgba(var(--c), .4); background: radial-gradient(ellipse at top, rgba(var(--c), .12), rgba(0, 0, 0, .85) 70%); box-shadow: 0 0 50px rgba(var(--c), .1); }
+        .final h2 { font-size: clamp(26px, 6vw, 42px); font-weight: 900; margin-bottom: 8px; }
+        .final p { color: var(--muted); margin-bottom: 24px; }
+        .final .cta { justify-content: center; }
+
+        /* ───────── footer ───────── */
+        footer { border-top: 1px solid var(--line); margin-top: 30px; padding: 40px 0 calc(24px + env(safe-area-inset-bottom, 0px)); background: rgba(0, 0, 0, .85); }
+        .f-grid { display: grid; grid-template-columns: 1.4fr 1fr 1fr; gap: 30px; }
+        footer h3 { font-size: 15px; font-weight: 900; margin-bottom: 12px; color: rgb(var(--c)); }
+        footer p.d { color: var(--muted); font-size: 14px; max-width: 360px; }
+        footer ul { list-style: none; display: grid; gap: 2px; }
+        footer li a { display: inline-flex; align-items: center; gap: 8px; min-height: 36px; color: var(--muted); font-size: 14px; }
+        footer li a:hover { color: rgb(var(--l)); }
+        footer li a i { width: 18px; text-align: center; }
+        .social { display: flex; gap: 10px; margin-top: 16px; }
+        .social a { width: 44px; height: 44px; border-radius: 12px; display: grid; place-items: center; border: 1px solid var(--line); color: var(--muted); font-size: 18px; }
+        .social a:hover { color: rgb(var(--c)); border-color: rgb(var(--c)); }
+        .f-bottom { margin-top: 30px; padding-top: 18px; border-top: 1px solid rgba(var(--w), .08); text-align: center; color: rgba(var(--w), .45); font-size: 12.5px; }
+        .f-bottom a { color: rgb(var(--l)); }
+
+        /* reveal (only when JS is on) */
+        .js .rv { opacity: 0; transform: translateY(18px); transition: opacity .6s ease, transform .6s ease; }
+        .js .rv.in { opacity: 1; transform: none; }
+
+        /* ───────── responsive ───────── */
+        @media (max-width: 900px) {
+            .hero-grid { grid-template-columns: 1fr; }
+            .frame { order: -1; width: min(280px, 64vw); }
+            .hero-text { text-align: center; }
+            .lead { margin-inline: auto; }
+            .cta, .mini { justify-content: center; }
+            .grid, .steps { grid-template-columns: 1fr 1fr; }
+            .ranks { grid-template-columns: repeat(4, 1fr); }
+            .f-grid { grid-template-columns: 1fr 1fr; }
+            .f-grid > :first-child { grid-column: 1 / -1; }
+            .links { display: none; }
+        }
+        @media (max-width: 560px) {
+            .wrap { width: calc(100% - 24px); }
+            .grid, .steps { grid-template-columns: 1fr; }
+            .ranks { grid-template-columns: repeat(4, 1fr); gap: 8px; }
+            .rk img { width: 44px; height: 44px; }
+            .btn { width: 100%; }
+            .nav-cta .btn { width: auto; }
+            .nav-cta .hide-s { display: none; }
+            .f-grid { grid-template-columns: 1fr; }
+        }
+        @media (prefers-reduced-motion: reduce) {
+            *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
+            html { scroll-behavior: auto; }
         }
     </style>
 </head>
-<body>
-    <!-- Cosmic Background -->
-    <div class="cosmic-bg"></div>
-    
-    <!-- Energy Orbs -->
-    <div class="energy-orbs">
-        <div class="orb orb-1"></div>
-        <div class="orb orb-2"></div>
-        <div class="orb orb-3"></div>
-    </div>
-    
-    <!-- 3D Geometric Grid -->
-    <div class="geometric-grid">
-        <div class="grid-layer"></div>
-    </div>
+<body class="locked">
+    <div class="bg" aria-hidden="true"></div>
 
-    <!-- Loading Screens Container (PRESERVED) -->
-    <div class="loading-container" id="loadingContainer">
-        <!-- Screen 1: Presented By -->
-        <div class="loading-screen active" id="presentedByScreen">
-            <div class="scanlines"></div>
-            <div class="presented-text">PRESENTED BY</div>
-            <img src="Assets/PhineX (2).png" alt="PhineX" class="phinex-logo">
+    <!-- ═══ INTRO (skippable, shown once per visit) ═══ -->
+    <div id="intro" role="dialog" aria-label="مقدمة">
+        <button type="button" id="skip">تخطي ‹</button>
+        <div class="stage on" id="st1">
+            <div class="kicker">Presented by</div>
+            <img class="px" src="Assets/PhineX (2).png" alt="PhineX">
         </div>
-
-        <!-- Screen 2: Credits -->
-        <div class="loading-screen" id="creditsScreen">
-            <div class="scanlines"></div>
-            <div class="credits-content">
-                <div class="made-by-text">MADE BY</div>
-                <div class="amg-container">
-                    <span class="amg-brackets">{</span>
-
-                    <div class="name-wrapper">
-                        <span class="letter-expand elgohary">OHARY</span><span class="letter-initial e">G</span>
-                    </div>
-
-                    <div class="name-wrapper">
-                        <span class="letter-expand mohamed">OHAMED</span><span class="letter-initial m">M</span>
-                    </div>
-
-                    <div class="name-wrapper">
-                        <span class="letter-expand ahmed">HMED</span><span class="letter-initial a">A</span>
-                    </div>
-
-                    <span class="amg-brackets">}</span>
-                </div>
-            </div>
+        <div class="stage" id="st2">
+            <div class="kicker">Made by</div>
+            <div class="credit" dir="ltr"><span>GOHARY</span><span>MOHAMED</span><span>AHMED</span></div>
         </div>
-
-        <!-- Screen 3: Main Loading -->
-        <div class="loading-screen" id="mainLoadingScreen">
-            <div class="grid-bg"></div>
-            <div class="scanlines"></div>
-            
-            <!-- Particles -->
-            <div class="particles" id="particlesContainer"></div>
-            
-            <!-- Circuit lines -->
-            <div class="circuit-lines" id="circuitContainer"></div>
-
-            <!-- Video Sphere -->
-            <div class="video-sphere">
-                <div class="sphere-border"></div>
-                <div class="video-container">
-                    <video id="loadingVideo" autoplay loop muted playsinline>
-                        <source src="Assets/Anime.mp4" type="video/mp4">
-                    </video>
-                </div>
-            </div>
-
-            <div class="eljasus-text glitch" data-text="EL JASUS">EL JASUS</div>
-            <div class="subtitle-text">THE CLASSIC EDITION</div>
-            
-            <div class="loading-bar-container">
-                <div class="loading-bar"></div>
-            </div>
+        <div class="stage" id="st3">
+            <div class="sphere"><video id="introVideo" muted loop playsinline preload="auto"><source src="Assets/Anime.mp4" type="video/mp4"></video></div>
+            <div class="intro-title">EL JASUS</div>
+            <div class="intro-sub">THE CLASSIC EDITION</div>
+            <div class="bar"><i></i></div>
         </div>
     </div>
 
-    <!-- Main Content -->
-    <div id="mainContent">
-        <!-- Hero Section -->
-        <section class="hero-section">
-            <div class="floating-hex-container" id="floatingHexContainer"></div>
-            
-            <div class="hero-content">
-                <!-- 3D Logo Container -->
-                <div class="logo-container-3d">
-                    <div class="holo-ring"></div>
-                    <div class="logo-wrapper">
-                        <img src="Assets/ElJasus.jpg" alt="El Jasus" class="hero-logo">
+    <header class="nav">
+        <div class="wrap nav-in">
+            <a href="index.html" class="brand" aria-label="الجاسوس"><img src="Assets/ElJasus.jpg" alt=""><span>EL JASUS<small>CLASSIC EDITION</small></span></a>
+            <nav class="links" aria-label="التنقل">
+                <a href="Files/home.html">اللعب</a>
+                <a href="Files/leaderboard.html">المتصدرون</a>
+                <a href="Files/updates.html">التحديثات</a>
+                <a href="Files/howtoplay.html">كيفية اللعب</a>
+            </nav>
+            <div class="nav-cta">
+                <a href="Files/login.html" class="btn btn-g btn-s hide-s">تسجيل الدخول</a>
+                <a href="Files/home.html" class="btn btn-p btn-s">العب الآن</a>
+            </div>
+        </div>
+    </header>
+
+    <main>
+        <!-- ═══ HERO ═══ -->
+        <section class="hero">
+            <div class="wrap hero-grid">
+                <div class="hero-text">
+                    <a href="Files/updates.html" class="chip" id="latest"><i class="fas fa-rocket"></i><span id="latestTx">جديد: سجل التحديثات ولوحات المتصدرين</span></a>
+                    <h1 class="title">اكتشف <em>الجاسوس</em><br>قبل فوات الأوان</h1>
+                    <span class="edition">THE CLASSIC EDITION</span>
+                    <p class="lead">لعبة جماعية مليئة بالتشويق والخداع. العب مع أصدقائك، تبادلوا الأسئلة، وحاولوا كشف من هو الجاسوس بينكم قبل أن يخمّن الكلمة السرية.</p>
+                    <div class="cta">
+                        <a href="Files/home.html" class="btn btn-p"><i class="fas fa-play"></i> العب على الموقع</a>
+                        <button type="button" class="btn btn-g" id="installBtn"><i class="fas fa-download"></i> ثبّت التطبيق</button>
+                    </div>
+                    <div class="mini">
+                        <div><b>7</b>رتب للتنافس</div>
+                        <div><b>3+</b>لاعبين في الجولة</div>
+                        <div><b>AI</b>للتدريب وحدك</div>
                     </div>
                 </div>
-                
-                <h1 class="hero-title">الجاسوس | El Jasus</h1>
-                <div class="hero-subtitle">THE CLASSIC EDITION</div>
-                <p class="hero-description">
-                    اكتشف من هو الجاسوس بينكم في لعبة جماعية مليئة بالتشويق والإثارة. 
-                    العب مع أصدقائك واختبر مهاراتك في الخداع والذكاء!
-                </p>
-                
-                <div class="button-container">
-                    <button class="game-btn btn-primary" onclick="location.href='Files/home.html'">
-                        العب على الموقع
-                        <i class="fas fa-play btn-icon"></i>
-                    </button>
-                    <button class="game-btn btn-secondary" id="installBtnHero">
-                        ثبت التطبيق
-                        <i class="fas fa-download btn-icon"></i>
-                    </button>
+                <div class="frame">
+                    <img src="Assets/ElJasus.jpg" alt="شعار الجاسوس — النسخة الكلاسيكية" width="380" height="380" fetchpriority="high">
+                    <div class="scan"></div>
                 </div>
             </div>
         </section>
 
-        <!-- Features Section -->
-        <section class="features-section">
-            <h2 class="section-title scroll-reveal">المميزات الحصرية</h2>
-            <div class="features-grid">
-                <div class="feature-card-3d scroll-reveal">
-                    <div class="card-content">
-                        <div class="icon-container-3d">
-                            <div class="icon-bg"></div>
-                            <div class="feature-icon-3d">
-                                <i class="fas fa-users"></i>
-                            </div>
-                        </div>
-                        <h3 class="feature-title">متعددة اللاعبين</h3>
-                        <p class="feature-description">
-                            العب مع أصدقائك محلياً أو عبر الإنترنت بنظام متطور
-                        </p>
-                    </div>
-                </div>
-                
-                <div class="feature-card-3d scroll-reveal">
-                    <div class="card-content">
-                        <div class="icon-container-3d">
-                            <div class="icon-bg"></div>
-                            <div class="feature-icon-3d">
-                                <i class="fas fa-crown"></i>
-                            </div>
-                        </div>
-                        <a href="Files/leaderboard.html" style="text-decoration: none;"><h3 class="feature-title">لوحة المتصدرين</h3></a>
-                        <p class="feature-description">
-                            تنافس مع اللاعبين حول العالم وأثبت أنك الأفضل
-                        </p>
-                    </div>
-                </div>
-                
-                <div class="feature-card-3d scroll-reveal">
-                    <div class="card-content">
-                        <div class="icon-container-3d">
-                            <div class="icon-bg"></div>
-                            <div class="feature-icon-3d">
-                                <i class="fas fa-shield-alt"></i>
-                            </div>
-                        </div>
-                        <a href="Files/JMS.html" style="text-decoration: none;"><h3 class="feature-title">نظام الJMS</h3></a>
-                        <p class="feature-description">
-                            نظام الحظورات والعقوبات المتطور للحفاظ على بيئة لعب عادلة وممتعة
-                        </p>
-                    </div>
-                </div>
-                
-                <div class="feature-card-3d scroll-reveal">
-                    <div class="card-content">
-                        <div class="icon-container-3d">
-                            <div class="icon-bg"></div>
-                            <div class="feature-icon-3d">
-                                <i class="fas fa-mobile-alt"></i>
-                            </div>
-                        </div>
-                        <h3 class="feature-title">تجربة محمولة</h3>
-                        <p class="feature-description">
-                            تطبيق متوافق مع جميع الأجهزة بتصميم عصري وسلس
-                        </p>
-                    </div>
-                </div>
-                
-                <div class="feature-card-3d scroll-reveal">
-                    <div class="card-content">
-                        <div class="icon-container-3d">
-                            <div class="icon-bg"></div>
-                            <div class="feature-icon-3d">
-                                <i class="fas fa-lock"></i>
-                            </div>
-                        </div>
-                        <h3 class="feature-title">آمن ومستقر</h3>
-                        <p class="feature-description">
-                            نظام أمان متقدم لحماية بياناتك وتجربة لعب مستقرة
-                        </p>
-                    </div>
-                </div>
-                
-                <div class="feature-card-3d scroll-reveal">
-                    <div class="card-content">
-                        <div class="icon-container-3d">
-                            <div class="icon-bg"></div>
-                            <div class="feature-icon-3d">
-                                <i class="fas fa-rocket"></i>
-                            </div>
-                        </div>
-                        <h3 class="feature-title">تحديثات مستمرة</h3>
-                        <p class="feature-description">
-                            محتوى جديد وميزات حصرية في كل تحديث
-                        </p>
-                    </div>
+        <!-- ═══ HOW IT WORKS ═══ -->
+        <section class="s">
+            <div class="wrap">
+                <div class="s-head rv"><small>HOW TO PLAY</small><h2>كيف تلعب؟</h2><p>ثلاث خطوات وتبدأ الجولة</p></div>
+                <div class="steps">
+                    <div class="step rv"><h3>اختر الفئة</h3><p>أنشئ غرفة أو ادخل بكود، ثم اختاروا فئة الكلمة: أماكن، أكلات، مهن، حيوانات وغيرها.</p></div>
+                    <div class="step rv"><h3>احصل على دورك</h3><p>الجميع يعرف الكلمة السرية إلا الجاسوس. اسأل وأجب دون أن تكشف الكلمة بشكل مباشر.</p></div>
+                    <div class="step rv"><h3>اكشف أو خمّن</h3><p>صوّتوا على من تشكّون فيه. إن نجا الجاسوس فعليه أن يخمّن الكلمة ليفوز.</p></div>
                 </div>
             </div>
         </section>
 
-        <!-- CTA Section -->
-        <section class="cta-section">
-            <div class="cta-content scroll-reveal">
-                <h2 class="cta-title">جاهز للمغامرة؟</h2>
-                <p class="cta-description">
-                    انضم إلى آلاف اللاعبين حول العالم واختبر تجربة لعب لا تُنسى
-                </p>
-                <div class="button-container">
-                    <button class="game-btn btn-primary" onclick="location.href='Files/home.html'">
-                        العب الآن مجاناً
-                        <i class="fas fa-play btn-icon"></i>
-                    </button>
-                    <button class="game-btn btn-secondary" onclick="location.href='Files/howtoplay.html'">
-                        كيفية اللعب
-                        <i class="fas fa-question-circle btn-icon"></i>
-                    </button>
+        <!-- ═══ FEATURES ═══ -->
+        <section class="s">
+            <div class="wrap">
+                <div class="s-head rv"><small>FEATURES</small><h2>المميزات</h2></div>
+                <div class="grid">
+                    <a class="card rv" href="Files/home.html"><div class="ic"><i class="fas fa-users"></i></div><h3>متعددة اللاعبين</h3><p>العب أونلاين أو محلياً مع أصدقائك، وتدرّب مع لاعبي الذكاء الاصطناعي.</p><span class="go">ابدأ اللعب ‹</span></a>
+                    <a class="card lime rv" href="Files/leaderboard.html"><div class="ic"><i class="fas fa-trophy"></i></div><h3>لوحات المتصدرين</h3><p>أكثر من لوحة: الترتيب العام، الأصدقاء، وكل رتبة على حدة.</p><span class="go">شاهد المتصدرين ‹</span></a>
+                    <a class="card rv" href="Files/friends.html"><div class="ic"><i class="fas fa-user-friends"></i></div><h3>أصدقاء ودردشة</h3><p>أضف أصدقاءك بكود خاص، تراسلوا، وادعُهم إلى غرفتك بضغطة.</p><span class="go">أصدقائي ‹</span></a>
+                    <a class="card lime rv" href="Files/shop.html"><div class="ic"><i class="fas fa-store"></i></div><h3>متجر الأسماء</h3><p>ثيمات وألقاب لاسمك داخل الغرفة لتظهر بشكل مميز.</p><span class="go">زر المتجر ‹</span></a>
+                    <a class="card rv" href="Files/JMS.html"><div class="ic"><i class="fas fa-shield-alt"></i></div><h3>لعب نظيف</h3><p>نظام إشراف وعقوبات واضح يحافظ على بيئة لعب عادلة وممتعة.</p><span class="go">نظام الإشراف ‹</span></a>
+                    <a class="card lime rv" href="Files/updates.html"><div class="ic"><i class="fas fa-code-branch"></i></div><h3>تحديثات مستمرة</h3><p>سجل كامل للتحديثات مع مقارنة بينها وما تم إصلاحه في كل إصدار.</p><span class="go">سجل التحديثات ‹</span></a>
                 </div>
             </div>
         </section>
 
-        <!-- Footer -->
-        <footer class="footer">
-            <div class="footer-content">
-                <div class="footer-grid">
-                    <div class="footer-section">
-                        <img src="Assets/ElJasus.jpg" alt="El Jasus" class="footer-logo">
-                        <h3>الجاسوس</h3>
-                        <p class="footer-description">
-                            لعبة جماعية بسيطة وممتعه تجمع الأصدقاء والعائلة في تجربة مليئة بالتشويق والمتعه
-                        </p>
-                        <div class="social-links">
-                        <a href="https://discord.gg/xBQ3ewVVHk" target="_blank" class=" social-link-discord">
-                            <i class="fab fa-discord"></i>
-                        </a>
-                        <a href="https://github.com/PhineX-org" target="_blank" class=" social-link-github">
-                            <i class="fab fa-github"></i>
-                        </a>
-                        <a href="https://www.youtube.com/channel/UCslNCf9VtxpFH_gtA1VHFyQ" target="_blank" class=" social-link-youtube">
-                            <i class="fab fa-youtube"></i>
-                        </a>
-                        <a href="https://www.facebook.com/profile.php?id=61584765330775" target="_blank" class=" social-link-facebook">
-                            <i class="fab fa-facebook-f"></i>
-                        </a>
-                    </div>
-                    </div>
-                    <div class="footer-section">
-                        <h3>روابط سريعة</h3>
-                        <ul>
-                            <li><a href="Files/home.html"><i class="fas fa-gamepad" style="margin-left: 0.5rem;"></i>اللعب</a></li>
-                            <li><a href="Files/howtoplay.html"><i class="fas fa-info-circle" style="margin-left: 0.5rem;"></i>كيفية اللعب</a></li>
-                            <li><a href="Files/leaderboard.html"><i class="fas fa-trophy" style="margin-left: 0.5rem;"></i>لوحة المتصدرين</a></li>
-                            <li><a href="Files/community.html"><i class="fas fa-users" style="margin-left: 0.5rem;"></i>معايير المجتمع</a></li>
-                            <li><a href="Files/login.html"><i class="fas fa-sign-in-alt" style="margin-left: 0.5rem;"></i>سجل دخولك</a></li>
-                        </ul>
-                    </div>
-                    <div class="footer-section">
-                        <h3>الدعم</h3>
-                        <ul>
-                            <li><a href="https://discord.gg/xBQ3ewVVHk" target="_blank"><i class="fab fa-discord" style="margin-left: 0.5rem;"></i>Discord</a></li>
-                            <li><a href="Files/bugreport.html"><i class="fas fa-bug" style="margin-left: 0.5rem;"></i>الإبلاغ عن مشكلة</a></li>
-                            <li><a href="Files/JMS.html"><i class="fas fa-ban" style="margin-left: 0.5rem;"></i>نظام الاشراف</a></li>
-                            <li><a href="https://phinex-org.github.io/PhineX" target="_blank"><i class="fas fa-globe" style="margin-left: 0.5rem;"></i>PhineX</a></li>
-                        </ul>
-                    </div>
-                </div>
-                <div class="footer-bottom">
-                    <p>&copy; 2026 El Jasus by PhineX. جميع الحقوق محفوظة.</p>
-                    <p style="margin-top: 0.8rem;">
-                        صُنع بـ <i class="fas fa-heart" style="color: var(--cyber-purple);"></i> بواسطة 
-                        <a href="https://www.facebook.com/A.Mo.Elgohary/" target="_blank">Ahmed Al Gohary</a>
-                    </p>
+        <!-- ═══ RANKS ═══ -->
+        <section class="s">
+            <div class="wrap">
+                <div class="s-head rv"><small>RANKS</small><h2>اصعد إلى القمة</h2><p>كل مباراة تقرّبك من Ace</p></div>
+                <div class="ranks">
+                    <div class="rk rv" style="--rc:#cd7f32"><img loading="lazy" src="Files/Bronze.png" alt="" width="56" height="56"><b>BRONZE</b><span>برونزي</span></div>
+                    <div class="rk rv" style="--rc:#c0c0c0"><img loading="lazy" src="Files/Silver.png" alt="" width="56" height="56"><b>SILVER</b><span>فضي</span></div>
+                    <div class="rk rv" style="--rc:#ffd700"><img loading="lazy" src="Files/Gold.png" alt="" width="56" height="56"><b>GOLD</b><span>ذهبي</span></div>
+                    <div class="rk rv" style="--rc:#e5e4e2"><img loading="lazy" src="Files/Platinum.png" alt="" width="56" height="56"><b>PLATINUM</b><span>بلاتيني</span></div>
+                    <div class="rk rv" style="--rc:#00f2ff"><img loading="lazy" src="Files/Diamond.png" alt="" width="56" height="56"><b>DIAMOND</b><span>ألماسي</span></div>
+                    <div class="rk rv" style="--rc:#ffd700"><img loading="lazy" src="Files/Crown.png" alt="" width="56" height="56"><b>CROWN</b><span>كراون</span></div>
+                    <div class="rk rv" style="--rc:#ffffff"><img loading="lazy" src="Files/Ace.png" alt="" width="56" height="56"><b>ACE</b><span>إيس</span></div>
                 </div>
             </div>
-        </footer>
-    </div>
+        </section>
 
-    <!-- ALL JAVASCRIPT PRESERVED FROM ORIGINAL -->
+        <!-- ═══ FINAL CTA ═══ -->
+        <section class="s">
+            <div class="wrap">
+                <div class="final rv">
+                    <h2>جاهز للمغامرة؟</h2>
+                    <p>انضم إلى اللاعبين واختبر ذكاءك في الخداع والاستنتاج.</p>
+                    <div class="cta">
+                        <a href="Files/home.html" class="btn btn-p"><i class="fas fa-play"></i> العب الآن مجاناً</a>
+                        <a href="Files/howtoplay.html" class="btn btn-g"><i class="fas fa-question-circle"></i> كيفية اللعب</a>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer>
+        <div class="wrap">
+            <div class="f-grid">
+                <div>
+                    <div class="brand" style="margin-bottom:12px"><img src="Assets/ElJasus.jpg" alt=""><span>EL JASUS<small>CLASSIC EDITION</small></span></div>
+                    <p class="d">لعبة جماعية بسيطة وممتعة تجمع الأصدقاء والعائلة في تجربة مليئة بالتشويق.</p>
+                    <div class="social">
+                        <a href="https://discord.gg/xBQ3ewVVHk" target="_blank" rel="noopener" aria-label="Discord"><i class="fab fa-discord"></i></a>
+                        <a href="https://github.com/PhineX-org" target="_blank" rel="noopener" aria-label="GitHub"><i class="fab fa-github"></i></a>
+                        <a href="https://www.youtube.com/channel/UCslNCf9VtxpFH_gtA1VHFyQ" target="_blank" rel="noopener" aria-label="YouTube"><i class="fab fa-youtube"></i></a>
+                        <a href="https://www.facebook.com/profile.php?id=61584765330775" target="_blank" rel="noopener" aria-label="Facebook"><i class="fab fa-facebook-f"></i></a>
+                    </div>
+                </div>
+                <div>
+                    <h3>روابط سريعة</h3>
+                    <ul>
+                        <li><a href="Files/home.html"><i class="fas fa-gamepad"></i>اللعب</a></li>
+                        <li><a href="Files/howtoplay.html"><i class="fas fa-info-circle"></i>كيفية اللعب</a></li>
+                        <li><a href="Files/leaderboard.html"><i class="fas fa-trophy"></i>لوحات المتصدرين</a></li>
+                        <li><a href="Files/updates.html"><i class="fas fa-code-branch"></i>سجل التحديثات</a></li>
+                        <li><a href="Files/community.html"><i class="fas fa-users"></i>معايير المجتمع</a></li>
+                        <li><a href="Files/login.html"><i class="fas fa-sign-in-alt"></i>سجّل دخولك</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h3>الدعم</h3>
+                    <ul>
+                        <li><a href="https://discord.gg/xBQ3ewVVHk" target="_blank" rel="noopener"><i class="fab fa-discord"></i>Discord</a></li>
+                        <li><a href="Files/bugreport.html"><i class="fas fa-bug"></i>الإبلاغ عن مشكلة</a></li>
+                        <li><a href="Files/JMS.html"><i class="fas fa-ban"></i>نظام الإشراف</a></li>
+                        <li><a href="https://phinex-org.github.io/PhineX" target="_blank" rel="noopener"><i class="fas fa-globe"></i>PhineX</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="f-bottom">
+                <p>&copy; 2026 El Jasus by PhineX. جميع الحقوق محفوظة.</p>
+                <p style="margin-top:8px">صُنع بـ <i class="fas fa-heart" style="color:rgb(163,230,53)"></i> بواسطة <a href="https://www.facebook.com/A.Mo.Elgohary/" target="_blank" rel="noopener">Ahmed Al Gohary</a></p>
+            </div>
+        </div>
+    </footer>
+
     <script>
-        // ============================================
-        // LOADING SCREEN SEQUENCE (PRESERVED)
-        // ============================================
-        
-        const screens = {
-            presentedBy: document.getElementById('presentedByScreen'),
-            credits: document.getElementById('creditsScreen'),
-            mainLoading: document.getElementById('mainLoadingScreen')
-        };
+    (function () {
+        'use strict';
+        document.documentElement.classList.add('js');
 
-        const loadingContainer = document.getElementById('loadingContainer');
-        const mainContent = document.getElementById('mainContent');
-
-        // Generate particles
-        function createParticles() {
-            const container = document.getElementById('particlesContainer');
-            for (let i = 0; i < 50; i++) {
-                const particle = document.createElement('div');
-                particle.className = 'particle';
-                particle.style.left = Math.random() * 100 + '%';
-                particle.style.setProperty('--drift', (Math.random() - 0.5) * 200 + 'px');
-                particle.style.animationDelay = Math.random() * 15 + 's';
-                particle.style.animationDuration = (10 + Math.random() * 10) + 's';
-                container.appendChild(particle);
-            }
+        /* ── intro: 3 stages, skippable, once per visit ── */
+        var intro = document.getElementById('intro'), stages = ['st1', 'st2', 'st3'].map(function (i) { return document.getElementById(i); });
+        var timers = [], finished = false;
+        function seen() { try { return sessionStorage.getItem('ej_intro') === '1'; } catch (e) { return false; } }
+        function finish() {
+            if (finished) return; finished = true;
+            timers.forEach(clearTimeout);
+            try { sessionStorage.setItem('ej_intro', '1'); } catch (e) {}
+            intro.classList.add('done'); document.body.classList.remove('locked');
+            var v = document.getElementById('introVideo'); if (v) v.pause();
+            setTimeout(function () { intro.style.display = 'none'; }, 700);
+        }
+        function show(i) { stages.forEach(function (s, k) { s.classList.toggle('on', k === i); }); if (i === 2) { var v = document.getElementById('introVideo'); if (v && v.play) v.play().catch(function () {}); } }
+        if (seen() || window.matchMedia('(prefers-reduced-motion: reduce)').matches) { finish(); }
+        else {
+            timers.push(setTimeout(function () { show(1); }, 2200));
+            timers.push(setTimeout(function () { show(2); }, 4900));
+            timers.push(setTimeout(finish, 7700));
+            document.getElementById('skip').addEventListener('click', finish);
+            document.addEventListener('keydown', function (e) { if (e.key === 'Escape' || e.key === 'Enter') finish(); });
         }
 
-        // Generate circuit lines
-        function createCircuitLines() {
-            const container = document.getElementById('circuitContainer');
-            for (let i = 0; i < 10; i++) {
-                const line = document.createElement('div');
-                line.className = 'circuit-line';
-                line.style.top = Math.random() * 100 + '%';
-                line.style.width = (200 + Math.random() * 300) + 'px';
-                line.style.animationDelay = Math.random() * 8 + 's';
-                line.style.animationDuration = (6 + Math.random() * 4) + 's';
-                container.appendChild(line);
-            }
-        }
+        /* ── latest release chip (from the shared update log) ── */
+        try {
+            var list = (window.EJ_UPDATES_BUILTIN || []).filter(function (u) { return u.status === 'released'; })
+                .sort(function (a, b) { return String(b.date).localeCompare(String(a.date)); });
+            if (list[0]) document.getElementById('latestTx').textContent = 'آخر تحديث v' + list[0].version + ' — ' + list[0].title;
+        } catch (e) {}
 
-        // Generate floating hexagons
-        function createFloatingHexagons() {
-            const container = document.getElementById('floatingHexContainer');
-            const hexagonSVG = '<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg"><polygon points="50 0, 93.3 25, 93.3 75, 50 100, 6.7 75, 6.7 25" fill="none" stroke="currentColor" stroke-width="2"/></svg>';
-            
-            for (let i = 0; i < 20; i++) {
-                const hexagon = document.createElement('div');
-                hexagon.className = 'hex-shape';
-                hexagon.style.left = Math.random() * 100 + '%';
-                hexagon.style.top = Math.random() * 100 + '%';
-                hexagon.style.animationDelay = Math.random() * 25 + 's';
-                hexagon.style.animationDuration = (20 + Math.random() * 15) + 's';
-                hexagon.innerHTML = hexagonSVG;
-                hexagon.style.color = `rgba(0, 242, 255, ${0.1 + Math.random() * 0.15})`;
-                container.appendChild(hexagon);
-            }
-        }
-
-        // Initialize effects
-        createParticles();
-        createCircuitLines();
-        createFloatingHexagons();
-
-        // Loading sequence
-        function startLoadingSequence() {
-            // Screen 1: Presented By (0-3.5s)
-            setTimeout(() => {
-                screens.presentedBy.classList.remove('active');
-                screens.credits.classList.add('active');
-            }, 3500);
-
-            // Screen 2: Credits (3.5-8s)
-            setTimeout(() => {
-                screens.credits.classList.remove('active');
-                screens.mainLoading.classList.add('active');
-            }, 8000);
-
-            // Screen 3: Main Loading (8-12s)
-            setTimeout(() => {
-                loadingContainer.style.opacity = '0';
-                mainContent.classList.add('active');
-                
-                setTimeout(() => {
-                    loadingContainer.style.display = 'none';
-                }, 1000);
-            }, 12000);
-        }
-
-        // Start loading sequence when page loads
-        window.addEventListener('load', () => {
-            startLoadingSequence();
+        /* ── PWA install ── */
+        var deferred = null;
+        window.addEventListener('beforeinstallprompt', function (e) { e.preventDefault(); deferred = e; });
+        document.getElementById('installBtn').addEventListener('click', function () {
+            if (!deferred) { UIAlert('التطبيق مثبت بالفعل أو أن المتصفح لا يدعم التثبيت.', { title: 'تثبيت التطبيق', type: 'info' }); return; }
+            deferred.prompt(); deferred.userChoice.then(function () { deferred = null; });
         });
 
-        // PWA Install
-        let deferredPrompt;
+        /* ── scroll reveal ── */
+        var els = [].slice.call(document.querySelectorAll('.rv'));
+        if ('IntersectionObserver' in window) {
+            var io = new IntersectionObserver(function (es) {
+                es.forEach(function (en) { if (en.isIntersecting) { en.target.classList.add('in'); io.unobserve(en.target); } });
+            }, { threshold: .12, rootMargin: '0px 0px -40px 0px' });
+            els.forEach(function (el, i) { el.style.transitionDelay = (i % 3) * 80 + 'ms'; io.observe(el); });
+        } else els.forEach(function (el) { el.classList.add('in'); });
 
-        window.addEventListener('beforeinstallprompt', (e) => {
-            e.preventDefault();
-            deferredPrompt = e;
-        });
-
-        function handleInstall() {
-            if (!deferredPrompt) {
-                alert('التطبيق مثبت بالفعل أو المتصفح لا يدعم التثبيت');
-                return;
-            }
-            deferredPrompt.prompt();
-            deferredPrompt.userChoice.then((choiceResult) => {
-                deferredPrompt = null;
-            });
-        }
-
-        document.getElementById('installBtnHero')?.addEventListener('click', handleInstall);
-
-        // Parallax effect for mouse movement
-        document.addEventListener('mousemove', (e) => {
-            const mouseX = (e.clientX / window.innerWidth - 0.5) * 20;
-            const mouseY = (e.clientY / window.innerHeight - 0.5) * 20;
-
-            document.querySelectorAll('.hex-shape').forEach((hex, index) => {
-                const speed = (index % 3 + 1) * 0.3;
-                hex.style.transform = `translate(${mouseX * speed}px, ${mouseY * speed}px)`;
-            });
-
-            // Add parallax to orbs
-            document.querySelectorAll('.orb').forEach((orb, index) => {
-                const speed = (index + 1) * 0.05;
-                orb.style.transform = `translate(${mouseX * speed}px, ${mouseY * speed}px)`;
-            });
-        });
-
-        // Scroll Reveal Animation
-        const observerOptions = {
-            threshold: 0.1,
-            rootMargin: '0px 0px -100px 0px'
-        };
-
-        const observer = new IntersectionObserver((entries) => {
-            entries.forEach((entry, index) => {
-                if (entry.isIntersecting) {
-                    setTimeout(() => {
-                        entry.target.classList.add('revealed');
-                    }, index * 100);
-                }
-            });
-        }, observerOptions);
-
-        document.querySelectorAll('.scroll-reveal').forEach((element) => {
-            observer.observe(element);
-        });
-
-        // 3D Card Tilt Effect
-        document.querySelectorAll('.feature-card-3d').forEach(card => {
-            card.addEventListener('mousemove', (e) => {
-                const rect = card.getBoundingClientRect();
-                const x = e.clientX - rect.left;
-                const y = e.clientY - rect.top;
-                
-                const centerX = rect.width / 2;
-                const centerY = rect.height / 2;
-                
-                const rotateX = (y - centerY) / 10;
-                const rotateY = (centerX - x) / 10;
-                
-                card.style.transform = `perspective(1000px) rotateX(${rotateX}deg) rotateY(${rotateY}deg) translateY(-15px)`;
-            });
-            
-            card.addEventListener('mouseleave', () => {
-                card.style.transform = 'perspective(1000px) rotateX(0) rotateY(0) translateY(0)';
-            });
-        });
+        /* ── service worker (relative path: works on the GitHub project site) ── */
+        if ('serviceWorker' in navigator) window.addEventListener('load', function () { navigator.serviceWorker.register('Assets/sw.js').catch(function () {}); });
+    })();
     </script>
-    <script>
-        window.alert   = (msg)             => UIAlert(msg);
-        window.confirm = (msg)             => UIConfirm(msg);
-        window.prompt  = (msg, defaultVal) => UIPrompt(msg, { defaultValue: defaultVal });
-    </script>
-    <script>if('serviceWorker' in navigator){window.addEventListener('load',()=>navigator.serviceWorker.register('/Assets/sw.js').catch(()=>{}));}</script>
-    <script>
-// Force service worker update on page load
-if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.getRegistrations().then(registrations => {
-        registrations.forEach(registration => {
-            registration.update();
-        });
-    });
-    
-    // Listen for new service worker
-    navigator.serviceWorker.addEventListener('controllerchange', () => {
-        window.location.reload();
-    });
-}
-</script>
 </body>
 </html>

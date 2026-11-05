@@ -676,7 +676,7 @@ const firebaseConfig = {
                     totalGames: 0, spyWins: 0, innocentWins: 0,
                     currentStreak: 0, longestWinStreak: 0
                 };
-                if (!prev.createdAt)           patch.createdAt   = Date.now();
+                if (!prev.createdAt)           { patch.createdAt = Date.now(); if (prev.tutorial == null) patch.tutorial = 'ns'; }   // brand-new account → show the tutorial once
                 if (prev.moderationWarnings == null) patch.moderationWarnings = 0;
                 if (prev.totalBans          == null) patch.totalBans          = 0;
 
@@ -715,8 +715,9 @@ const firebaseConfig = {
 
             const email      = document.getElementById('username').value.trim();
             const password   = document.getElementById('password').value;
-            // FIX: correct checkbox ID (was 'forgot_password', real ID is 'dontShowAgain')
-            const keepSignedIn = document.getElementById('dontShowAgain')?.checked || false;
+            // "ابقني مسجلاً" checkbox (its id is forgot_password) — the old code looked for a non-existent
+            // #dontShowAgain, so persistence was always SESSION and players were logged out on browser close.
+            const keepSignedIn = document.getElementById('forgot_password')?.checked || false;
             const loginBtn   = document.getElementById('loginBtn');
 
             if (!email)    { alert('الرجاء إدخال البريد الإلكتروني'); return; }

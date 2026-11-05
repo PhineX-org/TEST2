@@ -200,7 +200,6 @@ class SoundSystem {
         votingEnd:     () => { this.play('voteEnd');     this.speak('انتهى التصويت');      },
         spyWins:       () => { this.play('spyWin');      this.speak('الجاسوس انتصر');     },
         innocentsWin:  () => { this.play('innocentWin'); this.speak('الأبرياء انتصروا');  },
-        achievement:   (n) => { this.play('achievement');this.speak('إنجاز جديد: ' + n); },
         rankUp:        (r) => { this.play('rankUp');     this.speak('ترقية! أصبحت ' + r);},
         playerJoin:    (n) => { this.play('join');       this.speak(n + ' انضم للعبة');   },
         playerLeave:   (n) => { this.play('leave');      this.speak(n + ' غادر اللعبة'); },
