@@ -696,7 +696,9 @@
         /* Glitch Effect for Title — cyan + lime as two separate ghost layers (never blended) */
         .glitch {
             position: relative;
-            display: inline-block;      /* the ghost layers now match the text box exactly (was misaligned on phones) */
+            display: block;             /* own line (inline-block put it beside "Presented by") ... */
+            width: fit-content;         /* ...but shrink-wrapped, so the ghost layers match the text box exactly */
+            margin-left: auto; margin-right: auto;
             white-space: nowrap;
         }
 

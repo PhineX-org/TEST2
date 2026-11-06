@@ -250,6 +250,7 @@
         let userActiveTag = null;
         let userCoins = 0;
         let userRankPoints = 0;
+        let userIsOwner = false;   // game owner flag — comes from the database only (nameTag === 'gameowner')
         let userInventory = { nameThemes: [], nameTags: [] };
         let userSpecKeys = 0, userCardBg = null, userCardFrame = null;
         const SPEC_KEY_PRICE = 100, SPEC_KEY_MAX = 5;
@@ -295,6 +296,7 @@ function hideError() {
             userRankPoints = parseInt(data.rankPoints) || 0;
             
             const inv = data.inventory || {};
+            userIsOwner = data.nameTag === 'gameowner' || (Array.isArray(inv.nameTags) && inv.nameTags.includes('gameowner'));
             userInventory = {
                 nameThemes: Array.isArray(inv.nameThemes) ? inv.nameThemes : ['default'],
                 nameTags: Array.isArray(inv.nameTags) ? inv.nameTags : [],
@@ -352,6 +354,7 @@ function hideError() {
         const ownedThemes = Array.isArray(userInventory.nameThemes) ? userInventory.nameThemes : ['default'];
         
         const keys = Object.keys(themes)
+            .filter(key => !themes[key].ownerOnly || userIsOwner)          // owner-only themes are invisible to everyone else
             .filter(key => activeThemeFilter === 'all' || themes[key].type === activeThemeFilter)
             .sort((a, b) => (themes[a].price || 0) - (themes[b].price || 0));
 
@@ -362,7 +365,7 @@ function hideError() {
 
         grid.innerHTML = keys.map(key => {
             const theme = themes[key];
-            const owned = ownedThemes.includes(key);
+            const owned = ownedThemes.includes(key) || (themes[key].ownerOnly && userIsOwner);
             const isActive = userActiveTheme === key;
             const isNew = NEW_THEME_KEYS.includes(key);
             const typeLabel = theme.type === 'animated' ? 'متحرك' : theme.type === 'particle' ? 'جزيئات' : 'ثابت';
@@ -390,7 +393,7 @@ function hideError() {
                         <div class="flex items-center gap-2">
                             <span class="text-2xl">🪙</span>
                             <span class="font-black text-xl" style="font-family: 'Orbitron', sans-serif; color: var(--primary);">
-                                ${theme.price}
+                                ${theme.ownerOnly ? 'للمالك' : theme.price}
                             </span>
                         </div>
                         ${owned ? `
@@ -591,6 +594,7 @@ function hideError() {
             showError('الثيم غير موجود');
             return;
         }
+        if (theme.ownerOnly || theme.purchasable === false) { showError('⛔ هذا الثيم غير قابل للشراء'); return; }
         
         if (userCoins < theme.price) {
             showError('⚠️ ليس لديك عملات كافية!');
@@ -678,6 +682,7 @@ window.buyTag = async function(tagKey) {
 
 window.activateTheme = async function(themeKey) {
             try {
+                { const t0 = window.NameThemes.themes[themeKey]; if (t0 && t0.ownerOnly && !userIsOwner) { showError('⛔ هذا الثيم للمالك فقط'); return; } }
                 await update(ref(db, `players/${currentUser.uid}`), { nameTheme: themeKey });
                 const theme = window.NameThemes.themes[themeKey];
                 alert(`✅ تم تفعيل ثيم "${theme.name}"! سيظهر اسمك بهذا الشكل في الغرفة.`);
@@ -703,27 +708,28 @@ window.activateTheme = async function(themeKey) {
         const TIER_LABEL = { diamond: 'Diamond', crown: 'Crown', ace: 'Ace' };
         function cosCard(kind, id, it) {
             const owned = kind === 'bg' ? (userInventory.cardBgs || []) : (userInventory.cardFrames || []);
-            const usable = it.rank ? window.EJCos.isUsable(id, kind, userRankPoints) : owned.includes(id);
+            const usable = (it.rank || it.owner) ? window.EJCos.isUsable(id, kind, userRankPoints, userIsOwner) : owned.includes(id);
             const equipped = (kind === 'bg' ? userCardBg : userCardFrame) === id;
             const preview = `<div class="rounded-xl p-4 mb-3 text-center font-black border-2 border-white/10 ${kind === 'bg' ? 'cos-bg-' + id : 'cos-fr-' + id}" style="${kind === 'frame' ? 'background:#0a0a0a;' : ''}">اسمك</div>`;
             let action;
             if (equipped) action = `<button class="w-full py-2 rounded-xl font-black text-sm" style="background:rgba(255,255,255,.1);border:1px solid #a3e635;color:#a3e635" onclick="window.equipCos('${kind}','${id}')">✓ مُفعّل — إزالة</button>`;
             else if (usable) action = `<button class="w-full py-2 rounded-xl font-black text-sm" style="background:#a3e635;color:#000" onclick="window.equipCos('${kind}','${id}')">تفعيل</button>`;
+            else if (it.owner) action = `<div class="w-full py-2 rounded-xl text-center text-xs font-bold" style="background:rgba(255,255,255,.05);color:#9ca3af">🔒 للمالك فقط</div>`;
             else if (it.rank) action = `<div class="w-full py-2 rounded-xl text-center text-xs font-bold" style="background:rgba(255,255,255,.05);color:#9ca3af">🔒 يُفتح برتبة ${TIER_LABEL[it.rank]}</div>`;
             else action = `<button class="w-full py-2 rounded-xl font-black text-sm" style="background:#00f2ff;color:#000" onclick="window.buyCos('${kind}','${id}')">شراء ${it.price} 🪙</button>`;
-            return `<div class="glass rounded-2xl p-4">${preview}<div class="flex items-center justify-between mb-3"><span class="font-black">${it.name}</span><span class="text-xs" style="color:#9ca3af">${it.rank ? '🎖️ رتبة' : (it.animated ? '✨ متحرك' : 'ثابت')}</span></div>${action}</div>`;
+            return `<div class="glass rounded-2xl p-4">${preview}<div class="flex items-center justify-between mb-3"><span class="font-black">${it.name}</span><span class="text-xs" style="color:#9ca3af">${it.owner ? '👑 للمالك' : it.rank ? '🎖️ رتبة' : (it.animated ? '✨ متحرك' : 'ثابت')}</span></div>${action}</div>`;
         }
         function renderCosmetics() {
             if (!window.EJCos) return;
             const bg = document.getElementById('bgsGrid'), fr = document.getElementById('framesGrid');
-            const sortFn = (cat) => Object.keys(cat).sort((a, b) => (cat[a].rank ? 1 : 0) - (cat[b].rank ? 1 : 0) || (cat[a].price || 0) - (cat[b].price || 0));
+            const sortFn = (cat) => Object.keys(cat).filter(k => !cat[k].owner || userIsOwner).sort((a, b) => ((cat[a].rank || cat[a].owner) ? 1 : 0) - ((cat[b].rank || cat[b].owner) ? 1 : 0) || (cat[a].price || 0) - (cat[b].price || 0));
             if (bg) bg.innerHTML = sortFn(EJCos.backgrounds).map(id => cosCard('bg', id, EJCos.backgrounds[id])).join('');
             if (fr) fr.innerHTML = sortFn(EJCos.frames).map(id => cosCard('frame', id, EJCos.frames[id])).join('');
         }
         window.buyCos = async function(kind, id) {
             try {
                 const it = (kind === 'bg' ? EJCos.backgrounds : EJCos.frames)[id];
-                if (!it || it.rank) return;
+                if (!it || it.rank || it.owner) return;
                 const field = kind === 'bg' ? 'cardBgs' : 'cardFrames';
                 const owned = userInventory[field] || [];
                 if (owned.includes(id)) { showError('✅ تمتلكه بالفعل'); return; }
@@ -740,7 +746,7 @@ window.activateTheme = async function(themeKey) {
             try {
                 const cur = kind === 'bg' ? userCardBg : userCardFrame;
                 const next = cur === id ? null : id;
-                if (next && !(EJCos.isUsable(id, kind, userRankPoints) && ((kind === 'bg' ? EJCos.backgrounds : EJCos.frames)[id].rank || (userInventory[kind === 'bg' ? 'cardBgs' : 'cardFrames'] || []).includes(id)))) return;
+                if (next && !(EJCos.isUsable(id, kind, userRankPoints, userIsOwner) && ((kind === 'bg' ? EJCos.backgrounds : EJCos.frames)[id].rank || (kind === 'bg' ? EJCos.backgrounds : EJCos.frames)[id].owner || (userInventory[kind === 'bg' ? 'cardBgs' : 'cardFrames'] || []).includes(id)))) return;
                 await update(ref(db, `players/${currentUser.uid}`), { [kind === 'bg' ? 'cardBg' : 'cardFrame']: next });
                 if (kind === 'bg') userCardBg = next; else userCardFrame = next;
                 renderCosmetics();

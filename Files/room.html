@@ -1554,7 +1554,8 @@ async function joinRoom(uid, username) {
             nameTag: playerProfile.activeTitle || playerProfile.nameTag || null,
             rankPoints: playerProfile.rankPoints || 0,
             cardBg: playerProfile.cardBg || null,
-            cardFrame: playerProfile.cardFrame || null
+            cardFrame: playerProfile.cardFrame || null,
+            owner: playerProfile.nameTag === 'gameowner' || (Array.isArray(playerProfile.inventory && playerProfile.inventory.nameTags) && playerProfile.inventory.nameTags.indexOf('gameowner') >= 0)   // owner flag from the database only
         });
 
         // Setup disconnect handler
@@ -1823,6 +1824,7 @@ async function joinRoom(uid, username) {
                         username: player.username,
                         nameTheme: player.nameTheme || 'default',
                         nameTag: player.nameTag || null,
+                        owner: player.owner === true,
                         rankPoints: parseInt(player.rankPoints) || 0
                     });
                 }
@@ -2218,6 +2220,7 @@ async function joinRoom(uid, username) {
                         username: player.username,
                         nameTheme: player.nameTheme || 'default',
                         nameTag: player.nameTag || null,
+                        owner: player.owner === true,
                         rankPoints: parseInt(player.rankPoints) || 0
                     });
                 }
@@ -2406,6 +2409,7 @@ async function joinRoom(uid, username) {
                         username: player.username,
                         nameTheme: player.nameTheme || 'default',
                         nameTag: player.nameTag || null,
+                        owner: player.owner === true,
                         rankPoints: parseInt(player.rankPoints) || 0
                     });
                 }
@@ -2662,6 +2666,7 @@ async function joinRoom(uid, username) {
                         username: player.username,
                         nameTheme: player.nameTheme || 'default',
                         nameTag: player.nameTag || null,
+                        owner: player.owner === true,
                         rankPoints: player.rankPoints || 0
                     });
                 }
@@ -3202,6 +3207,7 @@ async function joinRoom(uid, username) {
                         username: friendPlayer.username || friendData.username,
                         nameTheme: friendPlayer.activeTheme || friendPlayer.nameTheme || 'default',
                         nameTag: friendPlayer.activeTitle || friendPlayer.nameTag || null,
+                        owner: friendPlayer.nameTag === 'gameowner',
                         rankPoints: friendPlayer.rankPoints || 0
                     });
                 }
@@ -3295,6 +3301,7 @@ async function joinRoom(uid, username) {
                         username: player.username,
                         nameTheme: player.nameTheme || 'default',
                         nameTag: player.nameTag || null,
+                        owner: player.owner === true,
                         rankPoints: player.rankPoints || 0
                     });
                 }

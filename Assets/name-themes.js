@@ -531,6 +531,44 @@
       `
     },
 
+    // ── GAME OWNER ONLY ─ never sold, never listed for other players, only renders for nameTag === 'gameowner' ──
+    ownerGold: {
+      name: 'ذهب المالك 👑',
+      type: 'particle',
+      price: null,
+      purchasable: false,
+      ownerOnly: true,
+      css: {
+        color: '#ffd34d',
+        fontWeight: '900',
+        backgroundImage: 'linear-gradient(100deg,#8a5a00 0%,#ffd34d 22%,#fffbe0 38%,#ffd34d 54%,#8a5a00 72%,#ffd34d 100%)',
+        backgroundSize: '260% 100%',
+        webkitBackgroundClip: 'text',
+        backgroundClip: 'text',
+        webkitTextFillColor: 'transparent',
+        filter: 'drop-shadow(0 0 7px rgba(255,200,40,0.85)) drop-shadow(0 0 16px rgba(255,160,0,0.45))',
+        position: 'relative'
+      },
+      animation: 'ownerGoldShine 2.6s linear infinite',
+      particles: {
+        count: 9,
+        type: 'sparkle',
+        animation: 'ownerGoldSpark 2.2s ease-in-out infinite'
+      },
+      keyframes: `
+        @keyframes ownerGoldShine {
+          0% { background-position: 160% 0; }
+          100% { background-position: -60% 0; }
+        }
+        @keyframes ownerGoldSpark {
+          0% { transform: translateY(8px) scale(0.3) rotate(0deg); opacity: 0; }
+          30% { opacity: 1; }
+          60% { transform: translateY(-10px) scale(1.15) rotate(90deg); opacity: 1; }
+          100% { transform: translateY(-22px) scale(0.3) rotate(180deg); opacity: 0; }
+        }
+      `
+    },
+
     galaxyDust: {
       name: 'غبار المجرة',
       type: 'particle',
@@ -949,6 +987,7 @@
       }
     `;
     
+    css += `.ej-name-themed .ej-name-particle-container, .ej-name-themed .ej-name-particle { -webkit-text-fill-color: initial; }`;
     // Add all theme keyframes
     Object.values(NAME_THEMES).forEach(theme => {
       if (theme.keyframes) {
@@ -1175,7 +1214,10 @@
       
       // Add themed name
       const nameSpan = document.createElement('span');
-      this.applyTheme(nameSpan, playerData.nameTheme || 'default', playerData.username || 'Player');
+      let themeKey = playerData.nameTheme || 'default';
+      // owner-only themes render only for the game owner (nameTag 'gameowner', which comes from the database only)
+      if (NAME_THEMES[themeKey] && NAME_THEMES[themeKey].ownerOnly && playerData.nameTag !== 'gameowner' && playerData.owner !== true) themeKey = 'default';
+      this.applyTheme(nameSpan, themeKey, playerData.username || 'Player');
       container.appendChild(nameSpan);
       
       // Add rank badge if rank points exist
