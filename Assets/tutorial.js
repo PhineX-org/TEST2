@@ -17,21 +17,21 @@
 
     // ── steps ─────────────────────────────────────
     // page:   file the step lives on (a step on another page navigates there)
-    // target: selector or function → element to highlight (none / hidden = centered card)
+    // target: selector or function → element to highlight
     // pose:   3D spy pose   before: runs when the step opens
     var STEPS = [
         { page: 'home.html', pose: 'wave', title: 'أهلاً يا عميل! 🕵️', text: 'أنا مرشدك في «الجاسوس». جولة سريعة (دقيقتين) وهتعرف كل حاجة في اللعبة. تقدر تتنقل بـ التالي / السابق.' },
         { page: 'home.html', pose: 'point', target: function () { var b = document.getElementById('setLocal'); return b && b.parentElement; }, before: function () { call('switchMode', 'local'); },
-          title: 'اختار طريقة اللعب', text: '🏠 محلي: جهاز واحد بتمرّروه بينكم. 🌐 أونلاين: غرفة مع أصحابك. 🤖 ضد الذكاء الاصطناعي: الـ AI بيفتكر الإجابات ويشكّ في اللي بيرد غريب!' },
+          title: 'اختار طريقة اللعب', text: '🏠 محلي: هتلعبو على نفس الجهاز. 🌐 أونلاين: غرفة مع أصحابك. 🤖 ضد الذكاء الاصطناعي: الـ هتقدر تلعب لوحدك' },
         { page: 'home.html', pose: 'pointLeft', target: '#gameCat', before: function () { call('switchMode', 'local'); },
           title: 'اختار الفئة', text: 'أماكن، أكل، حيوانات… وفيه فئة جديدة «مشاهير اللاعبين» ⚽. الكلمة السرية بتطلع منها.' },
         { page: 'home.html', pose: 'explain', target: function () { var b = document.getElementById('createBtn'); return b && b.parentElement; }, before: function () { call('switchMode', 'online'); },
           title: 'إنشاء غرفة أو انضمام', text: 'اعمل غرفة عامة (الكل يشوفها) أو خاصة (بالكود بس) وادخل بكود صاحبك. الغرفة تسع لحد ١٥ لاعب.' },
         { page: 'home.html', pose: 'point', target: '#publicRoomsLink', before: function () { call('switchMode', 'online'); },
-          title: 'الغرف العامة', text: 'هنا تلاقي غرف مفتوحة تنضم لها فوراً. لو فيه لعبة شغالة ممكن تتفرج، ولو فاضية هتلاقيها «غرفة فاضية 👻» تقدر تبدأ فيها.' },
+          title: 'الغرف العامة', text: 'هنا تلاقي غرف مفتوحة تنضم ليها فوراً. لو فيه لعبة شغالة ممكن تتفرج، ولو فاضية هتلاقيها «غرفة فاضية 👻» تقدر تبدأ فيها.' },
         { page: 'home.html', pose: 'explain', title: 'إزاي الجولة بتمشي؟', text: 'كل لاعب بيشوف الكلمة السرية ما عدا الجاسوس. بتسألوا بعض أسئلة، بتناقشوا، وبعدين بتصوّتوا. تكتشفوا الجاسوس تكسبوا — يخمّن الكلمة صح هو اللي يكسب. وممكن يبقى فيه ١–٣ جواسيس حسب عدد اللاعبين.' },
-        { page: 'home.html', pose: 'point', title: 'إعدادات الغرفة ⚙️', text: 'صاحب الغرفة يضبط عدد الجواسيس ومؤقت النقاش والتصويت من لوحة الإعدادات — زي Among Us. والمؤقت يقفل المرحلة تلقائي.' },
-        { page: 'home.html', pose: 'wave', title: 'شات، صوت وردود فعل 🎙️', text: 'جوه الغرفة: شات نصي (١٠٠ حرف + إيموجي)، دردشة صوتية بالميكروفون، وردود فعل سريعة (إيموجي + صوت) بتطلع فوق الشاشة باسمك.' },
+        { page: 'home.html', pose: 'point', title: 'إعدادات الغرفة ⚙️', text: 'صاحب الغرفة يضبط عدد الجواسيس ومؤقت النقاش والتصويت من لوحة الإعدادات والمؤقت يقفل المرحلة تلقائي.' },
+        { page: 'home.html', pose: 'wave', title: 'شات، صوت وردود فعل 🎙️', text: 'جوه الغرفة: شات نصي، دردشة صوتية بالميكروفون، وردود فعل سريعة (إيموجي + صوت) بتطلع فوق الشاشة باسمك.' },
         { page: 'home.html', pose: 'thumbs', title: 'مفاتيح المواصفات 🔑', text: 'لو تهت، مفتاح المواصفات بيكشفلك تلميح عن الكلمة السرية. تشتري لحد ٥ من المتجر، ولكل لعبة مفتاحين بس — عشان اللعب يفضل عادل.' },
         { page: 'home.html', pose: 'explain', title: 'الرتب والمواسم 👑', text: 'من برونز لحد كراون وإيس — الرتب العالية ليها أنيميشن دخول وخلفيات وإطارات خاصة لبطاقة اسمك. كل شهرين موسم جديد وبتنزل نقاطك شوية عشان المنافسة تفضل شغالة.' },
         { page: 'home.html', pose: 'point', target: '#openNav', title: 'القائمة', text: 'من هنا توصل للملف الشخصي والأصدقاء والمتصدرين والمتجر وتبلّغ عن مشكلة. هنزور كام صفحة سوا.' },

@@ -1,14 +1,6 @@
-// ============================================
-// EL JASUS — 3D SPY  (self-contained, no libraries, no CDN)
-//
-// A small software 3D renderer on <canvas> (polygons, perspective, depth sorting, flat shading) plus an animated spy
-// model — fedora, collar-up trench coat, tie, jointed arms — shaped after the middle figure of the game logo, but with
-// none of the logo's fingerprint, circuit grid or lightning. Transparent background = "cut out".
-//
-//   const spy = EJSpy3D.mount(element, { size: 200, pose: 'wave' });
-//   spy.setPose('explain' | 'wave' | 'point' | 'pointLeft' | 'idle' | 'thumbs');
-//   spy.destroy();
-// ============================================
+// ==================
+// EL JASUS — 3D SPY  
+// ==================
 (function () {
     'use strict';
 
