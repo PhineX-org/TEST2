@@ -32,7 +32,7 @@
   var BACKGROUNDS = {
     rank_diamond: { name: 'ألماس', rank: 'diamond', animated: true,  css: 'background:linear-gradient(135deg,#06222b,#0b4a5c 45%,#06222b);' },
     rank_crown:   { name: 'تاج ذهبي', rank: 'crown', animated: true, css: 'background:linear-gradient(135deg,#2a1d00,#6b4b00 45%,#2a1d00);' },
-    rank_ace:     { name: 'آس الأساطير', rank: 'ace', animated: true, css: 'background:linear-gradient(135deg,#001a12,#0a4b2d 40%,#003a4a 70%,#001a12);' },
+    rank_ace:     { name: 'المتفوق', rank: 'ace', animated: true, css: 'background:linear-gradient(135deg,#001a12,#0a4b2d 40%,#003a4a 70%,#001a12);' },
     bg_midnight:  { name: 'منتصف الليل', price: 150, animated: false, css: 'background:linear-gradient(160deg,#0a0a1f,#12123a);' },
     bg_forest:    { name: 'الغابة', price: 150, animated: false, css: 'background:linear-gradient(160deg,#04140a,#0b3a1c);' },
     bg_crimson:   { name: 'قرمزي', price: 150, animated: false, css: 'background:linear-gradient(160deg,#1c0408,#4a0d18);' },
@@ -45,7 +45,7 @@
   var FRAMES = {
     rank_diamond: { name: 'إطار الألماس', rank: 'diamond', animated: true },
     rank_crown:   { name: 'إطار التاج', rank: 'crown', animated: true },
-    rank_ace:     { name: 'إطار الآس', rank: 'ace', animated: true },
+    rank_ace:     { name: 'إطار المتفوق', rank: 'ace', animated: true },
     fr_lime:      { name: 'ليموني', price: 200, animated: false },
     fr_cyan:      { name: 'سماوي', price: 200, animated: false },
     fr_gold:      { name: 'ذهبي', price: 250, animated: false },

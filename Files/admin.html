@@ -11,6 +11,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <script src="../Assets/dialogs.js"></script>
+    <script src="../Assets/cursors.js"></script>
     <script src="../Assets/updates-data.js"></script>
     <style>
         /* ═══════════════════════════════════════════════════
@@ -671,20 +672,28 @@
                 <!-- ═══ WORDS / CATEGORIES ═══ -->
                 <section class="admin-section" id="sec-words">
                     <div class="section-head">
-                        <div><h2>الكلمات والفئات</h2><p>إدارة قوائم الكلمات المستخدمة في اللعب</p></div>
+                        <div><h2>الكلمات والفئات</h2><p>قوائم الكلمات هنا هي المصدر الأساسي للّعب (القوائم المحلية احتياطية فقط). كل فئة لها أيقونة واسم قابلان للتعديل.</p></div>
                     </div>
-                    <div style="display:grid;grid-template-columns:1fr 2fr;gap:16px;">
+                    <div class="words-grid" style="display:grid;grid-template-columns:minmax(0,1fr) minmax(0,2fr);gap:16px;">
                         <div class="card" style="padding:16px;">
                             <h3 style="font-size:12px;font-weight:900;margin-bottom:10px;color:var(--text-dim);">الفئات</h3>
                             <div id="category-list" style="margin-bottom:14px;"></div>
-                            <input id="new-category-name" class="admin-input" placeholder="اسم فئة جديدة" style="margin-bottom:8px;">
+                            <div style="display:flex;gap:6px;margin-bottom:8px;">
+                                <input id="new-category-icon" class="admin-input" placeholder="🙂" maxlength="8" style="width:64px;text-align:center;font-size:18px;padding:6px;">
+                                <input id="new-category-name" class="admin-input" placeholder="اسم فئة جديدة">
+                            </div>
                             <button class="btn btn-ghost btn-sm" style="width:100%;" onclick="addCategory()">+ إضافة فئة</button>
                         </div>
                         <div class="card" style="padding:16px;">
-                            <h3 style="font-size:12px;font-weight:900;margin-bottom:10px;color:var(--text-dim);" id="words-cloud-title">الكلمات</h3>
+                            <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;margin-bottom:10px;">
+                                <h3 style="font-size:13px;font-weight:900;color:var(--text);" id="words-cloud-title">الكلمات</h3>
+                                <div id="cat-actions" style="display:flex;gap:6px;flex-wrap:wrap;"></div>
+                            </div>
+                            <div id="cat-fix-banner" style="display:none;margin-bottom:10px;padding:10px 12px;border-radius:10px;border:1px solid rgba(255,184,0,.4);background:rgba(255,184,0,.08);font-size:12px;"></div>
+                            <div id="icon-picker" style="display:none;margin-bottom:10px;"></div>
                             <div id="words-cloud" style="min-height:100px;max-height:420px;overflow-y:auto;margin-bottom:14px;"></div>
                             <div style="display:flex;gap:8px;">
-                                <input id="new-word-input" class="admin-input" placeholder="كلمة جديدة">
+                                <input id="new-word-input" class="admin-input" placeholder="كلمة جديدة (أو عدة كلمات مفصولة بفاصلة / سطر جديد)" onkeydown="if(event.key==='Enter')addWord()">
                                 <button class="btn btn-primary btn-sm" onclick="addWord()">+ إضافة</button>
                             </div>
                         </div>
@@ -754,6 +763,7 @@
                                 <option value="0">متوقف</option><option value="300">كل 5 دقائق</option><option value="900">كل 15 دقيقة</option>
                             </select></label>
                         <button class="btn btn-ghost btn-sm" onclick="exportScanJSON()"><i class="fas fa-download"></i> JSON</button>
+                        <button class="btn btn-ghost btn-sm" onclick="copyScanReport()"><i class="fas fa-clipboard"></i> نسخ تقرير للمطوّر</button>
                     </div>
                     <div class="sc-cats" id="sc-cats"></div>
                     <div id="diag-results"></div>
@@ -805,7 +815,12 @@
 "adminLogs": {
   ".read": "root.child('players').child(auth.uid).child('isAdmin').val() === true",
   ".write": "root.child('players').child(auth.uid).child('isAdmin').val() === true"
-}</pre>
+}
+// ─ يُضاف داخل العقدتين الموجودتين "invites" و "joinRequests" (قبل "$targetUid") حتى يقرأهما الفاحص:
+//   ".read": "auth != null && root.child('players').child(auth.uid).child('isAdmin').val() === true",
+// ─ ولتظهر فئات الكلمات لكل الزوار (مصدر الفئات الأساسي):
+//   "wordLists": { ".read": true, ".write": "<قاعدة المدير>" }
+</pre>
                         <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px;">
                             <button class="btn btn-ghost btn-sm" onclick="copyRules()"><i class="fas fa-copy"></i> نسخ القواعد</button>
                             <button class="btn btn-ghost btn-sm" onclick="dbExportJSON()"><i class="fas fa-download"></i> نسخة احتياطية JSON</button>
@@ -1691,59 +1706,208 @@ window.clearAnnouncement = async function () {
 };
 
 // ── WORDS / CATEGORIES ───────────────────────────────────────
+// Storage:  wordLists/{category}/{word}: true   +   wordLists/{category}/_icon: "🍕"
+// Old/imported data can also be an array or {0:"word",1:"word"} (that is why words showed up as numbers);
+// those categories are read correctly and can be converted with one click.
 let wordListsCache = {};
 let selectedCategory = null;
+let wordsLoadError = null;
+const WL_BAD_CHARS = /[.$#\[\]\/]/g;
+const WL_EMOJI = ['🌍','🍕','🛠️','🏢','⚽','🌟','🐾','🎬','🎵','🎮','📱','🚗','✈️','🏖️','🍔','☕','🏥','📚','🎓','🏰','🐘','🦁','🍎','⚡','🔥','💎','👑','🎭','🏀','🏎️','🧪','🛒','🎨','🌋','🕌','🧩'];
+
+function wlMetaKey(k) { return !k || k.charAt(0) === '_' || k === 'name' || k === 'emoji' || k === 'icon' || k === 'about' || k === 'words'; }
+// [{key, word}] for a category value, whatever shape it is stored in
+function wlEntries(v) {
+    if (!v) return [];
+    if (Array.isArray(v)) return v.map((w, i) => w ? { key: String(i), word: String(w) } : null).filter(Boolean);
+    if (typeof v !== 'object') return [];
+    const out = [];
+    Object.keys(v).forEach(k => {
+        if (wlMetaKey(k)) return;
+        const x = v[k];
+        if (typeof x === 'string' && x.trim()) out.push({ key: k, word: x.trim() });
+        else if (x === true) out.push({ key: k, word: k });
+    });
+    return out;
+}
+function wlIcon(v) { return (v && !Array.isArray(v) && (v._icon || v.icon || v.emoji)) || ''; }
+function wlNeedsFix(v) { return wlEntries(v).some(e => e.key !== e.word); }
+function wlSanitize(w) { return String(w || '').replace(WL_BAD_CHARS, ' ').replace(/\s+/g, ' ').trim(); }
+function wlCatBad(name) { return !name || WL_BAD_CHARS.test(name) || name.charAt(0) === '_' ? (WL_BAD_CHARS.lastIndex = 0, true) : false; }
+
 async function loadWords() {
     try {
         const snap = await get(ref(db, 'wordLists'));
         wordListsCache = snap.val() || {};
+        wordsLoadError = null;
+        if (selectedCategory && !(selectedCategory in wordListsCache)) selectedCategory = null;
         renderCategoryList();
-    } catch (e) { console.error('loadWords', e); }
+    } catch (e) {
+        console.error('loadWords', e); wordsLoadError = e;
+        document.getElementById('category-list').innerHTML = `<p style="color:var(--danger);font-size:12px;">تعذر تحميل الفئات: ${esc(e.message || e.code || e)}</p>`;
+    }
 }
 window.loadWords = loadWords;
 
 function renderCategoryList() {
     const cats = Object.keys(wordListsCache);
     if (!selectedCategory && cats.length) selectedCategory = cats[0];
-    document.getElementById('category-list').innerHTML = cats.map(c => `
-        <div onclick="selectCategory('${c}')" style="display:flex;justify-content:space-between;align-items:center;padding:8px 10px;border-radius:9px;cursor:pointer;margin-bottom:4px;font-size:12.5px;font-weight:700;
-            background:${c===selectedCategory?'rgba(0,229,255,.1)':'transparent'};color:${c===selectedCategory?'var(--accent)':'var(--text-dim)'};">
-            <span>${esc(c)}</span>
-            <span style="font-size:10px;color:var(--text-faint);">${Object.keys(wordListsCache[c]||{}).length}</span>
-        </div>`).join('') || '<p style="color:var(--text-faint);font-size:12px;">لا توجد فئات</p>';
+    document.getElementById('category-list').innerHTML = cats.map((c, i) => {
+        const v = wordListsCache[c], on = c === selectedCategory;
+        return `<div onclick="selectCategory(${i})" style="display:flex;justify-content:space-between;align-items:center;gap:8px;padding:8px 10px;border-radius:9px;cursor:pointer;margin-bottom:4px;font-size:12.5px;font-weight:700;
+            background:${on ? 'rgba(0,229,255,.1)' : 'transparent'};color:${on ? 'var(--accent)' : 'var(--text-dim)'};">
+            <span style="display:flex;align-items:center;gap:7px;min-width:0;"><span style="font-size:17px;">${esc(wlIcon(v) || '🗂️')}</span><span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${esc(c)}</span>${wlNeedsFix(v) ? '<span title="تحتاج تحويل" style="color:var(--warn,#ffb800);">⚠</span>' : ''}</span>
+            <span style="font-size:10px;color:var(--text-faint);">${wlEntries(v).length}</span>
+        </div>`;
+    }).join('') || '<p style="color:var(--text-faint);font-size:12px;">لا توجد فئات (سيستخدم اللعب القوائم المحلية)</p>';
     renderWordsCloud();
 }
-window.selectCategory = function(c) { selectedCategory = c; renderCategoryList(); };
+window.selectCategory = function (i) { selectedCategory = Object.keys(wordListsCache)[i]; closeIconPicker(); renderCategoryList(); };
 
+let wlShown = [];
 function renderWordsCloud() {
     const el = document.getElementById('words-cloud');
     const titleEl = document.getElementById('words-cloud-title');
-    if (!selectedCategory) { el.innerHTML = ''; return; }
-    titleEl.textContent = `كلمات: ${selectedCategory}`;
-    const words = Object.keys(wordListsCache[selectedCategory] || {});
-    el.innerHTML = words.map(w => `
+    const act = document.getElementById('cat-actions');
+    const banner = document.getElementById('cat-fix-banner');
+    if (!selectedCategory) { el.innerHTML = ''; act.innerHTML = ''; banner.style.display = 'none'; titleEl.textContent = 'الكلمات'; return; }
+    const v = wordListsCache[selectedCategory];
+    wlShown = wlEntries(v);
+    titleEl.innerHTML = `${esc(wlIcon(v) || '🗂️')} ${esc(selectedCategory)} <span style="font-size:11px;color:var(--text-faint);font-weight:600;">(${wlShown.length} كلمة)</span>`;
+    act.innerHTML = `
+        <button class="btn btn-ghost btn-sm" onclick="renameCategory()">✏️ تعديل الاسم</button>
+        <button class="btn btn-ghost btn-sm" onclick="toggleIconPicker()">🎨 تعديل الأيقونة</button>
+        <button class="btn btn-ghost btn-sm" style="color:var(--danger);" onclick="deleteCategory()">🗑 حذف الفئة</button>`;
+    if (wlNeedsFix(v)) {
+        banner.style.display = 'block';
+        banner.innerHTML = `⚠ هذه الفئة مخزنة بصيغة قديمة (الكلمات مرقّمة 0، 1، 2…). تُقرأ بشكل صحيح في اللعب، لكن ننصح بتحويلها لتسهيل الإضافة والحذف.
+            <button class="btn btn-primary btn-sm" style="margin-right:8px;" onclick="fixCategoryShape()">تحويل الآن</button>`;
+    } else banner.style.display = 'none';
+    el.innerHTML = wlShown.map((e, i) => `
         <span style="display:inline-flex;align-items:center;gap:6px;background:rgba(255,255,255,.05);border:1px solid var(--border);border-radius:20px;padding:4px 6px 4px 12px;margin:3px;font-size:11.5px;">
-            ${esc(w)} <button onclick="deleteWord('${esc(w).replace(/'/g,"\\'")}')" style="background:none;border:none;color:var(--danger);cursor:pointer;font-size:10px;">✕</button>
+            ${esc(e.word)} <button onclick="deleteWordAt(${i})" style="background:none;border:none;color:var(--danger);cursor:pointer;font-size:10px;">✕</button>
         </span>`).join('') || '<p style="color:var(--text-faint);font-size:12px;">لا توجد كلمات</p>';
 }
 
-window.addCategory = async function() {
-    const name = document.getElementById('new-category-name').value.trim();
-    if (!name) return;
-    try { await set(ref(db, `wordLists/${name}/_init`), true); document.getElementById('new-category-name').value=''; loadWords(); }
-    catch (e) { UIAlert('خطأ: ' + e.message); }
+function closeIconPicker() { const p = document.getElementById('icon-picker'); if (p) { p.style.display = 'none'; p.innerHTML = ''; } }
+window.toggleIconPicker = function () {
+    const p = document.getElementById('icon-picker');
+    if (p.style.display === 'block') return closeIconPicker();
+    p.style.display = 'block';
+    p.innerHTML = `
+        <div style="padding:10px;border:1px solid var(--border);border-radius:10px;background:rgba(255,255,255,.03);">
+            <div style="display:flex;gap:6px;margin-bottom:8px;align-items:center;">
+                <input id="icon-custom" class="admin-input" maxlength="8" placeholder="اكتب أو الصق إيموجي" style="text-align:center;font-size:18px;max-width:180px;">
+                <button class="btn btn-primary btn-sm" onclick="saveCategoryIcon(document.getElementById('icon-custom').value)">حفظ</button>
+                <button class="btn btn-ghost btn-sm" onclick="saveCategoryIcon('')">إزالة الأيقونة</button>
+            </div>
+            <div style="display:flex;flex-wrap:wrap;gap:4px;">
+                ${WL_EMOJI.map(e => `<button onclick="saveCategoryIcon('${e}')" style="font-size:20px;background:none;border:1px solid var(--border);border-radius:8px;padding:2px 6px;cursor:pointer;">${e}</button>`).join('')}
+            </div>
+        </div>`;
 };
-window.addWord = async function() {
+window.saveCategoryIcon = async function (icon) {
+    if (!selectedCategory) return;
+    icon = String(icon || '').trim();
+    try {
+        const v = wordListsCache[selectedCategory];
+        if (Array.isArray(v) || wlNeedsFix(v)) { if (!await fixCategoryShape(true)) return; }
+        await set(ref(db, `wordLists/${selectedCategory}/_icon`), icon || null);
+        logAdmin('category.icon', selectedCategory, icon || '(removed)');
+        closeIconPicker(); await loadWords(); UIToast && UIToast('تم حفظ الأيقونة ✓');
+    } catch (e) { UIAlert('خطأ: ' + e.message); }
+};
+
+// Rewrites a category as {word:true,…,_icon} (fixes array / numbered storage). silent=true skips the confirm.
+window.fixCategoryShape = async function (silent) {
+    if (!selectedCategory) return false;
+    const v = wordListsCache[selectedCategory];
+    if (!silent && !await UIConfirm(`تحويل فئة "${selectedCategory}" إلى الصيغة الصحيحة؟ (الكلمات نفسها لن تتغير)`)) return false;
+    try {
+        const obj = {};
+        wlEntries(v).forEach(e => { const w = wlSanitize(e.word); if (w) obj[w] = true; });
+        const ic = wlIcon(v); if (ic) obj._icon = ic;
+        if (!Object.keys(obj).length) obj._init = true;
+        await set(ref(db, `wordLists/${selectedCategory}`), obj);
+        logAdmin('category.fix', selectedCategory, Object.keys(obj).length + ' words');
+        await loadWords(); return true;
+    } catch (e) { UIAlert('خطأ: ' + e.message); return false; }
+};
+
+window.addCategory = async function () {
+    const name = wlSanitize(document.getElementById('new-category-name').value);
+    const icon = document.getElementById('new-category-icon').value.trim();
+    if (!name) return UIAlert('اكتب اسم الفئة');
+    if (name.charAt(0) === '_') return UIAlert('الاسم لا يمكن أن يبدأ بـ _');
+    if (name in wordListsCache) return UIAlert('توجد فئة بهذا الاسم بالفعل');
+    try {
+        await set(ref(db, `wordLists/${name}`), icon ? { _init: true, _icon: icon } : { _init: true });
+        logAdmin('category.add', name, icon);
+        document.getElementById('new-category-name').value = ''; document.getElementById('new-category-icon').value = '';
+        selectedCategory = name; loadWords();
+    } catch (e) { UIAlert('خطأ: ' + e.message); }
+};
+
+window.renameCategory = async function () {
+    if (!selectedCategory) return;
+    const old = selectedCategory;
+    const raw = await UIPrompt('الاسم الجديد للفئة:', { defaultValue: old, title: 'تعديل اسم الفئة' });
+    if (raw == null) return;
+    const name = wlSanitize(raw);
+    if (!name || name === old) return;
+    if (name.charAt(0) === '_') return UIAlert('الاسم لا يمكن أن يبدأ بـ _');
+    if (name in wordListsCache) return UIAlert('توجد فئة بهذا الاسم بالفعل');
+    try {
+        const v = wordListsCache[old], obj = {};
+        wlEntries(v).forEach(e => { const w = wlSanitize(e.word); if (w) obj[w] = true; });
+        const ic = wlIcon(v); if (ic) obj._icon = ic;
+        if (!Object.keys(obj).length) obj._init = true;
+        // one atomic write: create the new key, remove the old one
+        await update(ref(db), { [`wordLists/${name}`]: obj, [`wordLists/${old}`]: null });
+        logAdmin('category.rename', old, '→ ' + name);
+        selectedCategory = name; await loadWords();
+        UIToast && UIToast('تمت إعادة التسمية ✓ (الغرف الجارية بالاسم القديم تنتقل لأول فئة متاحة عند بدء لعبة جديدة)');
+    } catch (e) { UIAlert('خطأ: ' + e.message); }
+};
+
+window.deleteCategory = async function () {
+    if (!selectedCategory) return;
+    const n = wlEntries(wordListsCache[selectedCategory]).length;
+    if (!await UIConfirm(`حذف الفئة "${selectedCategory}" بكل كلماتها (${n})؟ لا يمكن التراجع.`)) return;
+    try {
+        await remove(ref(db, `wordLists/${selectedCategory}`));
+        logAdmin('category.delete', selectedCategory, n + ' words');
+        selectedCategory = null; loadWords();
+    } catch (e) { UIAlert('خطأ: ' + e.message); }
+};
+
+window.addWord = async function () {
     if (!selectedCategory) return UIAlert('اختر فئة أولاً');
-    const w = document.getElementById('new-word-input').value.trim();
-    if (!w) return;
-    try { await set(ref(db, `wordLists/${selectedCategory}/${w}`), true); logAdmin('word.add', selectedCategory, w); document.getElementById('new-word-input').value=''; loadWords(); }
-    catch (e) { UIAlert('خطأ: ' + e.message); }
+    const inp = document.getElementById('new-word-input');
+    const words = inp.value.split(/[\n,،؛;]+/).map(wlSanitize).filter(Boolean);
+    if (!words.length) return;
+    try {
+        const v = wordListsCache[selectedCategory];
+        if (Array.isArray(v) || wlNeedsFix(v)) { if (!await fixCategoryShape(true)) return; }
+        const existing = new Set(wlEntries(wordListsCache[selectedCategory]).map(e => e.word));
+        const fresh = words.filter((w, i) => !existing.has(w) && words.indexOf(w) === i);
+        if (!fresh.length) { inp.value = ''; return UIToast && UIToast('الكلمات موجودة بالفعل'); }
+        const patch = {}; fresh.forEach(w => { patch[`wordLists/${selectedCategory}/${w}`] = true; });
+        await update(ref(db), patch);
+        logAdmin('word.add', selectedCategory, fresh.join(' | ').slice(0, 200));
+        inp.value = ''; await loadWords();
+        if (fresh.length !== words.length) UIToast && UIToast(`أُضيفت ${fresh.length} كلمة (تم تجاهل المكرر)`);
+    } catch (e) { UIAlert('خطأ: ' + e.message); }
 };
-window.deleteWord = async function(w) {
-    if (!selectedCategory || !await UIConfirm(`حذف "${w}"؟`)) return;
-    try { await remove(ref(db, `wordLists/${selectedCategory}/${w}`)); logAdmin('word.delete', selectedCategory, w); loadWords(); }
-    catch (e) { UIAlert('خطأ: ' + e.message); }
+window.deleteWordAt = async function (i) {
+    const e = wlShown[i];
+    if (!selectedCategory || !e || !await UIConfirm(`حذف "${e.word}"؟`)) return;
+    try {
+        const v = wordListsCache[selectedCategory];
+        if (Array.isArray(v) || wlNeedsFix(v)) { if (!await fixCategoryShape(true)) return; }
+        await remove(ref(db, `wordLists/${selectedCategory}/${wlSanitize(e.word)}`));
+        logAdmin('word.delete', selectedCategory, e.word); loadWords();
+    } catch (er) { UIAlert('خطأ: ' + er.message); }
 };
 
 // ── DATABASE EXPLORER (NEW) ──────────────────────────────────
@@ -1886,15 +2050,26 @@ window.runDiagnostics = async function (opts) {
         try { const snap = await get(ref(db, path)); timings[path] = Math.round(performance.now() - t); return snap.val() || {}; }
         catch (e) {
             timings[path] = Math.round(performance.now() - t); unreadable[path] = e.message;
-            add(critical ? 'critical' : 'warn', 'system', `تعذرت قراءة "${path}"`, `${e.message} — على الأغلب قواعد الأمان لا تسمح للمدير بقراءة هذا المسار (راجع تبويب الإعدادات). الفحوص المعتمدة عليه تم تخطيها.`);
+            const ADM = `"auth != null && root.child('players').child(auth.uid).child('isAdmin').val() === true"`;
+            const snip = `"${path.split('/')[0]}": { ".read": ${ADM} }   // أضف السطر ".read" داخل هذه العقدة (مع إبقاء ما فيها)`;
+            add(critical ? 'critical' : 'warn', 'system', `تعذرت قراءة "${path}"`, `${e.message} — قواعد الأمان لا تسمح للمدير بقراءة هذا المسار على مستوى الجذر. الفحوص المعتمدة عليه تم تخطيها.`, {
+                hint: 'الحل: أضف قراءة المدير في قواعد Realtime Database (تبويب Rules في Firebase Console) ثم اضغط Publish.',
+                items: [snip],
+                fix: { label: 'نسخ سطر القاعدة', safe: false, noRerun: true, fn: async () => { try { await navigator.clipboard.writeText(snip); UIToast && UIToast('تم نسخ سطر القاعدة'); } catch (e2) { UIAlert(snip); } } }
+            });
             return {};
         }
     }
     try {
         const t0 = performance.now();
-        const [players, rooms, words, invites, joinReqs, bans, reports, news, ann] = await Promise.all([
+        const rdq = async (path, n) => {   // last-N read (audit log) — same error handling as rd()
+            const t = performance.now();
+            try { const snap = await get(query(ref(db, path), limitToLast(n))); timings[path] = Math.round(performance.now() - t); return snap.val() || {}; }
+            catch (e) { timings[path] = Math.round(performance.now() - t); unreadable[path] = e.message; add('info', 'system', `تعذرت قراءة "${path}"`, e.message + ' — تم تخطي تحليل سجل الإدارة.'); return {}; }
+        };
+        const [players, rooms, words, invites, joinReqs, bans, reports, news, ann, updatesDb, shopItems, adminLogsRaw] = await Promise.all([
             rd('players', true), rd('rooms', true), rd('wordLists'), rd('invites'), rd('joinRequests'),
-            rd('bans'), rd('reports'), rd('news'), rd('announcements/current')
+            rd('bans'), rd('reports'), rd('news'), rd('announcements/current'), rd('updates'), rd('shopItems'), rdq('adminLogs', 300)
         ]);
         timings._total = Math.round(performance.now() - t0);
         if (unreadable.players && unreadable.rooms) {
@@ -1953,6 +2128,38 @@ window.runDiagnostics = async function (opts) {
             });
             const multi = Object.entries(where).filter(([, cs]) => cs.length > 1);
             if (multi.length) add('warn', 'rooms', `${multi.length} لاعب في أكثر من غرفة`, 'نفس الحساب مسجل في غرفتين أو أكثر.', { items: multi.map(([u, cs]) => `${pname(u)}: ${cs.join(', ')}`) });
+            // reveal order that points to players who are no longer in the room = the reveal phase can never finish
+            const revStuck = roomEntries.filter(([, r]) => r.status === 'revealing' && Array.isArray(r.revealOrder) && r.revealOrder.some(u => !rp(r)[u]));
+            if (revStuck.length) add('critical', 'rooms', `${revStuck.length} غرفة عالقة في مرحلة الكشف`, 'ترتيب الكشف يحتوي لاعباً غادر الغرفة، فلا يمكن للدور أن يكتمل.', {
+                hint: 'السبب الشائع: لاعب غادر أو انقطع اتصاله أثناء مرحلة الكشف. الإصلاح يحذفه من الترتيب ويُبقي المؤشر على اللاعب التالي.',
+                items: revStuck.map(([c, r]) => `${c}: ${r.revealOrder.filter(u => !rp(r)[u]).map(pname).join('، ')}`),
+                fix: { label: 'إزالة الغائبين من ترتيب الكشف', safe: false, confirm: 'إزالة اللاعبين الغائبين من ترتيب الكشف في هذه الغرف؟', fn: async () => {
+                    const m = {};
+                    revStuck.forEach(([c, r]) => {
+                        const idx = r.currentRevealIndex || 0, ord = r.revealOrder;
+                        const keep = ord.filter(u => rp(r)[u]);
+                        const removedBefore = ord.slice(0, idx).filter(u => !rp(r)[u]).length;
+                        m[`rooms/${c}/revealOrder`] = keep;
+                        m[`rooms/${c}/currentRevealIndex`] = Math.max(0, Math.min(keep.length - 1, idx - removedBefore));
+                        if (!keep.length) m[`rooms/${c}/status`] = 'discussion';
+                    });
+                    await multiUpdate(m); } }
+            });
+            const revIdx = roomEntries.filter(([, r]) => r.status === 'revealing' && Array.isArray(r.revealOrder) && (r.currentRevealIndex || 0) >= r.revealOrder.length);
+            if (revIdx.length) add('critical', 'rooms', `${revIdx.length} غرفة بمؤشر كشف خارج النطاق`, 'currentRevealIndex أكبر من عدد اللاعبين في الترتيب.', {
+                items: revIdx.map(([c]) => c),
+                fix: { label: 'نقل الغرفة للنقاش', safe: false, confirm: 'نقل هذه الغرف إلى مرحلة النقاش؟', fn: async () => { const m = {}; revIdx.forEach(([c]) => m[`rooms/${c}/status`] = 'discussion'); await multiUpdate(m); } }
+            });
+            const overMax = roomEntries.filter(([, r]) => r.maxPlayers && Object.keys(rp(r)).length > r.maxPlayers);
+            if (overMax.length) add('warn', 'rooms', `${overMax.length} غرفة تجاوزت الحد الأقصى للاعبين`, 'عدد اللاعبين أكبر من maxPlayers.', { items: overMax.map(([c, r]) => `${c}: ${Object.keys(rp(r)).length}/${r.maxPlayers}`) });
+            const badSpy = roomEntries.filter(([, r]) => ['revealing', 'discussion', 'voting'].includes(r.status) && r.roles && obj(r.roles) && (Object.values(r.roles).filter(x => x === 'spy').length === 0));
+            if (badSpy.length) add('critical', 'rooms', `${badSpy.length} لعبة جارية بلا جاسوس`, 'لا يوجد أي دور spy في roles — لن تنتهي اللعبة بشكل صحيح.', { items: badSpy.map(([c, r]) => `${c} (${r.status})`) });
+            const noWord = roomEntries.filter(([, r]) => ['discussion', 'voting'].includes(r.status) && !r.secretWord);
+            if (noWord.length) add('warn', 'rooms', `${noWord.length} لعبة بلا كلمة سرية`, 'الحالة نقاش/تصويت لكن secretWord مفقودة.', { items: noWord.map(([c]) => c) });
+            const overdue = roomEntries.filter(([, r]) => ['discussion', 'voting'].includes(r.status) && r.phaseEndsAt && now - r.phaseEndsAt > 5 * 60000 && Object.keys(rp(r)).length);
+            if (overdue.length) add('warn', 'rooms', `${overdue.length} غرفة انتهى مؤقتها ولم تتقدم`, 'phaseEndsAt مضى منذ +5 دقائق والحالة كما هي (غالباً لا أحد يدفع المرحلة).', { hint: 'قد يكون المضيف غادر أو أغلق الصفحة.', items: overdue.map(([c, r]) => `${c} (${r.status})`) });
+            const slowReveal = roomEntries.filter(([, r]) => r.status === 'revealing' && r.startedAt && now - r.startedAt > 30 * 60000);
+            if (slowReveal.length) add('warn', 'rooms', `${slowReveal.length} غرفة في مرحلة الكشف منذ +30 دقيقة`, 'مرحلة الكشف عادةً دقائق قليلة.', { items: slowReveal.map(([c]) => c) });
             if (!F.some(f => f.cat === 'rooms' && f.sev !== 'info') && roomEntries.length) add('ok', 'rooms', 'تكامل الغرف', `${roomEntries.length} غرفة سليمة`);
         }
 
@@ -2001,6 +2208,20 @@ window.runDiagnostics = async function (opts) {
                 items: unowned.map(([u, p]) => `${p.username || u}: ${p.nameTag}`),
                 fix: { label: 'إزالة الوسم', safe: false, confirm: 'إزالة الوسم غير المملوك من هؤلاء اللاعبين؟', fn: async () => { const m = {}; unowned.forEach(([u]) => m[`players/${u}/nameTag`] = null); await multiUpdate(m); } }
             });
+            const deadLast = playerEntries.filter(([, p]) => p.lastRoom && p.lastRoom.code && !rooms[p.lastRoom.code]);
+            if (deadLast.length && !unreadable.rooms) add('info', 'players', `${deadLast.length} لاعب لديه lastRoom لغرفة محذوفة`, 'سيسأل التطبيق اللاعب عن العودة لغرفة غير موجودة.', {
+                items: deadLast.map(([u, p]) => p.username || u),
+                fix: { label: 'مسح lastRoom', safe: true, fn: async () => { const m = {}; deadLast.forEach(([u]) => m[`players/${u}/lastRoom`] = null); await multiUpdate(m); } }
+            });
+            const oneWay = [];
+            playerEntries.forEach(([u, p]) => Object.keys(obj(p.friends)).forEach(f => { if (players[f] && !obj(players[f].friends)[u]) oneWay.push([u, f]); }));
+            if (oneWay.length) add('info', 'players', `${oneWay.length} صداقة في اتجاه واحد`, 'أحد الطرفين يرى الآخر صديقاً لكن العكس غير صحيح (غالباً قبول لم يكتمل).', {
+                hint: 'الإصلاح يكمل السجل الناقص عند الطرف الآخر (يجعلها صداقة متبادلة).',
+                items: oneWay.slice(0, 80).map(([u, f]) => `${pname(u)} → ${pname(f)}`),
+                fix: { label: 'جعلها متبادلة', safe: false, confirm: `إكمال ${oneWay.length} صداقة ناقصة؟`, fn: async () => { const m = {}; oneWay.forEach(([u, f]) => { m[`players/${f}/friends/${u}`] = obj(players[u].friends)[u] || { since: Date.now() }; }); await multiUpdate(m); } }
+            });
+            const badCur = playerEntries.filter(([, p]) => p.cursor != null && (typeof p.cursor !== 'object' || typeof p.cursor.shape !== 'string'));
+            if (badCur.length) add('info', 'players', `${badCur.length} لاعب بحقل cursor غير صالح`, 'سيتجاهله المتجر.', { items: badCur.map(([u, p]) => p.username || u), fix: { label: 'مسح الحقل', safe: true, fn: async () => { const m = {}; badCur.forEach(([u]) => m[`players/${u}/cursor`] = null); await multiUpdate(m); } } });
             if (!F.some(f => f.cat === 'players' && f.sev !== 'info') && playerEntries.length) add('ok', 'players', 'سجلات اللاعبين', `${playerEntries.length} سجل سليم`);
         }
 
@@ -2041,24 +2262,87 @@ window.runDiagnostics = async function (opts) {
             const orphan = Object.keys(bans).filter(u => !players[u]);
             if (orphan.length) add('info', 'moderation', `${orphan.length} حظر لحسابات محذوفة`, 'بيانات قديمة غير ضارة.', { items: orphan });
         }
+        {   // smarter report analysis: hot targets, spammy reporters, unlinkable reports, reasons
+            const pend = repEntries.filter(([, r]) => r.status === 'pending');
+            const byTarget = {};
+            pend.forEach(([, r]) => { const k = r.reportedUid || ('n:' + String(r.reportedUsername || '?').toLowerCase()); (byTarget[k] = byTarget[k] || []).push(r); });
+            const uidOf = k => k.startsWith('n:') ? null : k;
+            const hot = Object.entries(byTarget).filter(([k, a]) => a.length >= 3 && !bans[uidOf(k)]);
+            if (hot.length) add('warn', 'moderation', `${hot.length} لاعب عليه 3 بلاغات معلّقة أو أكثر`, 'لاعبون تتكرر الشكاوى ضدهم ولم يُحظروا بعد.', {
+                hint: 'الأولوية للأعلى عدداً. تحقق من اختلاف المُبلِّغين قبل الحظر (بلاغات من شخص واحد قد تكون تحرشاً به).',
+                items: hot.sort((a, b) => b[1].length - a[1].length).map(([k, a]) => `${a[0].reportedUsername || pname(uidOf(k))}: ${a.length} بلاغات من ${new Set(a.map(x => x.reportedBy)).size} مُبلِّغ — ${[...new Set(a.map(x => x.reason))].join('/')}`),
+                fix: { label: 'فتح البلاغات', safe: false, fn: async () => showSection('reports') }
+            });
+            const byRep = {};
+            repEntries.filter(([, r]) => repTs(r) && now - repTs(r) < D).forEach(([, r]) => { const k = r.reportedBy || '?'; (byRep[k] = byRep[k] || []).push(r); });
+            const spammy = Object.entries(byRep).filter(([, a]) => a.length >= 5);
+            if (spammy.length) add('warn', 'moderation', `${spammy.length} مُبلِّغ أرسل 5 بلاغات أو أكثر خلال 24 ساعة`, 'قد يكون استخداماً مسيئاً لنظام البلاغات.', { items: spammy.map(([k, a]) => `${a[0].reportedByUsername || pname(k)}: ${a.length} بلاغ`) });
+            const unlinked = pend.filter(([, r]) => !r.reportedUid && r.reportedUsername && !playerEntries.some(([, p]) => String(p.username || '').toLowerCase() === String(r.reportedUsername).toLowerCase()));
+            if (unlinked.length && !unreadable.players) add('info', 'moderation', `${unlinked.length} بلاغ عن اسم غير موجود بين اللاعبين`, 'قد يكون الاسم كُتب خطأ أو الحساب حُذف.', { items: unlinked.map(([, r]) => r.reportedUsername) });
+            const vague = pend.filter(([, r]) => r.reason === 'other' && !(r.description || '').trim());
+            if (vague.length) add('info', 'moderation', `${vague.length} بلاغ «أخرى» بلا وصف`, 'يصعب الحكم عليها دون تفاصيل.', { items: vague.map(([, r]) => r.reportedUsername || '?') });
+            const reasons = {}; repEntries.forEach(([, r]) => reasons[r.reason || '?'] = (reasons[r.reason || '?'] || 0) + 1);
+            const topR = Object.entries(reasons).sort((a, b) => b[1] - a[1])[0];
+            if (topR && repEntries.length >= 5) add('info', 'moderation', `أكثر سبب للبلاغات: ${topR[0]} (${topR[1]})`, Object.entries(reasons).map(([k, v]) => `${k}: ${v}`).join(' · '));
+        }
+        // admin activity: sudden mass deletions
+        if (!unreadable.adminLogs) {
+            const logs = Object.values(adminLogsRaw).filter(l => l && typeof l === 'object');
+            const recent = logs.filter(l => now - (l.at || 0) < 10 * 60000 && /delete|close|ban/.test(l.action || ''));
+            if (recent.length >= 15) add('warn', 'security', `${recent.length} إجراء حذف/إغلاق/حظر خلال 10 دقائق`, 'نشاط إداري مكثف غير معتاد — تأكد أنه مقصود.', { items: [...new Set(recent.map(l => l.by))].map(b => `${b}: ${recent.filter(l => l.by === b).length}`) });
+            if (logs.length) add('info', 'security', 'نشاط الإدارة', `${logs.length} إجراء مسجل مؤخراً · آخرها ${new Date(Math.max(...logs.map(l => l.at || 0))).toLocaleString('ar-EG')}`);
+        }
+        if (!unreadable.updates) {
+            const ups = Object.entries(updatesDb).filter(([, u]) => u && typeof u === 'object');
+            const bad = ups.filter(([, u]) => u.hidden !== true && (!u.version || !u.title || !['upcoming', 'released'].includes(u.status)));
+            if (bad.length) add('warn', 'content', `${bad.length} تحديث بحقول ناقصة في سجل التحديثات`, 'يحتاج version و title و status (upcoming/released).', { items: bad.map(([id, u]) => `${id}: ${u.version || '?'}`) });
+        }
+        if (!unreadable.shopItems) {
+            const bad = Object.entries(shopItems).filter(([, it]) => it && typeof it === 'object' && it.price != null && !(Number.isFinite(Number(it.price)) && Number(it.price) >= 0));
+            if (bad.length) add('warn', 'content', `${bad.length} عنصر متجر بسعر غير صالح`, 'السعر سالب أو ليس رقماً.', { items: bad.map(([id, it]) => `${id}: ${JSON.stringify(it.price)}`) });
+        }
         if (!F.some(f => f.cat === 'moderation' && f.sev !== 'info')) add('ok', 'moderation', 'الإشراف', `${repEntries.filter(([, r]) => r.status === 'pending').length} بلاغ معلّق، ${Object.keys(bans).length} حظر`);
 
         // ── CONTENT ─────────────────────────────────────────
+        // wordLists is the PRIMARY category source (local lists are only a fallback), so it is checked closely.
         if (!unreadable.wordLists) {
             const cats = Object.entries(words);
-            const wl = list => Object.keys(obj(list)).filter(k => k !== '_init');
+            const wl = list => wlEntries(list).map(e => e.word);
+            if (!cats.length) add('warn', 'content', 'لا توجد فئات في قاعدة البيانات', 'اللعب سيعتمد على القوائم المحلية الاحتياطية بدل قاعدة البيانات. أضف فئاتك من تبويب الكلمات.', { fix: { label: 'فتح الكلمات', safe: false, fn: async () => showSection('words') } });
+            const shape = cats.filter(([, l]) => wlNeedsFix(l));
+            if (shape.length) add('warn', 'content', `${shape.length} فئة مخزنة بصيغة قديمة (كلمات مرقّمة)`, 'الكلمات محفوظة كأرقام/قائمة بدل أن تكون مفاتيح، ما يسبب ظهورها كأرقام في الأدمن ويصعّب التعديل.', {
+                hint: 'التحويل لا يغيّر الكلمات نفسها، فقط طريقة تخزينها.',
+                items: shape.map(([c, l]) => `${c} (${wl(l).length})`),
+                fix: { label: 'تحويل كل الفئات', safe: true, fn: async () => { const m = {}; shape.forEach(([c, l]) => { const o = {}; wlEntries(l).forEach(e => { const w = wlSanitize(e.word); if (w) o[w] = true; }); const ic = wlIcon(l); if (ic) o._icon = ic; if (!Object.keys(o).length) o._init = true; m[`wordLists/${c}`] = o; }); await multiUpdate(m); } }
+            });
             const emptyC = cats.filter(([, l]) => !wl(l).length);
-            if (emptyC.length) add('critical', 'content', `${emptyC.length} فئة كلمات فارغة`, 'اختيارها في غرفة يمنع بدء اللعب.', { items: emptyC.map(([c]) => c), fix: { label: 'فتح الكلمات', safe: false, fn: async () => showSection('words') } });
+            if (emptyC.length) add('critical', 'content', `${emptyC.length} فئة كلمات فارغة`, 'فئة فارغة تُخفى من اللعب، ولا تُستخدم حتى تضيف كلمات.', { items: emptyC.map(([c]) => c), fix: { label: 'فتح الكلمات', safe: false, fn: async () => showSection('words') } });
             const small = cats.filter(([, l]) => { const n = wl(l).length; return n > 0 && n < 8; });
             if (small.length) add('warn', 'content', `${small.length} فئة بكلمات قليلة (<8)`, 'ستتكرر الكلمات بسرعة.', { items: small.map(([c, l]) => `${c} (${wl(l).length})`) });
-            const spaced = []; cats.forEach(([c, l]) => wl(l).forEach(w => { if (w !== w.trim()) spaced.push([c, w]); }));
-            if (spaced.length) add('warn', 'content', `${spaced.length} كلمة بمسافات زائدة`, 'مسافة في البداية أو النهاية قد تظهر بشكل خاطئ.', {
-                items: spaced.map(([c, w]) => `${c}: "${w}"`),
-                fix: { label: 'تنظيف المسافات', safe: false, confirm: 'إعادة تسمية الكلمات بإزالة المسافات الزائدة؟', fn: async () => { const m = {}; spaced.forEach(([c, w]) => { m[`wordLists/${c}/${w}`] = null; }); spaced.forEach(([c, w]) => { if (w.trim()) m[`wordLists/${c}/${w.trim()}`] = true; }); await multiUpdate(m); } }
+            const noIcon = cats.filter(([, l]) => wl(l).length && !wlIcon(l));
+            if (noIcon.length) add('info', 'content', `${noIcon.length} فئة بلا أيقونة`, 'ستظهر بأيقونة 🗂️ العامة. أضف أيقونة من تبويب الكلمات.', { items: noIcon.map(([c]) => c), fix: { label: 'فتح الكلمات', safe: false, fn: async () => showSection('words') } });
+            const spaced = []; cats.forEach(([c, l]) => wlEntries(l).forEach(e => { if (e.word !== e.word.trim() || /\s{2,}/.test(e.word)) spaced.push([c, e]); }));
+            if (spaced.length) add('warn', 'content', `${spaced.length} كلمة بمسافات زائدة`, 'مسافة في البداية أو النهاية أو مسافات مضاعفة.', {
+                items: spaced.map(([c, e]) => `${c}: "${e.word}"`),
+                fix: { label: 'تنظيف المسافات', safe: false, confirm: 'إعادة تسمية الكلمات بإزالة المسافات الزائدة؟', fn: async () => { const m = {}; spaced.forEach(([c, e]) => { m[`wordLists/${c}/${e.key}`] = null; }); spaced.forEach(([c, e]) => { const w = wlSanitize(e.word); if (w) m[`wordLists/${c}/${w}`] = true; }); await multiUpdate(m); } }
             });
             const dupW = []; cats.forEach(([c, l]) => { const seen = {}; wl(l).forEach(w => { const k = w.trim().toLowerCase(); if (seen[k]) dupW.push(`${c}: ${w}`); seen[k] = 1; }); });
             if (dupW.length) add('info', 'content', `${dupW.length} كلمة مكررة داخل فئاتها`, 'نفس الكلمة بحالة أحرف أو مسافات مختلفة.', { items: dupW });
-            if (!F.some(f => f.cat === 'content' && f.sev !== 'info') && cats.length) add('ok', 'content', 'فئات الكلمات', `${cats.length} فئة، ${cats.reduce((s, [, l]) => s + wl(l).length, 0)} كلمة`);
+            const where2 = {}; cats.forEach(([c, l]) => wl(l).forEach(w => { const k = w.trim().toLowerCase(); (where2[k] = where2[k] || new Set()).add(c); }));
+            const cross = Object.entries(where2).filter(([, set]) => set.size > 1);
+            if (cross.length) add('info', 'content', `${cross.length} كلمة موجودة في أكثر من فئة`, 'قد تكون مقصودة، لكنها تقلل التنوع.', { items: cross.slice(0, 60).map(([w, set]) => `${w}: ${[...set].join('، ')}`) });
+            const longW = []; cats.forEach(([c, l]) => wl(l).forEach(w => { if (w.length > 28) longW.push(`${c}: ${w.slice(0, 40)}…`); }));
+            if (longW.length) add('info', 'content', `${longW.length} كلمة طويلة جداً (+28 حرفاً)`, 'قد لا تظهر جيداً على بطاقة الكشف في الهاتف.', { items: longW });
+            // rooms whose category no longer exists in the database list (renamed / deleted)
+            if (!unreadable.rooms && cats.some(([, l]) => wl(l).length)) {
+                const known = new Set(cats.filter(([, l]) => wl(l).length).map(([c]) => c));
+                const orphanRooms = Object.entries(rooms).filter(([, r]) => r && r.category && !known.has(r.category) && r.status === 'waiting');
+                if (orphanRooms.length) add('warn', 'content', `${orphanRooms.length} غرفة انتظار بفئة غير موجودة`, 'فئتها حُذفت أو أُعيدت تسميتها. عند بدء اللعب ستنتقل لأول فئة متاحة.', {
+                    items: orphanRooms.map(([c, r]) => `${c}: ${r.category}`),
+                    fix: { label: 'نقلها لأول فئة', safe: true, fn: async () => { const first = [...known][0]; const m = {}; orphanRooms.forEach(([c]) => m[`rooms/${c}/category`] = first); await multiUpdate(m); } }
+                });
+            }
+            if (!F.some(f => f.cat === 'content' && f.sev !== 'info') && cats.length) add('ok', 'content', 'فئات الكلمات', `${cats.length} فئة، ${cats.reduce((s2, [, l]) => s2 + wl(l).length, 0)} كلمة`);
         }
 
         // ── NEWS ────────────────────────────────────────────
@@ -2099,8 +2383,21 @@ window.runDiagnostics = async function (opts) {
     F.sort((a, b) => sevOrder[a.sev] - sevOrder[b.sev]);
     const c = F.filter(f => f.sev === 'critical').length, w = F.filter(f => f.sev === 'warn').length, i = F.filter(f => f.sev === 'info').length;
     const score = scanScore(c, w, i);
-    const hist = lsj(SCAN_HIST_KEY, []); hist.push({ at: Date.now(), score, c, w, i }); lsw(SCAN_HIST_KEY, hist.slice(-20));
-    scanState = { ...scanState, running: false, findings: F, score, at: Date.now(), timings, counts: { c, w, i, ok: F.filter(f => f.sev === 'ok').length }, prev: hist.length > 1 ? hist[hist.length - 2].score : null };
+    // smarter reporting: remember each problem by a stable fingerprint (title with numbers masked) so the next
+    // scans can say "new", "recurring ×N" or "resolved since last scan".
+    const fpOf = f => f.cat + '|' + String(f.title).replace(/[0-9٠-٩]+/g, '#');
+    const hist = lsj(SCAN_HIST_KEY, []);
+    const bad = F.filter(f => f.sev === 'critical' || f.sev === 'warn');
+    const prevFps = hist.length ? (hist[hist.length - 1].fps || {}) : null;
+    bad.forEach(f => {
+        f.fp = fpOf(f); f.age = 0;
+        for (let k = hist.length - 1; k >= 0 && (hist[k].fps || {})[f.fp]; k--) f.age++;
+        f.isNew = !!prevFps && !prevFps[f.fp];
+    });
+    const nowFps = {}; bad.forEach(f => nowFps[f.fp] = f.title.slice(0, 60));
+    const resolved = prevFps ? Object.entries(prevFps).filter(([k]) => !nowFps[k]).map(([, t]) => t) : [];
+    hist.push({ at: Date.now(), score, c, w, i, fps: nowFps }); lsw(SCAN_HIST_KEY, hist.slice(-20));
+    scanState = { ...scanState, running: false, findings: F, score, at: Date.now(), timings, resolved, counts: { c, w, i, ok: F.filter(f => f.sev === 'ok').length }, prev: hist.length > 1 ? hist[hist.length - 2].score : null };
     if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fas fa-play"></i> تشغيل الفحص'; }
     renderScan();
 };
@@ -2130,11 +2427,14 @@ function renderScan() {
     const safeN = F.filter(f => f.fix?.safe).length;
     const fb = nv('fix-safe-btn'); fb.disabled = !safeN; fb.innerHTML = `<i class="fas fa-wand-magic-sparkles"></i> إصلاح كل الآمن${safeN ? ' (' + safeN + ')' : ''}`;
     const shown = F.map((f, idx) => [f, idx]).filter(([f]) => (s.sev === 'all' || f.sev === s.sev) && (s.cat === 'all' || f.cat === s.cat));
-    nv('diag-results').innerHTML = shown.map(([f, idx]) => `
+    const resolvedHtml = (s.resolved && s.resolved.length) ? `<div class="sc-f sev-ok"><div class="sc-f-head"><span class="badge badge-ok"><i class="fas fa-circle-check"></i> تم حلها</span><b>${s.resolved.length} مشكلة اختفت منذ الفحص السابق</b></div><details class="sc-items" open><summary>عرض</summary><div>${s.resolved.map(x => `<span>${esc(x)}</span>`).join('')}</div></details></div>` : '';
+    nv('diag-results').innerHTML = resolvedHtml + shown.map(([f, idx]) => `
         <div class="sc-f sev-${f.sev}">
             <div class="sc-f-head"><span class="badge badge-${f.sev === 'critical' ? 'critical' : f.sev}"><i class="fas ${SC_ICON[f.sev]}"></i> ${SC_SEV[f.sev]}</span>
-                <span class="sc-cat">${SC_CATS[f.cat]?.[0] || f.cat}</span><b>${esc(f.title)}</b></div>
+                <span class="sc-cat">${SC_CATS[f.cat]?.[0] || f.cat}</span><b>${esc(f.title)}</b>
+                ${f.isNew ? '<span class="badge badge-info" style="margin-inline-start:6px;">جديد</span>' : ''}${f.age >= 1 ? `<span class="badge badge-warn" style="margin-inline-start:6px;" title="ظهرت في ${f.age} فحص سابق متتالٍ">متكرر ×${f.age + 1}</span>` : ''}</div>
             <p>${esc(f.detail)}</p>
+            ${f.hint ? `<p style="font-size:11.5px;color:var(--accent);margin-top:4px;">💡 ${esc(f.hint)}</p>` : ''}
             ${f.items?.length ? `<details class="sc-items"><summary>عرض العناصر (${f.items.length})</summary><div>${f.items.slice(0, 60).map(x => `<span>${esc(x)}</span>`).join('')}${f.items.length > 60 ? `<span>… +${f.items.length - 60}</span>` : ''}</div></details>` : ''}
             ${f.fix ? `<div class="sc-fixrow"><button class="btn btn-ghost btn-sm" onclick="runDiagFix(${idx})">${esc(f.fix.label)}</button>${f.fix.safe ? '<span class="sc-safe">إصلاح آمن</span>' : ''}</div>` : ''}
         </div>`).join('') || (s.score == null ? '<p style="color:var(--text-faint);text-align:center;padding:30px;font-size:12.5px;">اضغط «تشغيل الفحص» للبدء.</p>' : '<p style="color:var(--text-faint);text-align:center;padding:30px;font-size:12.5px;">لا نتائج بهذا الفلتر.</p>');
@@ -2147,7 +2447,8 @@ window.runDiagFix = async function (i) {
     if (f.fix.confirm && !await UIConfirm(f.fix.confirm)) return;
     try {
         await f.fix.fn();
-        if (f.fix.label !== 'الذهاب للاعبين' && f.fix.label !== 'فتح البلاغات' && f.fix.label !== 'فتح الكلمات') { logAdmin('scan.fix', f.cat, f.title); UIAlert('تم'); runDiagnostics(); }
+        if (f.fix.noRerun) return;
+        if (f.fix.label !== 'الذهاب للاعبين' && f.fix.label !== 'فتح البلاغات' && f.fix.label !== 'فتح الكلمات' && f.fix.label !== 'فتح البلاغات') { logAdmin('scan.fix', f.cat, f.title); UIAlert('تم'); runDiagnostics(); }
     } catch (e) { UIAlert('فشل: ' + e.message); }
 };
 window.fixAllSafe = async function () {
@@ -2164,7 +2465,32 @@ window.exportScanJSON = function () {
     const s = scanState;
     if (s.score == null) return UIAlert('شغّل الفحص أولاً');
     downloadFile('scan-' + new Date().toISOString().slice(0, 16).replace(/[:T]/g, '-') + '.json',
-        JSON.stringify({ at: new Date(s.at).toISOString(), score: s.score, counts: s.counts, timings: s.timings, findings: s.findings.map(({ fix, ...f }) => ({ ...f, fixable: !!fix, safeFix: !!fix?.safe })) }, null, 2), 'application/json');
+        JSON.stringify({ at: new Date(s.at).toISOString(), score: s.score, counts: s.counts, timings: s.timings, resolved: s.resolved || [], findings: s.findings.map(({ fix, ...f }) => ({ ...f, fixable: !!fix, safeFix: !!fix?.safe })) }, null, 2), 'application/json');
+};
+// Markdown report ready to paste to a developer / issue tracker
+window.copyScanReport = async function () {
+    const s = scanState;
+    if (s.score == null) return UIAlert('شغّل الفحص أولاً');
+    const L = [];
+    L.push(`# تقرير فحص النظام — El Jasus`, `- الوقت: ${new Date(s.at).toLocaleString('ar-EG')}`, `- الدرجة: **${s.score}/100**${s.prev != null ? ` (السابق ${s.prev})` : ''}`,
+        `- ${s.counts.c} حرج · ${s.counts.w} تحذير · ${s.counts.i} معلومة · ${s.counts.ok} سليم`, `- المشرف: ${currentAdmin?.username || '?'}`, '');
+    ['critical', 'warn'].forEach(sev => {
+        const list = s.findings.filter(f => f.sev === sev);
+        if (!list.length) return;
+        L.push(`## ${SC_SEV[sev]} (${list.length})`);
+        list.forEach(f => {
+            L.push(`### [${SC_CATS[f.cat]?.[0] || f.cat}] ${f.title}${f.isNew ? ' — جديد' : ''}${f.age >= 1 ? ` — متكرر ×${f.age + 1}` : ''}`, f.detail);
+            if (f.hint) L.push(`> السبب/الحل المحتمل: ${f.hint}`);
+            if (f.items?.length) L.push('العناصر المتأثرة:', ...f.items.slice(0, 15).map(x => `- ${x}`), f.items.length > 15 ? `- … و${f.items.length - 15} أخرى` : '');
+            if (f.fix) L.push(`الإصلاح المتاح: ${f.fix.label}${f.fix.safe ? ' (آمن)' : ''}`);
+            L.push('');
+        });
+    });
+    if (s.resolved?.length) L.push('## حُلّت منذ الفحص السابق', ...s.resolved.map(x => `- ${x}`), '');
+    L.push('## توقيت القراءة', Object.entries(s.timings).map(([k, v]) => `${k}: ${v}ms`).join(' · '));
+    const text = L.join('\n');
+    try { await navigator.clipboard.writeText(text); UIToast ? UIToast('تم نسخ التقرير ✓') : UIAlert('تم نسخ التقرير'); }
+    catch (e) { downloadFile('scan-report-' + new Date().toISOString().slice(0, 10) + '.md', text, 'text/markdown'); }
 };
 window.setScanAuto = function (sec) {
     lsw(SCAN_AUTO_KEY, parseInt(sec) || 0); initScanAuto();
@@ -2192,7 +2518,7 @@ const AUDIT_LABEL = {
     coins: ['تعديل عملات', 'fa-coins'], 'msg.send': ['رسالة للاعب', 'fa-envelope'], 'news.publish': ['نشر خبر', 'fa-newspaper'],
     'news.edit': ['تعديل خبر', 'fa-pen'], 'news.delete': ['حذف خبر', 'fa-trash'], 'news.pinned': ['تثبيت خبر', 'fa-thumbtack'],
     'news.visible': ['إظهار/إخفاء خبر', 'fa-eye'], 'news.banner': ['شريط علوي', 'fa-bullhorn'], 'news.banner.clear': ['إلغاء الشريط', 'fa-bullhorn'],
-    'word.add': ['إضافة كلمة', 'fa-font'], 'word.delete': ['حذف كلمة', 'fa-font'], 'db.write': ['كتابة قاعدة البيانات', 'fa-database'],
+    'word.add': ['إضافة كلمة', 'fa-font'], 'category.add': ['إضافة فئة', 'fa-layer-group'], 'category.rename': ['إعادة تسمية فئة', 'fa-pen'], 'category.icon': ['أيقونة فئة', 'fa-icons'], 'category.delete': ['حذف فئة', 'fa-trash'], 'category.fix': ['تحويل صيغة فئة', 'fa-wrench'], 'word.delete': ['حذف كلمة', 'fa-font'], 'db.write': ['كتابة قاعدة البيانات', 'fa-database'],
     'db.delete': ['حذف من قاعدة البيانات', 'fa-database'], 'scan.fix': ['إصلاح من الفاحص', 'fa-stethoscope'], 'scan.fixall': ['إصلاح آمن شامل', 'fa-wand-magic-sparkles'],
     'player.patch': ['إصلاح سجل لاعب', 'fa-wrench']
 };

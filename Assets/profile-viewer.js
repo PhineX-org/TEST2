@@ -34,7 +34,7 @@
     places: '🌍 أماكن سياحية', food: '🍕 أكلات مصرية', jobs: '🛠️ مهن ووظائف',
     companies: '🏢 شركات عالمية', football_teams: '⚽ أندية ومنتخبات', famous_players: '🌟 لاعبين مشهورين', animals: '🐾 حيوانات',
   };
-  const catName = (k) => CAT_NAMES[k] || k;
+  const catName = (k) => { const W = window.EJ_WORDS; if (W && W.lists && W.lists[k]) { const i = W.info(k); return (i.emoji || '') + ' ' + i.name; } return CAT_NAMES[k] || k; };
 
   // ── Firebase (late-bound) ──────────────────────────────────
   let db = null, M = null, auth = null, dbPromise = null;

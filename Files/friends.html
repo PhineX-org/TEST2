@@ -17,6 +17,8 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <script src="../Assets/presence.js"></script>
     <script src="../Assets/dialogs.js"></script>
+    <script src="../Assets/cursors.js"></script>
+   <script src="../Assets/game-words.js"></script>
     <script src="../Assets/moderation.js"></script>
     <script src="../Assets/name-themes.js"></script>
    <script src="../Assets/inbox.js"></script>
@@ -337,12 +339,6 @@
 
             <label class="inv-field-label">فئة اللعب</label>
             <select class="inv-input" id="inv-category">
-                <option value="places">🌍 أماكن سياحية</option>
-                <option value="food">🍕 أكلات مصرية</option>
-                <option value="jobs">🛠️ مهن ووظائف</option>
-                <option value="companies">🏢 شركات عالمية</option>
-                <option value="football_teams">⚽ أندية ومنتخبات كورة</option>
-                <option value="famous_players">🌟 لاعبين مشهورين</option>
             </select>
 
             <div style="display:flex;gap:12px;">
@@ -372,6 +368,7 @@
         const app  = initializeApp(firebaseConfig);
         const auth = getAuth(app);
         const db   = getDatabase(app);
+        if (window.EJ_WORDS) EJ_WORDS.initSelect(document.getElementById('inv-category'), db, get, ref);
 
         window._db = db; window._auth = auth;
         window._dbFns = { ref, get, set, update, push, remove };

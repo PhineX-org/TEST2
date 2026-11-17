@@ -15,6 +15,9 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <script src="../Assets/presence.js"></script>
     <script src="../Assets/dialogs.js"></script>
+    <script src="../Assets/cursors.js"></script>
+    <script src="../Assets/tutorial.js" defer></script>
+    <script src="../Assets/game-words.js"></script>
     <script src="../Assets/moderation.js"></script>
     <script src="../Assets/name-themes.js"></script>
     <script src="../Assets/inbox.js"></script>
@@ -144,12 +147,6 @@
         <h3>🎮 دعوة لغرفة</h3>
         <p id="sheetTxt">ستصل دعوة لصديقك — <b>تُنشأ الغرفة فقط عندما يقبل</b>، وعندها تنتقلان إليها معاً.</p>
         <select id="sheetCat">
-            <option value="places">🌍 أماكن سياحية</option>
-            <option value="food">🍕 أكلات مصرية</option>
-            <option value="jobs">🛠️ مهن ووظائف</option>
-            <option value="companies">🏢 شركات عالمية</option>
-            <option value="football_teams">⚽ أندية ومنتخبات كورة</option>
-            <option value="famous_players">🌟 لاعبين مشهورين</option>
         </select>
         <div class="row">
             <button class="btn go" id="sheetGo" type="button">إرسال الدعوة</button>
@@ -176,6 +173,7 @@
     const app = initializeApp(firebaseConfig);
     const auth = getAuth(app);
     const db = getDatabase(app);
+    if (window.EJ_WORDS) EJ_WORDS.initSelect(document.getElementById('sheetCat'), db, get, ref);
 
     const $ = (id) => document.getElementById(id);
     const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));

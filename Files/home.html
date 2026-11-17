@@ -28,6 +28,7 @@
     <script src="../Assets/seasons.js"></script>
     <script src="../Assets/cosmetics.js"></script>
     <script src="../Assets/dialogs.js"></script>
+    <script src="../Assets/cursors.js"></script>
     <script src="../Assets/moderation.js"></script>
     <script src="../Assets/name-themes.js"></script>
     <script src="../Assets/game-words.js"></script>
@@ -1233,14 +1234,7 @@
                     📋 القائمة
                 </label>
                 <select id="gameCat" class="w-full p-4 rounded-xl border-2 outline-none text-sm appearance-none cursor-pointer font-bold">
-                    <!-- Built-in categories (always present) -->
-                    <option value="places">🌍 أماكن سياحية</option>
-                    <option value="food">🍕 أكلات مصرية</option>
-                    <option value="jobs">🛠️ مهن ووظائف</option>
-                    <option value="companies">🏢 شركات عالمية</option>
-                    <option value="football_teams">⚽ أندية ومنتخبات كورة</option>
-                    <option value="famous_players">🌟 لاعبين مشهورين</option>
-                    <!-- Admin-added categories will be injected here dynamically -->
+                    <!-- Options are built by EJ_WORDS.fillSelect(): database categories first, local lists only as fallback -->
                 </select>
             </div>
 
@@ -1657,65 +1651,24 @@ async function offerRejoin(user) {
 
         let myName = "", myRoom = "", isHost = false;
 
-        async function loadCustomCategories() {
-        try {
-            const snap = await get(ref(db, 'wordLists'));
-            if (!snap.exists()) return;
-
+        // Categories: the database (wordLists) is the primary source. Local lists are used only
+        // when the database cannot be read / is empty. Never both (no duplicates).
+        function renderCategorySelect() {
             const select = document.getElementById('gameCat');
-
-            // Remove any previously injected custom options
-            // (in case this is called again on auth change)
-            select.querySelectorAll('option[data-custom]').forEach(o => o.remove());
-
-            snap.forEach(child => {
-                const catId  = child.key;
-                const catVal = child.val() || {};
-
-                // admin.html stores words as keys ({word:true}); older data uses {words:[...]}
-                const wordsOf = (v) => {
-                    if (Array.isArray(v.words)) return v.words.filter(Boolean);
-                    if (v.words && typeof v.words === 'object') return Object.values(v.words).filter(Boolean);
-                    return Object.keys(v).filter(k => k && !['_init','name','emoji','words','about'].includes(k));
-                };
-                const words = wordsOf(catVal);
-
-                // Skip if it's a built-in category key (already in HTML)
-                const builtIn = ['places','food','jobs','companies','football_teams','famous_players'];
-                if (builtIn.includes(catId)) {
-                    // If admin updated a built-in category's word list, merge the words
-                    if (words.length > 0) {
-                        gameData[catId] = [...new Set([...(gameData[catId] || []), ...words])];
-                    }
-                    return;
-                }
-
-                // It's a NEW custom category from admin
-                if (!words.length) return; // skip empty
-
-                // Add to gameData so startLocalGame can find it
-                gameData[catId] = words;
-
-                // Add to the <select> dropdown
-                const emoji  = catVal.emoji || '🗂️';
-                const label  = catVal.name  || catId;
-                const option = document.createElement('option');
-                option.value           = catId;
-                option.textContent     = `${emoji} ${label}`;
-                option.dataset.custom  = 'true'; // mark so we can remove/re-add on refresh
-                select.appendChild(option);
-            });
-
-            // Re-apply the saved local category now that custom options exist
-            const savedCat = localStorage.getItem('eljasus_local_category');
-            if (savedCat && [...select.options].some(o => o.value === savedCat)) {
-                select.value = savedCat;
-            }
-
-        } catch (e) {
-            console.warn('loadCustomCategories failed:', e);
+            if (!select || !window.EJ_WORDS) return;
+            const saved = localStorage.getItem('eljasus_local_category');
+            window.EJ_WORDS.fillSelect(select, saved || select.value);
+            // gameData must mirror the active lists (startLocalGame reads it)
+            Object.keys(gameData).forEach(k => delete gameData[k]);
+            const L = window.EJ_WORDS.lists;
+            Object.keys(L).forEach(k => { gameData[k] = L[k].slice(); });
         }
-    }
+        async function loadCustomCategories() {
+            try { await window.EJ_WORDS.loadFromDb(db, get, ref); }
+            catch (e) { console.warn('loadCustomCategories failed, local lists stay:', e); }
+            renderCategorySelect();
+        }
+        renderCategorySelect();   // instant (local) list; replaced by the database list once it loads
 
         // Auto-fill name + last-used local game setup from localStorage
         document.addEventListener('DOMContentLoaded', () => {
@@ -1814,6 +1767,7 @@ async function offerRejoin(user) {
             saveLocalSetup();
             const names  = Array.from(document.querySelectorAll('.local-name-in')).map(i => i.value || "مجهول");
             const cat    = document.getElementById('gameCat').value;
+            if (!gameData[cat] || !gameData[cat].length) { renderCategorySelect(); return UIAlert('هذه الفئة غير متاحة الآن، اختر فئة أخرى'); }
             const secret = gameData[cat][Math.floor(Math.random() * gameData[cat].length)];
             const spyIdx = Math.floor(Math.random() * names.length);
             showLocalTurn(names, secret, spyIdx, 0);

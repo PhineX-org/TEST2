@@ -12,6 +12,7 @@
     <script src="../Assets/presence.js"></script>
     <script src="../Assets/cosmetics.js"></script>
     <script src="../Assets/dialogs.js"></script>
+    <script src="../Assets/cursors.js"></script>
     <script src="../Assets/friend-invite-enhanced.js" defer></script>
     <script src="../Assets/profile-viewer.js" defer></script>
     <script src="../Assets/inbox.js"></script>
@@ -170,6 +171,9 @@
             <button class="tab-btn px-6 py-3 rounded-xl font-black text-sm" data-tab="ranks">
                 🎖️ الرتب
             </button>
+            <button class="tab-btn px-6 py-3 rounded-xl font-black text-sm" data-tab="cursor">
+                🖱️ المؤشر
+            </button>
         </div>
         
         <!-- Themes Tab -->
@@ -186,6 +190,11 @@
         <!-- Tags Tab -->
         <div id="tab-tags" class="tab-content hidden">
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4" id="tagsGrid"></div>
+        </div>
+
+        <!-- Custom cursor -->
+        <div id="tab-cursor" class="tab-content hidden">
+            <div id="cursorPicker" class="glass rounded-2xl p-5"></div>
         </div>
 
         <!-- Card backgrounds -->
@@ -258,6 +267,15 @@
         onAuthStateChanged(auth, async (user) => {
     if (user) {
         currentUser = user;
+        if (window.EJCursor) {   // custom cursor picker: local first, mirrored to the account
+            const box = document.getElementById('cursorPicker');
+            EJCursor.mount(box);
+            get(ref(db, `players/${user.uid}/cursor`)).then(s => {
+                const v = s.val();
+                if (v && v.shape && !EJCursor.isCustom()) { EJCursor.set(v); EJCursor.mount(box); }
+            }).catch(() => {});
+            EJCursor.onChange(c => update(ref(db, `players/${user.uid}`), { cursor: c || null }).catch(() => {}));
+        }
         try {
             await loadUserData();
             renderShop();

@@ -18,6 +18,9 @@
     <script src="../Assets/friend-invite-enhanced.js" defer></script>
     <script src="../Assets/presence.js"></script>
     <script src="../Assets/dialogs.js"></script>
+    <script src="../Assets/cursors.js"></script>
+    <script src="../Assets/tutorial.js" defer></script>
+    <script src="../Assets/game-words.js"></script>
     <script src="../Assets/moderation.js"></script>
     <script src="../Assets/inbox.js"></script>
 
@@ -285,36 +288,7 @@
                                 🌐 الكل
                             </span>
                         </button>
-                        <button class="filter-chip category-filter" data-category="places">
-                            <span class="px-4 py-2.5 rounded-xl border-2 border-white/20 bg-white/5 text-xs font-bold hover:border-cyan-400 transition-all">
-                                🌍 أماكن سياحية
-                            </span>
-                        </button>
-                        <button class="filter-chip category-filter" data-category="food">
-                            <span class="px-4 py-2.5 rounded-xl border-2 border-white/20 bg-white/5 text-xs font-bold hover:border-cyan-400 transition-all">
-                                🍕 أكلات مصرية
-                            </span>
-                        </button>
-                        <button class="filter-chip category-filter" data-category="jobs">
-                            <span class="px-4 py-2.5 rounded-xl border-2 border-white/20 bg-white/5 text-xs font-bold hover:border-cyan-400 transition-all">
-                                🛠️ مهن ووظائف
-                            </span>
-                        </button>
-                        <button class="filter-chip category-filter" data-category="companies">
-                            <span class="px-4 py-2.5 rounded-xl border-2 border-white/20 bg-white/5 text-xs font-bold hover:border-cyan-400 transition-all">
-                                🏢 شركات عالمية
-                            </span>
-                        </button>
-                        <button class="filter-chip category-filter" data-category="football_teams">
-                            <span class="px-4 py-2.5 rounded-xl border-2 border-white/20 bg-white/5 text-xs font-bold hover:border-cyan-400 transition-all">
-                                ⚽ أندية كورة
-                            </span>
-                        </button>
-                        <button class="filter-chip category-filter" data-category="famous_players">
-                            <span class="px-4 py-2.5 rounded-xl border-2 border-white/20 bg-white/5 text-xs font-bold hover:border-cyan-400 transition-all">
-                                🌟 لاعبين مشهورين
-                            </span>
-                        </button>
+                        <span id="catChipsDyn" class="contents"></span>
                     </div>
                 </div>
                 <div>
@@ -456,14 +430,12 @@
         // Categories with enhanced styling
         // Icons differentiate categories now — no per-category color needed,
         // every badge uses the same .category-badge treatment.
-        const categoryLabels = {
-            places:         { label:"أماكن سياحية",  icon:"🌍" },
-            food:           { label:"أكلات مصرية",   icon:"🍕" },
-            jobs:           { label:"مهن ووظائف",    icon:"🛠️" },
-            companies:      { label:"شركات عالمية",  icon:"🏢" },
-            football_teams: { label:"أندية كورة",    icon:"⚽" },
-            famous_players: { label:"لاعبين مشهورين", icon:"🌟" }
-        };
+        // Labels come from EJ_WORDS (database categories first, built-in only as fallback)
+        function catLabel(id) {
+            const W = window.EJ_WORDS;
+            const m = W && W.lists[id] ? W.info(id) : null;
+            return m ? { label: m.name, icon: m.emoji || '🗂️' } : null;
+        }
         const defaultCategory = { label:"عامة", icon:"🎮" };
 
         // Data
@@ -594,6 +566,7 @@
 
         // Auth: sign in then start listeners
         onAuthStateChanged(auth, async user => {
+            if (window.EJ_WORDS && !window.EJ_WORDS.usingDb()) W_loadCats();
             if (user) {
                 if (window.MOD) {
                     await MOD.init(db, user);
@@ -647,7 +620,7 @@
             // everything — including Join — immediately, stacked in a
             // mobile-first column that never depends on horizontal room.
             el('roomsList').innerHTML = filteredRooms.map((room, index) => {
-                const cat          = categoryLabels[room.category] || defaultCategory;
+                const cat          = catLabel(room.category) || (room.category ? { label: room.category, icon: '🗂️' } : defaultCategory);
                 const pct          = (room.playerCount / room.maxPlayers) * 100;
                 const isAlmostFull = pct >= 70;
                 const isFull       = room.playerCount >= room.maxPlayers;
@@ -723,14 +696,35 @@
             icon.style.transform = hidden ? 'rotate(0deg)' : 'rotate(180deg)';
         });
 
-        document.querySelectorAll('.category-filter').forEach(btn => {
-            btn.addEventListener('click', () => {
-                document.querySelectorAll('.category-filter').forEach(b => b.classList.remove('active'));
-                btn.classList.add('active');
-                activeFilters.category = btn.dataset.category;
-                applyFilters();
+        function bindCategoryChips() {
+            document.querySelectorAll('.category-filter').forEach(btn => {
+                if (btn._bound) return; btn._bound = true;
+                btn.addEventListener('click', () => {
+                    document.querySelectorAll('.category-filter').forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+                    activeFilters.category = btn.dataset.category;
+                    applyFilters();
+                });
             });
-        });
+        }
+        function renderCategoryChips() {
+            const host = el('catChipsDyn'); const W = window.EJ_WORDS;
+            if (!host || !W) return;
+            const esc2 = t => String(t).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+            host.innerHTML = W.catalog().map(c => `
+                <button class="filter-chip category-filter${activeFilters.category === c.id ? ' active' : ''}" data-category="${esc2(c.id)}">
+                    <span class="px-4 py-2.5 rounded-xl border-2 border-white/20 bg-white/5 text-xs font-bold hover:border-cyan-400 transition-all">${esc2(c.emoji)} ${esc2(c.name)}</span>
+                </button>`).join('');
+            bindCategoryChips();
+        }
+        bindCategoryChips();
+        renderCategoryChips();   // instant (local) chips
+        W_loadCats();
+        async function W_loadCats() {
+            try { if (window.EJ_WORDS) await window.EJ_WORDS.loadFromDb(db, get, ref); } catch (e) {}
+            renderCategoryChips();
+            if (typeof applyFilters === 'function') applyFilters();
+        }
 
         document.querySelectorAll('.player-filter').forEach(btn => {
             btn.addEventListener('click', () => {

@@ -787,7 +787,7 @@
     ace: {
       key: 'ace',
       name: 'Ace',
-      nameAr: 'ايس',
+      nameAr: 'متفوق',
       min: 7500,
       max: Infinity,
       color: '#ffffff',

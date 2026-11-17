@@ -489,32 +489,98 @@
     return out;
   }
 
+  var RESERVED = { name: 1, emoji: 1, words: 1, about: 1, icon: 1 };
+  // Words of one DB category. Handles every shape that can exist in the database:
+  //   {word: true}  (admin.html)   |   ["w1","w2"] / {0:"w1",1:"w2"} (imported arrays)   |   {words:[...]}
   function normList(v) {
     if (!v) return [];
     if (Array.isArray(v)) return v.filter(Boolean).map(String);
-    // admin.html stores words as keys:  wordLists/{cat}/{word}: true
-    return Object.keys(v).filter(function (k) { return k && k !== '_init' && k !== 'name' && k !== 'emoji' && k !== 'words' && k !== 'about'; });
+    if (typeof v !== 'object') return [];
+    var out = [];
+    Object.keys(v).forEach(function (k) {
+      if (!k || k.charAt(0) === '_' || RESERVED[k]) return;
+      var x = v[k];
+      if (typeof x === 'string' && x.trim()) out.push(x.trim());
+      else if (x === true) out.push(k);
+      else if (x && typeof x === 'object' && typeof x.word === 'string') out.push(x.word);
+    });
+    return out.filter(function (w, i) { return out.indexOf(w) === i; });
+  }
+
+  // Local (built-in) data is kept as a fallback; the database lists replace it once they load.
+  var LOCAL_LISTS = {}, LOCAL_META = {};
+  Object.keys(LISTS).forEach(function (k) { LOCAL_LISTS[k] = LISTS[k].slice(); });
+  Object.keys(META).forEach(function (k) { LOCAL_META[k] = META[k]; });
+  var usingDb = false;
+
+  function restoreLocal() {
+    Object.keys(LISTS).forEach(function (k) { delete LISTS[k]; });
+    Object.keys(META).forEach(function (k) { delete META[k]; });
+    Object.keys(LOCAL_LISTS).forEach(function (k) { LISTS[k] = LOCAL_LISTS[k].slice(); });
+    Object.keys(LOCAL_META).forEach(function (k) { META[k] = LOCAL_META[k]; });
+    usingDb = false;
   }
 
   window.EJ_WORDS = {
     lists: LISTS,
     meta: META,
-    // Merges the database lists into `target` (defaults to LISTS) and registers labels for custom categories.
-    mergeCustom: function (snapVal, target) {
-      target = target || LISTS;
+    // The database (wordLists/*) is the PRIMARY source: when it loads with at least one non-empty
+    // category, it replaces the built-in lists completely (no duplicates). If it is empty/unreadable
+    // the built-in lists stay as the fallback. Returns true when the database lists are in use.
+    applyDb: function (snapVal) {
+      var cats = [];
       Object.keys(snapVal || {}).forEach(function (id) {
         var c = snapVal[id]; if (!c || typeof c !== 'object') return;
         var words = normList(c.words || c);
         if (!words.length) return;
-        if (META[id]) target[id] = (target[id] || []).concat(words.filter(function (w) { return (target[id] || []).indexOf(w) < 0; }));
-        else {
-          target[id] = words;
-          META[id] = { name: c.name || id, emoji: c.emoji || '🗂️', about: c.about || ('فئة مخصصة اسمها «' + (c.name || id) + '»'), kind: 'كلمة' };
-        }
+        var loc = LOCAL_META[id] || {};
+        cats.push({
+          id: id, words: words,
+          meta: {
+            name: c._name || c.name || loc.name || id,
+            emoji: c._icon || c.icon || c.emoji || loc.emoji || '🗂️',
+            about: c.about || loc.about || ('فئة اسمها «' + (c._name || c.name || id) + '»'),
+            kind: loc.kind || 'كلمة'
+          }
+        });
       });
-      return target;
+      if (!cats.length) { if (usingDb) restoreLocal(); return false; }
+      Object.keys(LISTS).forEach(function (k) { delete LISTS[k]; });
+      Object.keys(META).forEach(function (k) { delete META[k]; });
+      cats.forEach(function (c) { LISTS[c.id] = c.words; META[c.id] = c.meta; });
+      usingDb = true;
+      return true;
     },
-    words: function (cat) { return LISTS[cat] || LISTS.places; },
+    mergeCustom: function (snapVal) { return window.EJ_WORDS.applyDb(snapVal); },   // old name, same behaviour
+    usingDb: function () { return usingDb; },
+    // [{id,name,emoji,count}] of the categories that are active right now (DB if loaded, else local)
+    catalog: function () {
+      return Object.keys(LISTS).filter(function (k) { return LISTS[k] && LISTS[k].length; }).map(function (k) {
+        var m = META[k] || {}; return { id: k, name: m.name || k, emoji: m.emoji || '🗂️', count: LISTS[k].length };
+      });
+    },
+    // Rebuilds a <select>'s options from the active catalog and keeps `keep` (or the current value) selected
+    fillSelect: function (sel, keep) {
+      if (!sel) return;
+      var want = keep || sel.value, cat = window.EJ_WORDS.catalog();
+      sel.innerHTML = '';
+      cat.forEach(function (c) { var o = document.createElement('option'); o.value = c.id; o.textContent = c.emoji + ' ' + c.name; sel.appendChild(o); });
+      if (want && cat.some(function (c) { return c.id === want; })) sel.value = want;
+      else if (cat.length) sel.value = cat[0].id;
+    },
+    // Fills a <select> now with the active lists and again once the database lists have loaded.
+    initSelect: function (sel, db, get, ref) {
+      if (!sel) return;
+      var W = window.EJ_WORDS; W.fillSelect(sel);
+      W.loadFromDb(db, get, ref).then(function () { W.fillSelect(sel, sel.value); });
+    },
+    // Loads wordLists with the given Firebase helpers; resolves true if DB lists are active, false if the local fallback is used.
+    loadFromDb: function (db, get, ref) {
+      return get(ref(db, 'wordLists')).then(function (snap) {
+        return snap.exists() ? window.EJ_WORDS.applyDb(snap.val()) : false;
+      }).catch(function (e) { console.warn('wordLists not loaded, using local lists', e); return false; });
+    },
+    words: function (cat) { if (LISTS[cat]) return LISTS[cat]; var k = Object.keys(LISTS)[0]; return (k && LISTS[k]) || []; },
     // specs of one secret word (hand-written list if it has one, otherwise generic specs built from the word itself)
     specs: function (word, cat) { var s = SPECS[word]; return (s && s.length) ? s.slice() : genericSpecs(word, cat); },
     hasSpecs: function (word) { return !!(SPECS[word] && SPECS[word].length); },

@@ -15,6 +15,7 @@
     <script src="../Assets/emoji-reactions.js"></script>
     <script src="../Assets/room-reactions.js"></script>
     <script src="../Assets/dialogs.js"></script>
+    <script src="../Assets/cursors.js"></script>
     <script src="../Assets/name-themes.js"></script>
    <script src="../Assets/game-words.js"></script>
    <script src="../Assets/inbox.js"></script>
@@ -590,6 +591,24 @@
             color: #00f2ff;
             margin-left: 8px;
         }
+    
+        /* ── hold-to-reveal category card (discussion + voting) ── */
+        .hold-card { position:relative; width:min(240px,100%); min-height:92px; padding:10px 12px; border-radius:18px; text-align:center;
+            display:flex; flex-direction:column; align-items:center; justify-content:center; gap:4px; cursor:pointer;
+            border:2px dashed rgba(163,230,53,.55); background:rgba(163,230,53,.06); color:#e5e7eb;
+            user-select:none; -webkit-user-select:none; -webkit-touch-callout:none; touch-action:none; -webkit-tap-highlight-color:transparent;
+            transition:background .18s, border-color .18s, transform .12s, box-shadow .18s; outline:none; }
+        .hold-card:focus-visible { box-shadow:0 0 0 3px rgba(0,242,255,.6); }
+        .hold-card .hc-front { font-size:12px; font-weight:800; opacity:.75; line-height:1.5; }
+        .hold-card .hc-front i { display:block; font-size:22px; opacity:.5; margin-bottom:2px; }
+        .hold-card .hc-back { display:none; flex-direction:column; align-items:center; gap:2px; width:100%; }
+        .hold-card.holding { transform:scale(1.04); border-style:solid; border-color:#a3e635; background:rgba(163,230,53,.16); box-shadow:0 0 22px rgba(163,230,53,.35); }
+        .hold-card.holding .hc-front { display:none; }
+        .hold-card.holding .hc-back { display:flex; }
+        .hold-card .hc-cat { font-size:15px; font-weight:900; color:#a3e635; word-break:break-word; }
+        .hold-card .hc-plus { font-size:12px; opacity:.6; font-weight:900; }
+        .hold-card .hc-word { font-size:20px; font-weight:900; color:#00f2ff; word-break:break-word; }
+        .hold-card .hc-role { font-size:10px; opacity:.6; font-weight:700; }
     </style>
 
     <style id="v4-layout">
@@ -723,12 +742,7 @@
                             <label class="text-xs opacity-60 block mb-2">الفئة</label>
                             <select id="categorySelect" onchange="updateRoomSettings()" 
                                 class="w-full bg-black/60 p-3 rounded-xl border-2 border-primary/20 outline-none focus:border-primary font-bold text-sm">
-                                <option value="places">🌍 أماكن سياحية</option>
-                                <option value="food">🍕 أكلات مصرية</option>
-                                <option value="jobs">🛠️ مهن ووظائف</option>
-                                <option value="companies">🏢 شركات عالمية</option>
-                                <option value="football_teams">⚽ أندية كرة قدم</option>
-                                <option value="famous_players">🌟 لاعبين مشهورين</option>
+                                <!-- filled by refreshCategorySelect(): database categories first, local only as fallback -->
                             </select>
                         </div>
 
@@ -850,6 +864,7 @@
                     </div>
                 </div>
 
+                <div class="hold-slot flex justify-center mb-4"></div>
                 <!-- Suspects List with improved multi-suspect UI -->
                 <div id="suspectsList" class="grid player-grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 mb-6 max-h-96 overflow-y-auto custom-scrollbar pr-2">
                     <!-- Player cards with suspect buttons -->
@@ -917,6 +932,7 @@
                     </span>
                 </div>
 
+                <div class="hold-slot flex justify-center mb-4"></div>
                 <div id="voteCards" class="grid player-grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 mb-6 max-h-96 overflow-y-auto custom-scrollbar pr-2">
                     <!-- Voting cards -->
                 </div>
@@ -1626,6 +1642,7 @@ async function joinRoom(uid, username) {
                 window.gameState.currentStatus = roomData.status || 'waiting';
                 window.gameState.category = roomData.category || 'places';
                 window.gameState.secretWord = roomData.secretWord;
+                ensureWordLists();
 
                 // Keep my role in sync with the room on EVERY update — before the screen is chosen. It used to be set
                 // only when my own reveal card was shown, so reloading during discussion lost the spy UI / hints / result data.
@@ -1714,6 +1731,8 @@ async function joinRoom(uid, username) {
             document.getElementById('resultScreen').classList.add('hidden');
             document.getElementById('rankedScreen').classList.add('hidden');
 
+            if (window.releaseHoldCards) window.releaseHoldCards();
+            if (status !== 'revealing') { window.gameState._revealKey = null; if (window.resetRevealUI) window.resetRevealUI(); }
             // Show current screen
             switch(status) {
                 case 'waiting':
@@ -1846,7 +1865,9 @@ async function joinRoom(uid, username) {
             const visibilityBtn = document.getElementById('visibilityBtn');
             
             if (categorySelect) {
-                categorySelect.value = roomData.category || 'places';
+                const want = roomData.category || (window.EJ_WORDS && window.EJ_WORDS.catalog()[0]?.id) || 'places';
+                if (![...categorySelect.options].some(o => o.value === want)) { window.gameState.category = want; refreshCategorySelect(); }
+                categorySelect.value = want;
             }
             
             if (visibilityBtn) {
@@ -1938,7 +1959,10 @@ async function joinRoom(uid, username) {
             
             // Select secret word (merge admin-added lists first)
             await ensureWordLists();
-            const words = getWordsForCategory(window.gameState.category);
+            let _cat = window.gameState.category;
+            { const L = (window.EJ_WORDS && window.EJ_WORDS.lists) || {};
+              if (!(L[_cat] && L[_cat].length)) { _cat = Object.keys(L).find(k => L[k] && L[k].length) || _cat; window.gameState.category = _cat; } }
+            const words = getWordsForCategory(_cat);
             const secretWord = words[Math.floor(Math.random() * words.length)];
             
             // Create roles
@@ -1955,6 +1979,7 @@ async function joinRoom(uid, username) {
             await update(ref(db, `rooms/${window.gameState.roomCode}`), {
                 ...(window.gameState.mode === 'ai' ? { chat: null } : {}),
                 status: 'revealing',
+                category: _cat,
                 roles,
                 secretWord,
                 spyId,
@@ -1977,20 +2002,35 @@ async function joinRoom(uid, username) {
         // Full lists live in Assets/game-words.js (shared with home.html); admin-added
         // lists from the database (wordLists/*) are merged in once per page load.
         let _wordListsLoaded = null;
+        // The category <select> is built from EJ_WORDS.catalog(): database lists when they loaded,
+        // the built-in ones only as a fallback — never both. A room whose category is not in the list
+        // (older room / renamed category) still shows its own category as a selected option.
+        function refreshCategorySelect() {
+            const sel = document.getElementById('categorySelect');
+            const W = window.EJ_WORDS;
+            if (!sel || !W) return;
+            const cur = (window.gameState && window.gameState.category) || sel.value;
+            W.fillSelect(sel, cur);
+            if (cur && sel.value !== cur) {
+                const i = W.info(cur), o = document.createElement('option');
+                o.value = cur; o.textContent = (i.emoji || '🗂️') + ' ' + (i.name || cur);
+                sel.appendChild(o); sel.value = cur;
+            }
+        }
         function ensureWordLists() {
             if (_wordListsLoaded) return _wordListsLoaded;
+            refreshCategorySelect();   // instant local list until the database answers
             _wordListsLoaded = (async () => {
-                try {
-                    const snap = await get(ref(db, 'wordLists'));
-                    if (snap.exists() && window.EJ_WORDS) window.EJ_WORDS.mergeCustom(snap.val());
-                } catch (e) { console.warn('wordLists not loaded', e); }
+                try { if (window.EJ_WORDS) await window.EJ_WORDS.loadFromDb(db, get, ref); }
+                catch (e) { console.warn('wordLists not loaded', e); }
+                refreshCategorySelect();
             })();
             return _wordListsLoaded;
         }
         function getWordsForCategory(category) {
             const W = window.EJ_WORDS;
             if (W && W.lists[category] && W.lists[category].length) return W.lists[category];
-            if (W && W.lists.places) return W.lists.places;
+            { const k = W && Object.keys(W.lists)[0]; if (k && W.lists[k].length) return W.lists[k]; }
             return ["المدرسة", "المستشفى", "المطار", "السينما", "المطعم", "البحر", "المزرعة", "السيرك"];
         }
 
@@ -2013,12 +2053,77 @@ async function joinRoom(uid, username) {
         // REVEAL STATUS - FIX: Only current player can flip
         // ═══════════════════════════════════════════════════════════
 
+        // Clears everything the reveal card/Next button keep between turns and between games:
+        // flipped state, pending flip timer, the Next button (hidden AND re-enabled) and the busy flag.
+        // Before this existed a finished game left the card flipped / the Next button disabled, so in the
+        // next game in the same room the first revealer's card looked frozen and Next could not be pressed.
+        function resetRevealUI() {
+            const card = document.getElementById('revealCard');
+            const btn = document.getElementById('nextRevealBtn');
+            clearTimeout(window.gameState._revealBtnTimer);
+            window.gameState._nextBusy = false;
+            if (card) { card.classList.remove('flipped'); card.style.pointerEvents = ''; }
+            if (btn) { btn.classList.add('hidden'); btn.disabled = false; btn.style.opacity = '1'; btn.style.pointerEvents = ''; }
+        }
+        window.resetRevealUI = resetRevealUI;
+
+
+        // ═══════════════════════════════════════════════════════════
+        // HOLD-TO-REVEAL CATEGORY CARD (discussion + voting)
+        // Content exists in the DOM ONLY while the card is held; it is cleared the moment the finger/mouse lets go.
+        //   spy      → the category
+        //   innocent → category + secret word
+        // ═══════════════════════════════════════════════════════════
+        function holdCardContent() {
+            const gs = window.gameState, r = gs.roomData || {};
+            const cat = r.category || gs.category;
+            const W = window.EJ_WORDS;
+            const info = W ? W.info(cat) : { name: cat, emoji: '🗂️' };
+            const spy = gs.myRole === 'spy' || (r.roles && gs.currentUser && r.roles[gs.currentUser.uid] === 'spy');
+            const esc = (t) => String(t == null ? '' : t).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+            const catHtml = `<span class="hc-cat">${esc(info.emoji || '🗂️')} ${esc(info.name || cat || '—')}</span>`;
+            if (spy || !r.secretWord) return catHtml + `<span class="hc-role">${spy ? 'فئة الغرفة — أنت الجاسوس 🕵️' : 'فئة الغرفة'}</span>`;
+            return catHtml + `<span class="hc-plus">+</span><span class="hc-word">${esc(r.secretWord)}</span><span class="hc-role">الفئة + الكلمة السرية</span>`;
+        }
+        function buildHoldCard(slot) {
+            if (!slot || slot.dataset.ready) return;
+            slot.dataset.ready = '1';
+            slot.innerHTML = `<div class="hold-card" role="button" tabindex="0" aria-label="اضغط مطولاً لإظهار الفئة">
+                <div class="hc-front"><i class="fas fa-fingerprint"></i>اضغط مطوّلاً لإظهار الفئة 🔒</div>
+                <div class="hc-back"></div></div>`;
+            const card = slot.firstElementChild, back = card.querySelector('.hc-back');
+            let down = false;
+            const show = () => { if (down) return; down = true; back.innerHTML = holdCardContent(); card.classList.add('holding'); };
+            const hide = () => { down = false; card.classList.remove('holding'); back.innerHTML = ''; };
+            card._hide = hide;
+            card.addEventListener('pointerdown', (e) => {
+                if (e.pointerType === 'mouse' && e.button !== 0) return;
+                try { card.setPointerCapture(e.pointerId); } catch (_) {}
+                e.preventDefault(); show();
+            });
+            ['pointerup', 'pointercancel', 'lostpointercapture', 'pointerleave'].forEach(ev => card.addEventListener(ev, hide));
+            card.addEventListener('contextmenu', (e) => e.preventDefault());
+            card.addEventListener('dragstart', (e) => e.preventDefault());
+            card.addEventListener('keydown', (e) => { if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); show(); } });
+            card.addEventListener('keyup', hide);
+            card.addEventListener('blur', hide);
+        }
+        window.releaseHoldCards = function () { document.querySelectorAll('.hold-card').forEach(c => c._hide && c._hide()); };
+        document.querySelectorAll('.hold-slot').forEach(buildHoldCard);
+        document.addEventListener('visibilitychange', () => { if (document.hidden) window.releaseHoldCards(); });
+        window.addEventListener('blur', () => window.releaseHoldCards());
+
         async function handleRevealStatus() {
-            const roomRef = ref(db, `rooms/${window.gameState.roomCode}`);
-            const snap = await get(roomRef);
-            const roomData = snap.val();
-            
+            let roomData = window.gameState.roomData;
+            if (!roomData || roomData.status !== 'revealing') {
+                const snap = await get(ref(db, `rooms/${window.gameState.roomCode}`));
+                roomData = snap.val();
+            }
             if (!roomData) return;
+
+            // new game or new turn → fresh card + fresh button
+            const _key = String(roomData.startedAt || 0) + '|' + (roomData.currentRevealIndex || 0);
+            if (window.gameState._revealKey !== _key) { window.gameState._revealKey = _key; resetRevealUI(); }
 
             const revealOrder = roomData.revealOrder || [];
             const currentIndex = roomData.currentRevealIndex || 0;
@@ -2081,27 +2186,32 @@ async function joinRoom(uid, username) {
             }
             
             revealCard.classList.toggle('flipped');
-            setTimeout(() => {
-                document.getElementById('nextRevealBtn').classList.remove('hidden');
+            const btn = document.getElementById('nextRevealBtn');
+            clearTimeout(window.gameState._revealBtnTimer);
+            window.gameState._revealBtnTimer = setTimeout(() => {
+                // the Next button is always usable once the card was opened this turn
+                btn.disabled = false; btn.style.opacity = '1'; btn.style.pointerEvents = '';
+                btn.classList.remove('hidden');
             }, 600);
         };
 
         window.nextReveal = async function() {
             const nextBtn = document.getElementById('nextRevealBtn');
-            
-            // ✅ FIX: Disable button immediately to prevent double-clicks
+            if (window.gameState._nextBusy) return;          // double-click guard (reset by resetRevealUI)
+            window.gameState._nextBusy = true;
             nextBtn.disabled = true;
             nextBtn.style.opacity = '0.5';
-            
+            let ok = false;
             try {
                 const roomRef = ref(db, `rooms/${window.gameState.roomCode}`);
                 const snap = await get(roomRef);
                 const roomData = snap.val();
-                
-                if (!roomData) return;
+                if (!roomData || roomData.status !== 'revealing') { ok = true; return; }
 
                 const currentIndex = roomData.currentRevealIndex || 0;
                 const revealOrder = roomData.revealOrder || [];
+                // only the player whose turn it is may advance (stale tab / double device safety)
+                if (revealOrder[currentIndex] && revealOrder[currentIndex] !== window.gameState.currentUser?.uid) { ok = true; return; }
                 
                 if (currentIndex >= revealOrder.length - 1) {
                     await update(roomRef, {
@@ -2113,17 +2223,17 @@ async function joinRoom(uid, username) {
                     await update(roomRef, {
                         currentRevealIndex: currentIndex + 1
                     });
-                    document.getElementById('revealCard').classList.remove('flipped');
-                    document.getElementById('nextRevealBtn').classList.add('hidden');
                 }
+                ok = true;
             } catch (error) {
                 console.error('Error in nextReveal:', error);
                 if (window.showToast) {
                     showToast('⛔ حدث خطأ، حاول مرة أخرى');
                 }
-                // Re-enable button on error
-                nextBtn.disabled = false;
-                nextBtn.style.opacity = '1';
+            } finally {
+                // success → fresh card for the next turn/game; error → button usable again
+                if (ok) resetRevealUI();
+                else { window.gameState._nextBusy = false; nextBtn.disabled = false; nextBtn.style.opacity = '1'; }
             }
         };
 
