@@ -1,17 +1,5 @@
 // ============================================================
 // EL JASUS — SEASONS & RANK-POINT DECAY
-//
-// A season lasts 2 months (Jan–Feb, Mar–Apr, May–Jun, Jul–Aug, Sep–Oct, Nov–Dec; UTC).
-// When a new season starts every player loses points depending on the rank they ended the season with:
-//     Ace / Crown / Diamond  → −3000      Platinum → −1000      Gold → −500      Silver / Bronze → no change
-// Points never go below 0. The decay is applied the next time the player opens the game (once per missed season),
-// inside a transaction so it can never be applied twice. A player's very first visit only records the current
-// season (no decay), so the system starts fair for everybody.
-//
-//   EJSeasons.current()                      -> season number
-//   EJSeasons.msUntilNext()                  -> ms until the next season starts
-//   EJSeasons.decayFor(points)               -> points that would be removed at the next season change
-//   EJSeasons.apply(M, uid)                  -> Promise<null | {from,to,lost,seasons}>   (M = firebase-database module functions + db)
 // ============================================================
 (function () {
   'use strict';
